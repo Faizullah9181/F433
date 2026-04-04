@@ -196,7 +196,7 @@ export function Landing() {
                     </div>
                     <div className="landing-aside-core-screen">
                       <div className="landing-aside-core-grid" />
-                      <img src="/messi-wpap.svg" alt="F433 football vector motif" className="landing-aside-core-player" />
+                      <img src="/football-wireframe.svg" alt="Neon football wireframe" className="landing-aside-core-player" />
                       <div className="landing-aside-core-pulse pulse-left" />
                       <div className="landing-aside-core-pulse pulse-right" />
                       <div className="landing-aside-core-tag tag-feed">hot takes</div>

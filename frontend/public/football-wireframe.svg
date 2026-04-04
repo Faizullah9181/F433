@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" fill="none">
+  <defs>
+    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.25"/>
+      <stop offset="100%" stop-color="#38bdf8" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="lineGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8"/>
+      <stop offset="50%" stop-color="#a78bfa"/>
+      <stop offset="100%" stop-color="#38bdf8"/>
+    </linearGradient>
+    <filter id="neon">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="2" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Ambient glow -->
+  <circle cx="200" cy="200" r="180" fill="url(#glow)"/>
+
+  <!-- Outer ring -->
+  <circle cx="200" cy="200" r="150" stroke="url(#lineGrad)" stroke-width="1.2" opacity="0.5" filter="url(#neon)"/>
+
+  <!-- Pentagon wireframe – top -->
+  <polygon points="200,60 260,110 240,180 160,180 140,110" stroke="#38bdf8" stroke-width="1.5" fill="none" opacity="0.7" filter="url(#neon)"/>
+
+  <!-- Pentagon wireframe – bottom-left -->
+  <polygon points="100,150 140,110 160,180 130,240 70,210" stroke="#a78bfa" stroke-width="1.5" fill="none" opacity="0.6" filter="url(#neon)"/>
+
+  <!-- Pentagon wireframe – bottom-right -->
+  <polygon points="300,150 260,110 240,180 270,240 330,210" stroke="#38bdf8" stroke-width="1.5" fill="none" opacity="0.6" filter="url(#neon)"/>
+
+  <!-- Pentagon wireframe – lower-left -->
+  <polygon points="130,240 160,180 200,220 180,300 100,280" stroke="#a78bfa" stroke-width="1.5" fill="none" opacity="0.5" filter="url(#neon)"/>
+
+  <!-- Pentagon wireframe – lower-right -->
+  <polygon points="270,240 240,180 200,220 220,300 300,280" stroke="#38bdf8" stroke-width="1.5" fill="none" opacity="0.5" filter="url(#neon)"/>
+
+  <!-- Center pentagon (filled) -->
+  <polygon points="160,180 240,180 270,240 200,280 130,240" stroke="#a78bfa" stroke-width="1.8" fill="rgba(167,139,250,0.08)" filter="url(#neon)"/>
+
+  <!-- Bottom cap -->
+  <polygon points="180,300 220,300 240,340 200,360 160,340" stroke="#38bdf8" stroke-width="1.2" fill="none" opacity="0.4" filter="url(#neon)"/>
+
+  <!-- Connecting edges -->
+  <line x1="200" y1="60" x2="200" y2="30" stroke="#38bdf8" stroke-width="0.8" opacity="0.3"/>
+  <line x1="100" y1="150" x2="70" y2="130" stroke="#a78bfa" stroke-width="0.8" opacity="0.3"/>
+  <line x1="300" y1="150" x2="330" y2="130" stroke="#38bdf8" stroke-width="0.8" opacity="0.3"/>
+  <line x1="100" y1="280" x2="70" y2="300" stroke="#a78bfa" stroke-width="0.8" opacity="0.3"/>
+  <line x1="300" y1="280" x2="330" y2="300" stroke="#38bdf8" stroke-width="0.8" opacity="0.3"/>
+
+  <!-- Vertex dots -->
+  <circle cx="200" cy="60" r="3" fill="#38bdf8" filter="url(#neon)"/>
+  <circle cx="260" cy="110" r="3" fill="#38bdf8" filter="url(#neon)"/>
+  <circle cx="140" cy="110" r="3" fill="#a78bfa" filter="url(#neon)"/>
+  <circle cx="100" cy="150" r="3" fill="#a78bfa" filter="url(#neon)"/>
+  <circle cx="300" cy="150" r="3" fill="#38bdf8" filter="url(#neon)"/>
+  <circle cx="160" cy="180" r="3" fill="#a78bfa" filter="url(#neon)"/>
+  <circle cx="240" cy="180" r="3" fill="#38bdf8" filter="url(#neon)"/>
+  <circle cx="200" cy="220" r="2.5" fill="#fff" filter="url(#neon)"/>
+  <circle cx="130" cy="240" r="3" fill="#a78bfa" filter="url(#neon)"/>
+  <circle cx="270" cy="240" r="3" fill="#38bdf8" filter="url(#neon)"/>
+  <circle cx="70" cy="210" r="2.5" fill="#a78bfa" opacity="0.6" filter="url(#neon)"/>
+  <circle cx="330" cy="210" r="2.5" fill="#38bdf8" opacity="0.6" filter="url(#neon)"/>
+  <circle cx="180" cy="300" r="3" fill="#a78bfa" filter="url(#neon)"/>
+  <circle cx="220" cy="300" r="3" fill="#38bdf8" filter="url(#neon)"/>
+  <circle cx="200" cy="280" r="3" fill="#fff" opacity="0.7" filter="url(#neon)"/>
+  <circle cx="100" cy="280" r="2.5" fill="#a78bfa" opacity="0.5"/>
+  <circle cx="300" cy="280" r="2.5" fill="#38bdf8" opacity="0.5"/>
+
+  <!-- Scan line accent -->
+  <line x1="40" y1="200" x2="360" y2="200" stroke="#38bdf8" stroke-width="0.5" opacity="0.15" stroke-dasharray="8 6"/>
+  <line x1="200" y1="20" x2="200" y2="380" stroke="#a78bfa" stroke-width="0.5" opacity="0.12" stroke-dasharray="8 6"/>
+</svg>
