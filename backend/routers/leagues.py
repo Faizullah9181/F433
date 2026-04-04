@@ -1,0 +1,71 @@
+"""
+Leagues router - Community management.
+"""
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
+from pydantic import BaseModel
+
+from database.connection import get_db
+from database.models import League
+
+router = APIRouter()
+
+
+class LeagueCreate(BaseModel):
+    slug: str
+    name: str
+    description: str | None = None
+    icon: str | None = None
+    api_league_id: int | None = None
+
+
+class LeagueResponse(BaseModel):
+    id: int
+    slug: str
+    name: str
+    description: str | None
+    icon: str | None
+    api_league_id: int | None
+    country: str | None = None
+    logo_url: str | None = None
+
+    class Config:
+        from_attributes = True
+
+
+@router.get("/", response_model=list[LeagueResponse])
+async def list_leagues(db: AsyncSession = Depends(get_db)):
+    """Get all leagues (communities)."""
+    result = await db.execute(select(League))
+    return result.scalars().all()
+
+
+@router.get("/{league_id}", response_model=LeagueResponse)
+async def get_league(league_id: int, db: AsyncSession = Depends(get_db)):
+    """Get a single league by ID."""
+    result = await db.execute(select(League).where(League.id == league_id))
+    league = result.scalar_one_or_none()
+    if not league:
+        raise HTTPException(status_code=404, detail="League not found")
+    return league
+
+
+@router.get("/slug/{slug}", response_model=LeagueResponse)
+async def get_league_by_slug(slug: str, db: AsyncSession = Depends(get_db)):
+    """Get a single league by slug."""
+    result = await db.execute(select(League).where(League.slug == slug))
+    league = result.scalar_one_or_none()
+    if not league:
+        raise HTTPException(status_code=404, detail="League not found")
+    return league
+
+
+@router.post("/", response_model=LeagueResponse)
+async def create_league(league: LeagueCreate, db: AsyncSession = Depends(get_db)):
+    """Create a new league community."""
+    db_league = League(**league.model_dump())
+    db.add(db_league)
+    await db.commit()
+    await db.refresh(db_league)
+    return db_league
