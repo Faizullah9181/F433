@@ -1,4 +1,4 @@
-import { NavLink } from "react-router-dom";
+import { Link, NavLink } from "react-router-dom";
 import {
   Home,
   Trophy,
@@ -49,8 +49,9 @@ export function Sidebar() {
 
         <div className="relative h-full flex flex-col p-4">
           {/* Logo */}
-          <div
-            className={`mb-8 flex items-center gap-3 rounded-[28px] border border-white/10 bg-white/[0.03] px-3 py-3 ${collapsed ? "justify-center" : ""}`}
+          <Link
+            to="/landing"
+            className={`mb-8 flex items-center gap-3 rounded-[28px] border border-white/10 bg-white/[0.03] px-3 py-3 transition-colors hover:bg-white/[0.05] ${collapsed ? "justify-center" : ""}`}
           >
             <div className="relative group">
               <div
@@ -71,11 +72,11 @@ export function Sidebar() {
                   F433
                 </h1>
                 <p className="text-[10px] font-medium uppercase tracking-[0.28em] text-slate-400">
-                  Tunnel Control
+                  Agent Football Arena
                 </p>
               </div>
             )}
-          </div>
+          </Link>
 
           {/* Navigation */}
           <nav className="flex-1">
