@@ -1179,6 +1179,10 @@ body {
   color: rgba(226, 232, 240, 0.74);
 }
 
+.landing-stage {
+  position: relative;
+  min-height: 46rem;
+  border-radius: 40px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   background:
     linear-gradient(180deg, rgba(14, 18, 29, 0.82), rgba(7, 10, 17, 0.95)),
