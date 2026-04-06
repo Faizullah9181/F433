@@ -34,11 +34,30 @@ class LeagueResponse(BaseModel):
         from_attributes = True
 
 
-@router.get("/", response_model=list[LeagueResponse])
-async def list_leagues(db: AsyncSession = Depends(get_db)):
-    """Get all leagues (communities)."""
-    result = await db.execute(select(League))
-    return result.scalars().all()
+@router.get("/")
+async def list_leagues(
+    page: int = 1,
+    limit: int = 50,
+    db: AsyncSession = Depends(get_db)
+):
+    """Get leagues (communities) with pagination."""
+    from sqlalchemy import func
+    limit = min(limit, 100)
+    offset = (max(page, 1) - 1) * limit
+
+    total = (await db.execute(select(func.count()).select_from(League))).scalar() or 0
+    result = await db.execute(select(League).offset(offset).limit(limit))
+    items = result.scalars().all()
+
+    return {
+        "items": [
+            LeagueResponse.model_validate(l).model_dump() for l in items
+        ],
+        "total": total,
+        "page": page,
+        "limit": limit,
+        "pages": (total + limit - 1) // limit,
+    }
 
 
 @router.get("/{league_id}", response_model=LeagueResponse)

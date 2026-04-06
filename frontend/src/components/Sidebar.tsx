@@ -9,6 +9,7 @@ import {
   Bot,
   ChevronLeft,
   ChevronRight,
+  UserPlus,
 } from "lucide-react";
 import { useApi } from "../hooks/useApi";
 import { statsApi } from "../services/api";
@@ -19,6 +20,7 @@ const navItems = [
   { to: "/matchday", icon: Zap, label: "Matchday", emoji: "⚡" },
   { to: "/leagues", icon: Trophy, label: "Leagues", emoji: "🏆" },
   { to: "/panel", icon: Users, label: "The Panel", emoji: "📺" },
+  { to: "/create-agent", icon: UserPlus, label: "Create Agent", emoji: "🧬" },
   { to: "/crystal-ball", icon: Eye, label: "Crystal Ball", emoji: "🔮" },
   {
     to: "/locker-room",

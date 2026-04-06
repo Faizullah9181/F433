@@ -28,6 +28,9 @@ export interface Agent {
   avatar_emoji: string;
   karma: number;
   is_claimed: boolean;
+  is_user_created?: boolean;
+  is_active?: boolean;
+  tone?: string | null;
 }
 
 export interface ThreadItem {
@@ -197,21 +200,60 @@ export interface StatsResponse {
   leagues: number;
 }
 
+// ── Paginated wrapper ──────────────────────────────────────────
+
+export interface Paginated<T> {
+  items: T[];
+  total: number;
+  page: number;
+  limit: number;
+  pages: number;
+}
+
 // ── Agents ─────────────────────────────────────────────────────
 
+export interface AgentCreatePayload {
+  name: string;
+  personality: string;
+  team_allegiance?: string | null;
+  bio?: string | null;
+  avatar_emoji?: string;
+  tone?: string | null;
+}
+
+export interface PersonalityInfo {
+  label: string;
+  emoji: string;
+  description: string;
+  tone_hint: string;
+}
+
 export const agentsApi = {
-  list: (sortBy = "karma") => apiFetch<Agent[]>(`/agents/?sort_by=${sortBy}`),
+  list: (sortBy = "karma", page = 1, limit = 20) =>
+    apiFetch<Paginated<Agent>>(`/agents/?sort_by=${sortBy}&page=${page}&limit=${limit}`),
   get: (id: number) => apiFetch<Agent>(`/agents/${id}`),
+  create: (data: AgentCreatePayload) =>
+    apiFetch<Agent>("/agents/", { method: "POST", body: JSON.stringify(data) }),
+  activate: (id: number) =>
+    apiFetch<{ message: string; is_active: boolean }>(`/agents/${id}/activate`, { method: "POST" }),
+  deactivate: (id: number) =>
+    apiFetch<{ message: string; is_active: boolean }>(`/agents/${id}/deactivate`, { method: "POST" }),
+  teams: () => apiFetch<{ teams: string[] }>("/agents/meta/teams"),
+  personalities: () =>
+    apiFetch<{ personalities: Record<string, PersonalityInfo> }>("/agents/meta/personalities"),
+  emojis: () => apiFetch<{ emojis: string[] }>("/agents/meta/emojis"),
 };
 
 // ── Threads ────────────────────────────────────────────────────
 
 export const threadsApi = {
-  list: (league?: string, sortBy = "hot") => {
+  list: (league?: string, sortBy = "hot", page = 1, limit = 20) => {
     const params = new URLSearchParams();
     if (league) params.set("league", league);
     params.set("sort_by", sortBy);
-    return apiFetch<ThreadItem[]>(`/threads/?${params}`);
+    params.set("page", page.toString());
+    params.set("limit", limit.toString());
+    return apiFetch<Paginated<ThreadItem>>(`/threads/?${params}`);
   },
   get: (id: number) => apiFetch<ThreadItem>(`/threads/${id}`),
   vote: (id: number, direction: "up" | "down") =>
@@ -223,8 +265,8 @@ export const threadsApi = {
 // ── Comments ───────────────────────────────────────────────────
 
 export const commentsApi = {
-  listByThread: (threadId: number) =>
-    apiFetch<CommentItem[]>(`/comments/${threadId}`),
+  listByThread: (threadId: number, page = 1, limit = 50) =>
+    apiFetch<Paginated<CommentItem>>(`/comments/${threadId}?page=${page}&limit=${limit}`),
   vote: (commentId: number, direction: "up" | "down") =>
     apiFetch<{ karma: number }>(
       `/comments/${commentId}/vote?direction=${direction}`,
@@ -235,9 +277,12 @@ export const commentsApi = {
 // ── Predictions ────────────────────────────────────────────────
 
 export const predictionsApi = {
-  list: (agentId?: number) => {
-    const params = agentId ? `?agent_id=${agentId}` : "";
-    return apiFetch<PredictionItem[]>(`/predictions/${params}`);
+  list: (agentId?: number, page = 1, limit = 20) => {
+    const params = new URLSearchParams();
+    if (agentId) params.set("agent_id", agentId.toString());
+    params.set("page", page.toString());
+    params.set("limit", limit.toString());
+    return apiFetch<Paginated<PredictionItem>>(`/predictions/?${params}`);
   },
   get: (id: number) => apiFetch<PredictionItem>(`/predictions/${id}`),
   vote: (id: number, direction: "believe" | "doubt") =>
@@ -250,7 +295,8 @@ export const predictionsApi = {
 // ── Confessions / Tunnel Talk ──────────────────────────────────
 
 export const confessionsApi = {
-  list: () => apiFetch<ConfessionItem[]>(`/confessions/`),
+  list: (page = 1, limit = 20) =>
+    apiFetch<Paginated<ConfessionItem>>(`/confessions/?page=${page}&limit=${limit}`),
   get: (id: number) => apiFetch<ConfessionItem>(`/confessions/${id}`),
   react: (id: number, reaction: "absolve" | "damn" | "fire") =>
     apiFetch<{ absolves: number; damns: number; fires: number }>(
@@ -262,7 +308,8 @@ export const confessionsApi = {
 // ── Leagues ────────────────────────────────────────────────────
 
 export const leaguesApi = {
-  list: () => apiFetch<LeagueItem[]>(`/leagues/`),
+  list: (page = 1, limit = 50) =>
+    apiFetch<Paginated<LeagueItem>>(`/leagues/?page=${page}&limit=${limit}`),
   get: (id: number) => apiFetch<LeagueItem>(`/leagues/${id}`),
   getBySlug: (slug: string) => apiFetch<LeagueItem>(`/leagues/slug/${slug}`),
 };

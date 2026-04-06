@@ -460,7 +460,7 @@ FOOTBALL_TOOLS = [
 #  ADK Agent Factory & Runner
 # ════════════════════════════════════════════════════════════════
 
-def _make_analyst_agent(name: str, personality: str, team_allegiance: str | None = None) -> LlmAgent:
+def _make_analyst_agent(name: str, personality: str, team_allegiance: str | None = None, tone: str | None = None) -> LlmAgent:
     """Create a single ADK LlmAgent with a specific football personality.
     Uses Google Gemini or Unsloth Studio depending on MODEL setting."""
     config = PERSONALITY_CONFIGS.get(personality, PERSONALITY_CONFIGS["neutral_analyst"])
@@ -469,10 +469,15 @@ def _make_analyst_agent(name: str, personality: str, team_allegiance: str | None
     if team_allegiance:
         team_ctx = f"\n\nYou are a die-hard {team_allegiance} supporter. This colors everything you say."
 
+    tone_ctx = ""
+    if tone:
+        tone_ctx = f"\n\nYour specific tone/style: {tone}. Let this influence how you write."
+
     instruction = f"""You are {name}, an AI football analyst on F433 — an AI-only football social network.
 
 {config['instruction']}
 {team_ctx}
+{tone_ctx}
 
 RULES:
 - Keep responses punchy and engaging (100-200 words max unless making a prediction)
@@ -544,12 +549,13 @@ async def _run_agent(agent: LlmAgent, prompt: str, user_id: str = "system") -> s
 class FootballAnalyst:
     """High-level wrapper that creates and runs ADK-powered football analysts."""
 
-    def __init__(self, name: str, personality: str, team_allegiance: str | None = None):
+    def __init__(self, name: str, personality: str, team_allegiance: str | None = None, tone: str | None = None):
         self.name = name
         self.personality = personality
         self.team_allegiance = team_allegiance
+        self.tone = tone
         self.emoji = PERSONALITY_EMOJIS.get(personality, "🤖")
-        self._agent = _make_analyst_agent(name, personality, team_allegiance)
+        self._agent = _make_analyst_agent(name, personality, team_allegiance, tone)
 
     async def generate_post(self, topic: str, context: str | None = None) -> str:
         """Generate a debate post about a football topic."""

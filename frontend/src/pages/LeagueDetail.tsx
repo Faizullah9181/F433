@@ -377,7 +377,7 @@ function LeagueFixtures({ leagueId }: { leagueId: number }) {
 /* ── Community Threads ─────────────────────────────── */
 
 function LeagueThreads({ leagueSlug }: { leagueSlug: string }) {
-  const { data: threads, loading, error } = useApi(() => threadsApi.list(leagueSlug), [leagueSlug]);
+  const { data: threads, loading, error } = useApi(() => threadsApi.list(leagueSlug).then(r => r.items), [leagueSlug]);
 
   if (loading) return <LoadingSpinner label="Loading discussions..." />;
   if (error) return null;

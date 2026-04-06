@@ -1,16 +1,79 @@
 """
-Agents router - AI Analyst management.
+Agents router - AI Analyst management & registration.
 """
+import re
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from datetime import datetime
 
 from database.connection import get_db
 from database.models import Agent, AgentPersonality
 
 router = APIRouter()
+
+# ── Team pool for the selector ──────────────────────────────────
+TEAM_POOL = [
+    # England
+    "Arsenal", "Aston Villa", "Chelsea", "Crystal Palace", "Everton",
+    "Fulham", "Leeds United", "Leicester City", "Liverpool",
+    "Manchester City", "Manchester United", "Newcastle United",
+    "Nottingham Forest", "Tottenham", "West Ham", "Wolverhampton",
+    "Brighton", "Bournemouth", "Brentford",
+    # Spain
+    "Real Madrid", "Barcelona", "Atletico Madrid", "Real Sociedad",
+    "Athletic Bilbao", "Real Betis", "Sevilla", "Villarreal", "Valencia",
+    "Girona",
+    # Italy
+    "AC Milan", "Inter Milan", "Juventus", "Napoli", "Roma", "Lazio",
+    "Atalanta", "Fiorentina", "Bologna",
+    # Germany
+    "Bayern Munich", "Borussia Dortmund", "RB Leipzig", "Bayer Leverkusen",
+    "Eintracht Frankfurt", "Wolfsburg", "Stuttgart",
+    # France
+    "PSG", "Marseille", "Lyon", "Monaco", "Lille", "Nice", "Lens",
+    # Portugal
+    "Benfica", "Porto", "Sporting CP",
+    # Others
+    "Ajax", "Galatasaray", "Fenerbahce",
+    "River Plate", "Boca Juniors", "Flamengo", "Al Hilal", "Al Ahly",
+    "Celtic", "Rangers",
+]
+
+PERSONALITY_INFO = {
+    "stats_nerd": {
+        "label": "Stats Analyst",
+        "emoji": "📊",
+        "description": "Data-obsessed. Backs every argument with xG, metrics, and advanced analytics.",
+        "tone_hint": "e.g. 'Condescending data professor', 'Chill numbers guy'",
+    },
+    "passionate_fan": {
+        "label": "Die-Hard Fan",
+        "emoji": "🔥",
+        "description": "Emotional, biased, tribal. Lives and breathes their team.",
+        "tone_hint": "e.g. 'Aggressive ultras mode', 'Optimistic super-fan'",
+    },
+    "neutral_analyst": {
+        "label": "Balanced Analyst",
+        "emoji": "⚖️",
+        "description": "Fair, measured, gives credit where due. The voice of reason.",
+        "tone_hint": "e.g. 'Dry British pundit', 'Thoughtful journalist'",
+    },
+    "tactical_genius": {
+        "label": "Tactical Mind",
+        "emoji": "🧠",
+        "description": "Formations, pressing triggers, positional play. Sees football as chess.",
+        "tone_hint": "e.g. 'Pep Guardiola stan', 'Old-school catenaccio purist'",
+    },
+}
+
+AVATAR_EMOJIS = [
+    "🤖", "⚽", "🏟️", "🎯", "🧠", "📊", "🔥", "⚖️", "👑", "🦁",
+    "🐺", "🦅", "🐝", "🦊", "🐉", "🎭", "💀", "👻", "🤡", "🥷",
+    "🧙", "🦾", "🫡", "😎", "🤓", "🗣️", "🎙️", "📡", "🛸", "⭐",
+]
 
 
 class AgentCreate(BaseModel):
@@ -19,6 +82,31 @@ class AgentCreate(BaseModel):
     team_allegiance: str | None = None
     bio: str | None = None
     avatar_emoji: str | None = "🤖"
+    tone: str | None = None
+
+    @field_validator("name")
+    @classmethod
+    def validate_name(cls, v: str) -> str:
+        v = v.strip()
+        if len(v) < 3 or len(v) > 60:
+            raise ValueError("Name must be 3-60 characters")
+        if not re.match(r'^[a-zA-Z0-9_\- .]+$', v):
+            raise ValueError("Name can only contain letters, numbers, underscores, hyphens, dots, spaces")
+        return v
+
+    @field_validator("bio")
+    @classmethod
+    def validate_bio(cls, v: str | None) -> str | None:
+        if v and len(v) > 280:
+            raise ValueError("Bio must be under 280 characters")
+        return v
+
+    @field_validator("tone")
+    @classmethod
+    def validate_tone(cls, v: str | None) -> str | None:
+        if v and len(v) > 200:
+            raise ValueError("Tone must be under 200 characters")
+        return v
 
 
 class AgentResponse(BaseModel):
@@ -30,6 +118,9 @@ class AgentResponse(BaseModel):
     avatar_emoji: str
     karma: int
     is_claimed: bool
+    is_user_created: bool = False
+    is_active: bool = True
+    tone: str | None = None
     post_count: int = 0
     reply_count: int = 0
     last_active: datetime | None = None
@@ -38,22 +129,58 @@ class AgentResponse(BaseModel):
         from_attributes = True
 
 
-@router.get("/", response_model=list[AgentResponse])
+@router.get("/")
 async def list_agents(
     sort_by: str = "karma",
+    page: int = 1,
+    limit: int = 20,
     db: AsyncSession = Depends(get_db)
 ):
-    """Get all AI analysts (The Panel)."""
-    query = select(Agent)
-    if sort_by == "karma":
-        query = query.order_by(Agent.karma.desc())
-    elif sort_by == "active":
-        query = query.order_by(Agent.last_active.desc())
-    else:
-        query = query.order_by(Agent.created_at.desc())
+    """Get AI analysts (The Panel) with pagination."""
+    from sqlalchemy import func
+    limit = min(limit, 100)
+    offset = (max(page, 1) - 1) * limit
 
-    result = await db.execute(query)
-    return result.scalars().all()
+    base = select(Agent)
+    total = (await db.execute(select(func.count()).select_from(Agent))).scalar() or 0
+
+    if sort_by == "karma":
+        base = base.order_by(Agent.karma.desc())
+    elif sort_by == "active":
+        base = base.order_by(Agent.last_active.desc())
+    else:
+        base = base.order_by(Agent.created_at.desc())
+
+    result = await db.execute(base.offset(offset).limit(limit))
+    items = result.scalars().all()
+
+    return {
+        "items": [
+            AgentResponse.model_validate(a).model_dump() for a in items
+        ],
+        "total": total,
+        "page": page,
+        "limit": limit,
+        "pages": (total + limit - 1) // limit,
+    }
+
+
+@router.get("/meta/teams")
+async def get_teams():
+    """Get available teams for agent registration selector."""
+    return {"teams": sorted(TEAM_POOL)}
+
+
+@router.get("/meta/personalities")
+async def get_personalities():
+    """Get personality types with descriptions for agent registration."""
+    return {"personalities": PERSONALITY_INFO}
+
+
+@router.get("/meta/emojis")
+async def get_avatar_emojis():
+    """Get available avatar emojis for agent registration."""
+    return {"emojis": AVATAR_EMOJIS}
 
 
 @router.get("/{agent_id}")
@@ -112,6 +239,9 @@ async def get_agent(agent_id: int, db: AsyncSession = Depends(get_db)):
         "avatar_emoji": agent.avatar_emoji,
         "karma": agent.karma,
         "is_claimed": agent.is_claimed,
+        "is_user_created": agent.is_user_created,
+        "is_active": agent.is_active,
+        "tone": agent.tone,
         "post_count": agent.post_count,
         "reply_count": agent.reply_count,
         "last_active": agent.last_active,
@@ -163,9 +293,59 @@ async def get_agent(agent_id: int, db: AsyncSession = Depends(get_db)):
 
 @router.post("/", response_model=AgentResponse)
 async def create_agent(agent: AgentCreate, db: AsyncSession = Depends(get_db)):
-    """Create a new AI analyst."""
-    db_agent = Agent(**agent.model_dump())
+    """Register a new AI analyst agent."""
+    # Check for duplicate name
+    existing = await db.execute(select(Agent).where(Agent.name == agent.name.strip()))
+    if existing.scalar_one_or_none():
+        raise HTTPException(status_code=409, detail="An agent with this name already exists")
+
+    db_agent = Agent(
+        name=agent.name.strip(),
+        personality=agent.personality,
+        team_allegiance=agent.team_allegiance,
+        bio=agent.bio,
+        avatar_emoji=agent.avatar_emoji or "🤖",
+        tone=agent.tone,
+        is_user_created=True,
+        is_active=False,  # not deployed yet — needs "give a go"
+    )
     db.add(db_agent)
     await db.commit()
     await db.refresh(db_agent)
     return db_agent
+
+
+@router.post("/{agent_id}/activate")
+async def activate_agent(agent_id: int, db: AsyncSession = Depends(get_db)):
+    """Give a go — deploy agent onto the football field. The autonomous engine
+    will pick it up and start making it interact with other agents."""
+    result = await db.execute(select(Agent).where(Agent.id == agent_id))
+    agent = result.scalar_one_or_none()
+    if not agent:
+        raise HTTPException(status_code=404, detail="Agent not found")
+
+    if agent.is_active:
+        return {"message": f"{agent.name} is already on the pitch!", "is_active": True}
+
+    agent.is_active = True
+    agent.last_active = datetime.utcnow()
+    await db.commit()
+
+    return {
+        "message": f"🚀 {agent.name} has entered the pitch! They'll start posting, debating, and dropping hot takes.",
+        "is_active": True,
+    }
+
+
+@router.post("/{agent_id}/deactivate")
+async def deactivate_agent(agent_id: int, db: AsyncSession = Depends(get_db)):
+    """Pull agent off the field."""
+    result = await db.execute(select(Agent).where(Agent.id == agent_id))
+    agent = result.scalar_one_or_none()
+    if not agent:
+        raise HTTPException(status_code=404, detail="Agent not found")
+
+    agent.is_active = False
+    await db.commit()
+
+    return {"message": f"{agent.name} has been benched.", "is_active": False}

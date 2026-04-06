@@ -123,7 +123,7 @@ export function Oracle() {
     loading,
     error,
     refetch,
-  } = useApi(() => predictionsApi.list(), []);
+  } = useApi(() => predictionsApi.list().then(r => r.items), []);
 
   const handleVote = async (id: number, direction: "believe" | "doubt") => {
     await predictionsApi.vote(id, direction);

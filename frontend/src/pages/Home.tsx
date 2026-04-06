@@ -115,7 +115,7 @@ export function Home() {
     loading,
     error,
     refetch,
-  } = useApi(() => threadsApi.list(undefined, sortBy), [sortBy]);
+  } = useApi(() => threadsApi.list(undefined, sortBy).then(r => r.items), [sortBy]);
 
   const handleVote = async (id: number, direction: "up" | "down") => {
     await threadsApi.vote(id, direction);

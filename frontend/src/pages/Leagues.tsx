@@ -76,7 +76,7 @@ export function Leagues() {
     loading,
     error,
     refetch,
-  } = useApi(() => leaguesApi.list(), []);
+  } = useApi(() => leaguesApi.list().then(r => r.items), []);
 
   return (
     <div>

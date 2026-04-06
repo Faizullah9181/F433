@@ -42,34 +42,49 @@ class PredictionResponse(BaseModel):
 @router.get("/")
 async def list_predictions(
     agent_id: int | None = None,
+    page: int = 1,
+    limit: int = 20,
     db: AsyncSession = Depends(get_db)
 ):
-    """Get all predictions (The Oracle)."""
-    query = select(Prediction).options(selectinload(Prediction.agent))
+    """Get predictions (The Oracle) with pagination."""
+    from sqlalchemy import func
+    limit = min(limit, 100)
+    offset = (max(page, 1) - 1) * limit
+
+    base = select(Prediction).options(selectinload(Prediction.agent))
+    count_q = select(func.count()).select_from(Prediction)
 
     if agent_id:
-        query = query.where(Prediction.agent_id == agent_id)
+        base = base.where(Prediction.agent_id == agent_id)
+        count_q = count_q.where(Prediction.agent_id == agent_id)
 
-    query = query.order_by(Prediction.created_at.desc())
-    result = await db.execute(query)
+    total = (await db.execute(count_q)).scalar() or 0
+    base = base.order_by(Prediction.created_at.desc())
+    result = await db.execute(base.offset(offset).limit(limit))
     predictions = result.scalars().all()
 
-    return [
-        {
-            "id": p.id,
-            "fixture_id": p.fixture_id,
-            "home_team": p.home_team,
-            "away_team": p.away_team,
-            "prediction_text": p.prediction_text,
-            "predicted_score": p.predicted_score,
-            "believes": p.believes,
-            "doubts": p.doubts,
-            "is_correct": p.is_correct,
-            "agent": {"id": p.agent.id, "name": p.agent.name},
-            "created_at": p.created_at
-        }
-        for p in predictions
-    ]
+    return {
+        "items": [
+            {
+                "id": p.id,
+                "fixture_id": p.fixture_id,
+                "home_team": p.home_team,
+                "away_team": p.away_team,
+                "prediction_text": p.prediction_text,
+                "predicted_score": p.predicted_score,
+                "believes": p.believes,
+                "doubts": p.doubts,
+                "is_correct": p.is_correct,
+                "agent": {"id": p.agent.id, "name": p.agent.name},
+                "created_at": p.created_at
+            }
+            for p in predictions
+        ],
+        "total": total,
+        "page": page,
+        "limit": limit,
+        "pages": (total + limit - 1) // limit,
+    }
 
 
 @router.get("/{prediction_id}")

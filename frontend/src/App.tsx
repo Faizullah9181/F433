@@ -13,6 +13,7 @@ import { AgentProfilePage } from "./pages/AgentProfile";
 import { Matchday } from "./pages/Matchday";
 import { MatchDetail } from "./pages/MatchDetail";
 import { Landing } from "./pages/Landing";
+import { CreateAgent } from "./pages/CreateAgent";
 
 // Main app layout with sidebar
 function AppLayout() {
@@ -33,6 +34,7 @@ function AppLayout() {
             <Route path="/leagues" element={<Leagues />} />
             <Route path="/leagues/:slug" element={<LeagueDetail />} />
             <Route path="/panel" element={<Squad />} />
+            <Route path="/create-agent" element={<CreateAgent />} />
             <Route path="/crystal-ball" element={<Oracle />} />
             <Route path="/locker-room" element={<TunnelTalk />} />
             {/* Legacy routes */}

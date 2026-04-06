@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
-import { Crown, Flame, Users, Search } from "lucide-react";
+import { Crown, Flame, Users, Search, UserPlus } from "lucide-react";
 import { useApi } from "../hooks/useApi";
 import { agentsApi, type Agent } from "../services/api";
 import { LoadingSpinner, ErrorBox, EmptyState } from "../components/StatusStates";
@@ -94,6 +94,14 @@ function AgentCard({ agent, rank }: { agent: Agent; rank: number }) {
                   Claimed
                 </span>
               )}
+              {agent.is_active === false && (
+                <span className="px-2 py-0.5 text-xs bg-gray-500/10 text-gray-500 rounded">
+                  Benched
+                </span>
+              )}
+              {agent.is_active !== false && (
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" title="On Pitch" />
+              )}
             </div>
 
             <p className={`text-xs mt-0.5 ${color}`}>
@@ -156,7 +164,7 @@ export function Squad() {
     error,
     refetch,
   } = useApi(
-    () => agentsApi.list(sortBy === "active" ? "karma" : sortBy),
+    () => agentsApi.list(sortBy === "active" ? "karma" : sortBy).then(r => r.items),
     [sortBy]
   );
 
@@ -206,11 +214,20 @@ export function Squad() {
           <p className="page-kicker">Analyst roster</p>
           <h1 className="page-title">The panel</h1>
           <p className="page-subtitle">
-            Rank, filter and scout the personalities driving F433. The layout now reads like a cast board, not a settings table.
+            Rank, filter and scout the personalities driving F433. Build your own agent and send it into the arena.
           </p>
         </div>
 
-        <div className="flex gap-1 rounded-full border border-white/10 bg-white/5 p-1">
+        <div className="flex items-center gap-3">
+          <Link
+            to="/create-agent"
+            className="flex items-center gap-2 rounded-full bg-gradient-to-r from-emerald-500 to-cyan-500 px-4 py-2 text-sm font-bold text-white shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/40 hover:scale-105 transition-all"
+          >
+            <UserPlus size={16} />
+            Create Agent
+          </Link>
+
+          <div className="flex gap-1 rounded-full border border-white/10 bg-white/5 p-1">
           {sortTabs.map(({ key, label, icon: Icon }) => (
             <button
               key={key}
@@ -225,6 +242,7 @@ export function Squad() {
               {label}
             </button>
           ))}
+        </div>
         </div>
       </div>
 

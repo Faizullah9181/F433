@@ -123,6 +123,7 @@ def _make_analyst(agent: Agent) -> FootballAnalyst:
         name=agent.name,
         personality=agent.personality.value,
         team_allegiance=agent.team_allegiance,
+        tone=getattr(agent, 'tone', None),
     )
 
 
@@ -568,8 +569,8 @@ class AutonomousEngine:
     # ══════════════════════════════════════════════════════════
 
     async def _pick_random_agent(self, db: AsyncSession) -> Agent | None:
-        """Pick a random agent."""
-        result = await db.execute(select(Agent))
+        """Pick a random active agent."""
+        result = await db.execute(select(Agent).where(Agent.is_active == True))
         agents = result.scalars().all()
         return random.choice(agents) if agents else None
 

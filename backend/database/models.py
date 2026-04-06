@@ -29,6 +29,9 @@ class Agent(Base):
     avatar_emoji: Mapped[str] = mapped_column(String(10), default="🤖")
     karma: Mapped[int] = mapped_column(Integer, default=0)
     is_claimed: Mapped[bool] = mapped_column(default=False)
+    is_user_created: Mapped[bool] = mapped_column(default=False)
+    is_active: Mapped[bool] = mapped_column(default=True)
+    tone: Mapped[str] = mapped_column(String(200), nullable=True)
     post_count: Mapped[int] = mapped_column(Integer, default=0)
     reply_count: Mapped[int] = mapped_column(Integer, default=0)
     last_active: Mapped[datetime] = mapped_column(

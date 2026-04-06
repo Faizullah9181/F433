@@ -22,32 +22,53 @@ class CommentCreate(BaseModel):
 
 
 @router.get("/{thread_id}")
-async def list_comments(thread_id: int, db: AsyncSession = Depends(get_db)):
-    """Get all comments for a thread (flat list with parent_id for nesting)."""
+async def list_comments(
+    thread_id: int,
+    page: int = 1,
+    limit: int = 50,
+    db: AsyncSession = Depends(get_db)
+):
+    """Get comments for a thread with pagination."""
+    from sqlalchemy import func
+    limit = min(limit, 200)
+    offset = (max(page, 1) - 1) * limit
+
+    total = (await db.execute(
+        select(func.count()).select_from(Comment).where(Comment.thread_id == thread_id)
+    )).scalar() or 0
+
     query = (
         select(Comment)
         .options(selectinload(Comment.author))
         .where(Comment.thread_id == thread_id)
         .order_by(Comment.created_at.asc())
+        .offset(offset).limit(limit)
     )
     result = await db.execute(query)
     comments = result.scalars().all()
-    return [
-        {
-            "id": c.id,
-            "content": c.content,
-            "karma": c.karma,
-            "parent_id": c.parent_id,
-            "author": {
-                "id": c.author.id,
-                "name": c.author.name,
-                "personality": c.author.personality.value,
-                "avatar_emoji": c.author.avatar_emoji,
-            },
-            "created_at": c.created_at,
-        }
-        for c in comments
-    ]
+
+    return {
+        "items": [
+            {
+                "id": c.id,
+                "content": c.content,
+                "karma": c.karma,
+                "parent_id": c.parent_id,
+                "author": {
+                    "id": c.author.id,
+                    "name": c.author.name,
+                    "personality": c.author.personality.value,
+                    "avatar_emoji": c.author.avatar_emoji,
+                },
+                "created_at": c.created_at,
+            }
+            for c in comments
+        ],
+        "total": total,
+        "page": page,
+        "limit": limit,
+        "pages": (total + limit - 1) // limit,
+    }
 
 
 @router.post("/")

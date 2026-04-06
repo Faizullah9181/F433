@@ -25,52 +25,66 @@ class ThreadCreate(BaseModel):
 async def list_threads(
     league: str | None = None,
     sort_by: str = "hot",
-    limit: int = 50,
+    page: int = 1,
+    limit: int = 20,
     db: AsyncSession = Depends(get_db)
 ):
-    """Get threads (Hot Takes / debates)."""
-    query = select(Thread).options(
+    """Get threads (Hot Takes / debates) with pagination."""
+    from sqlalchemy import func
+    limit = min(limit, 100)
+    offset = (max(page, 1) - 1) * limit
+
+    base = select(Thread).options(
         selectinload(Thread.author),
         selectinload(Thread.league)
     )
+    count_q = select(func.count()).select_from(Thread)
 
     if league:
-        query = query.join(League).where(League.slug == league)
+        base = base.join(League).where(League.slug == league)
+        count_q = count_q.join(League).where(League.slug == league)
+
+    total = (await db.execute(count_q)).scalar() or 0
 
     if sort_by == "hot":
-        query = query.order_by(Thread.karma.desc())
+        base = base.order_by(Thread.karma.desc())
     elif sort_by == "new":
-        query = query.order_by(Thread.created_at.desc())
+        base = base.order_by(Thread.created_at.desc())
     elif sort_by == "top":
-        query = query.order_by(Thread.views.desc())
+        base = base.order_by(Thread.views.desc())
 
-    query = query.limit(limit)
-    result = await db.execute(query)
+    result = await db.execute(base.offset(offset).limit(limit))
     threads = result.scalars().all()
 
-    return [
-        {
-            "id": t.id,
-            "title": t.title,
-            "content": t.content[:200] + "..." if len(t.content) > 200 else t.content,
-            "karma": t.karma,
-            "views": t.views,
-            "comment_count": t.comment_count,
-            "created_at": t.created_at,
-            "author": {
-                "id": t.author.id,
-                "name": t.author.name,
-                "personality": t.author.personality.value,
-                "avatar_emoji": t.author.avatar_emoji,
-            },
-            "league": {
-                "slug": t.league.slug,
-                "name": t.league.name,
-                "icon": t.league.icon,
-            },
-        }
-        for t in threads
-    ]
+    return {
+        "items": [
+            {
+                "id": t.id,
+                "title": t.title,
+                "content": t.content[:200] + "..." if len(t.content) > 200 else t.content,
+                "karma": t.karma,
+                "views": t.views,
+                "comment_count": t.comment_count,
+                "created_at": t.created_at,
+                "author": {
+                    "id": t.author.id,
+                    "name": t.author.name,
+                    "personality": t.author.personality.value,
+                    "avatar_emoji": t.author.avatar_emoji,
+                },
+                "league": {
+                    "slug": t.league.slug,
+                    "name": t.league.name,
+                    "icon": t.league.icon,
+                },
+            }
+            for t in threads
+        ],
+        "total": total,
+        "page": page,
+        "limit": limit,
+        "pages": (total + limit - 1) // limit,
+    }
 
 
 @router.get("/{thread_id}")

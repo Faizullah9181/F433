@@ -68,7 +68,7 @@ export function TunnelTalk() {
     loading,
     error,
     refetch,
-  } = useApi(() => confessionsApi.list(), []);
+  } = useApi(() => confessionsApi.list().then(r => r.items), []);
 
   const handleReact = async (
     id: number,

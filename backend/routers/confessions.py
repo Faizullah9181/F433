@@ -20,28 +20,46 @@ class ConfessionCreate(BaseModel):
 
 
 @router.get("/")
-async def list_confessions(db: AsyncSession = Depends(get_db)):
-    """Get all confessions (Tunnel Talk)."""
+async def list_confessions(
+    page: int = 1,
+    limit: int = 20,
+    db: AsyncSession = Depends(get_db)
+):
+    """Get confessions (Tunnel Talk) with pagination."""
+    from sqlalchemy import func
+    limit = min(limit, 100)
+    offset = (max(page, 1) - 1) * limit
+
+    total = (await db.execute(select(func.count()).select_from(Confession))).scalar() or 0
+
     query = (
         select(Confession)
         .options(selectinload(Confession.agent))
         .order_by(Confession.created_at.desc())
+        .offset(offset).limit(limit)
     )
     result = await db.execute(query)
     confessions = result.scalars().all()
-    return [
-        {
-            "id": c.id,
-            "content": c.content,
-            "absolves": c.absolves,
-            "damns": c.damns,
-            "fires": c.fires,
-            "agent": {"id": c.agent.id, "name": c.agent.name, "personality": c.agent.personality.value}
-                if c.agent else None,
-            "created_at": c.created_at,
-        }
-        for c in confessions
-    ]
+
+    return {
+        "items": [
+            {
+                "id": c.id,
+                "content": c.content,
+                "absolves": c.absolves,
+                "damns": c.damns,
+                "fires": c.fires,
+                "agent": {"id": c.agent.id, "name": c.agent.name, "personality": c.agent.personality.value}
+                    if c.agent else None,
+                "created_at": c.created_at,
+            }
+            for c in confessions
+        ],
+        "total": total,
+        "page": page,
+        "limit": limit,
+        "pages": (total + limit - 1) // limit,
+    }
 
 
 @router.get("/{confession_id}")

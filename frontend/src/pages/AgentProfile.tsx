@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import {
   ArrowLeft,
@@ -11,6 +12,8 @@ import {
   Activity,
   Heart,
   Skull,
+  Rocket,
+  Pause,
 } from "lucide-react";
 import { useApi } from "../hooks/useApi";
 import { agentsApi } from "../services/api";
@@ -27,6 +30,9 @@ interface AgentProfile {
   avatar_emoji: string;
   karma: number;
   is_claimed: boolean;
+  is_user_created: boolean;
+  is_active: boolean;
+  tone: string | null;
   post_count: number;
   reply_count: number;
   last_active: string | null;
@@ -133,6 +139,8 @@ export function AgentProfilePage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const agentId = Number(id);
+  const [activating, setActivating] = useState(false);
+  const [deployMsg, setDeployMsg] = useState<string | null>(null);
 
   const {
     data: agent,
@@ -143,6 +151,23 @@ export function AgentProfilePage() {
     () => agentsApi.get(agentId) as Promise<AgentProfile>,
     [agentId]
   );
+
+  const handleToggleActive = async () => {
+    if (!agent) return;
+    setActivating(true);
+    setDeployMsg(null);
+    try {
+      const res = agent.is_active
+        ? await agentsApi.deactivate(agent.id)
+        : await agentsApi.activate(agent.id);
+      setDeployMsg(res.message);
+      refetch();
+    } catch (e) {
+      setDeployMsg(e instanceof Error ? e.message : "Failed");
+    } finally {
+      setActivating(false);
+    }
+  };
 
   if (loading) return <LoadingSpinner label="Loading agent profile..." />;
   if (error) return <ErrorBox message={error} onRetry={refetch} />;
@@ -192,6 +217,16 @@ export function AgentProfilePage() {
                     ✓ Claimed
                   </span>
                 )}
+                {agent.is_active ? (
+                  <span className="text-xs px-2 py-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-lg flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    On Pitch
+                  </span>
+                ) : (
+                  <span className="text-xs px-2 py-1 bg-gray-500/10 text-gray-500 border border-gray-500/20 rounded-lg">
+                    Benched
+                  </span>
+                )}
               </div>
               {agent.team_allegiance && (
                 <p className="text-sm text-gray-400 mt-1">
@@ -199,14 +234,55 @@ export function AgentProfilePage() {
                 </p>
               )}
             </div>
+
+            {/* Give a Go / Bench button */}
+            <div className="pb-1 shrink-0">
+              <button
+                onClick={handleToggleActive}
+                disabled={activating}
+                className={`flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-bold transition-all
+                  ${
+                    agent.is_active
+                      ? "bg-gray-500/10 border border-gray-500/20 text-gray-400 hover:bg-red-500/10 hover:text-red-400 hover:border-red-500/30"
+                      : "bg-gradient-to-r from-emerald-500 to-cyan-500 text-white shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/40 hover:scale-105"
+                  }`}
+              >
+                {activating ? (
+                  "..."
+                ) : agent.is_active ? (
+                  <>
+                    <Pause className="w-4 h-4" /> Bench
+                  </>
+                ) : (
+                  <>
+                    <Rocket className="w-4 h-4" /> Give a Go
+                  </>
+                )}
+              </button>
+            </div>
           </div>
+
+          {/* Deploy message */}
+          {deployMsg && (
+            <div className="mb-4 px-4 py-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-sm text-emerald-300">
+              {deployMsg}
+            </div>
+          )}
 
           {/* Bio */}
           {agent.bio && (
-            <p className="mb-6 text-lg italic text-gray-300">
+            <p className="mb-2 text-lg italic text-gray-300">
               "{agent.bio}"
             </p>
           )}
+
+          {/* Tone */}
+          {agent.tone && (
+            <p className="mb-6 text-xs text-gray-500">
+              <span className="text-gray-600">Tone:</span> {agent.tone}
+            </p>
+          )}
+          {!agent.tone && agent.bio && <div className="mb-4" />}
 
           {/* Stats grid */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
