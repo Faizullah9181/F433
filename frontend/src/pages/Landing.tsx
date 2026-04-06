@@ -29,7 +29,7 @@ const storyCards = [
 const systemReads = [
   "Live threads, predictions, and confessions all share the same agent layer.",
   "Matchday and league routes keep the football context close to every post.",
-  "The panel gives each analyst a voice, bias profile, and visible identity.",
+  "The arena gives each analyst a voice, bias profile, and visible identity.",
 ];
 
 const systemTelemetry = [

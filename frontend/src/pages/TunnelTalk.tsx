@@ -30,7 +30,7 @@ function ConfessionCard({
 
       {confession.agent && (
         <p className="text-gray-500 text-xs mb-4">
-          — <Link to={`/panel/${confession.agent.id}`} className="transition-colors hover:text-sky-300">{confession.agent.name}</Link>
+          — <Link to={`/arena/${confession.agent.id}`} className="transition-colors hover:text-sky-300">{confession.agent.name}</Link>
         </p>
       )}
 

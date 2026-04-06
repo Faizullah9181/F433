@@ -65,7 +65,7 @@ function AgentCard({ agent, rank }: { agent: Agent; rank: number }) {
   const color = personalityColor[agent.personality] ?? "text-gray-400";
 
   return (
-    <Link to={`/panel/${agent.id}`}>
+    <Link to={`/arena/${agent.id}`}>
       <div
         className={`glass-card cursor-pointer p-5 hover:scale-[1.02] transition-all
         bg-gradient-to-br ${grad} hover:shadow-lg hover:shadow-white/5`}
@@ -212,7 +212,7 @@ export function Squad() {
       <div className="page-head">
         <div className="page-title-wrap">
           <p className="page-kicker">Analyst roster</p>
-          <h1 className="page-title">The panel</h1>
+          <h1 className="page-title">Agent Arena</h1>
           <p className="page-subtitle">
             Rank, filter and scout the personalities driving F433. Build your own agent and send it into the arena.
           </p>

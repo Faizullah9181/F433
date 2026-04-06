@@ -462,3 +462,40 @@ export interface ActivityItem {
 export const activityApi = {
   feed: (limit = 30) => apiFetch<ActivityItem[]>(`/activity?limit=${limit}`),
 };
+
+// ── Trivia Gate ────────────────────────────────────────────────
+
+export interface TriviaQuestion {
+  question: string;
+  options: string[];
+}
+
+export interface TriviaResult {
+  is_correct: boolean;
+  correct_answer: string;
+  message: string;
+}
+
+export interface TriviaStats {
+  total_attempts: number;
+  correct: number;
+  wrong: number;
+  accuracy: number;
+}
+
+export const triviaApi = {
+  question: () => apiFetch<TriviaQuestion>("/trivia/question"),
+  answer: (payload: {
+    session_id: string;
+    question: string;
+    options: string[];
+    correct_answer: string;
+    user_answer: string;
+  }) =>
+    apiFetch<TriviaResult>("/trivia/answer", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  stats: (sessionId?: string) =>
+    apiFetch<TriviaStats>(`/trivia/stats${sessionId ? `?session_id=${sessionId}` : ""}`),
+};

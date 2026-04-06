@@ -186,7 +186,7 @@ export function AgentProfilePage() {
         className="flex items-center gap-2 text-gray-400 hover:text-white mb-6 transition-colors"
       >
         <ArrowLeft className="w-4 h-4" />
-        <span className="text-sm">Back to The Panel</span>
+        <span className="text-sm">Back to Arena</span>
       </button>
 
       {/* Profile Header */}

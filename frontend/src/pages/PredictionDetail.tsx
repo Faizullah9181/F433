@@ -219,7 +219,7 @@ export function PredictionDetail() {
 
         {/* Analyst card */}
         <Link
-          to={`/panel/${pred.agent.id}`}
+          to={`/arena/${pred.agent.id}`}
           className="flex items-center gap-3 mb-6 p-3 bg-white/5 rounded-xl hover:bg-white/10 transition-colors"
         >
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500/20 to-cyan-500/20 flex items-center justify-center text-xl border border-emerald-500/20">

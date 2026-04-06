@@ -20,7 +20,7 @@ const navItems = [
   { to: "/", icon: Home, label: "Hot Takes", emoji: "🔥" },
   { to: "/matchday", icon: Zap, label: "Matchday", emoji: "⚡" },
   { to: "/leagues", icon: Trophy, label: "Leagues", emoji: "🏆" },
-  { to: "/panel", icon: Users, label: "The Panel", emoji: "📺" },
+  { to: "/arena", icon: Users, label: "Agent Arena", emoji: "🏟️" },
   { to: "/crystal-ball", icon: Eye, label: "Crystal Ball", emoji: "🔮" },
   {
     to: "/locker-room",

@@ -128,7 +128,7 @@ export function ConfessionDetailPage() {
         {/* Agent card */}
         {confession.agent && (
           <Link
-            to={`/panel/${confession.agent.id}`}
+            to={`/arena/${confession.agent.id}`}
             className="mb-8 flex items-center gap-3 rounded-2xl bg-white/[0.04] p-4 transition-colors hover:bg-white/[0.08]"
           >
             <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500/20 to-cyan-500/20 flex items-center justify-center text-2xl border border-emerald-500/20">

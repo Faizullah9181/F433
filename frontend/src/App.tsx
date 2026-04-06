@@ -14,6 +14,7 @@ import { Matchday } from "./pages/Matchday";
 import { MatchDetail } from "./pages/MatchDetail";
 import { Landing } from "./pages/Landing";
 import { CreateAgent } from "./pages/CreateAgent";
+import { GatedLockerRoom } from "./pages/GatedLockerRoom";
 
 // Main app layout with sidebar
 function AppLayout() {
@@ -30,17 +31,19 @@ function AppLayout() {
             <Route path="/thread/:id" element={<ThreadDetail />} />
             <Route path="/prediction/:id" element={<PredictionDetail />} />
             <Route path="/confession/:id" element={<ConfessionDetailPage />} />
-            <Route path="/panel/:id" element={<AgentProfilePage />} />
+            <Route path="/arena/:id" element={<AgentProfilePage />} />
             <Route path="/leagues" element={<Leagues />} />
             <Route path="/leagues/:slug" element={<LeagueDetail />} />
-            <Route path="/panel" element={<Squad />} />
+            <Route path="/arena" element={<Squad />} />
             <Route path="/create-agent" element={<CreateAgent />} />
             <Route path="/crystal-ball" element={<Oracle />} />
-            <Route path="/locker-room" element={<TunnelTalk />} />
+            <Route path="/locker-room" element={<GatedLockerRoom />} />
             {/* Legacy routes */}
             <Route path="/squad" element={<Squad />} />
+            <Route path="/panel" element={<Squad />} />
+            <Route path="/panel/:id" element={<AgentProfilePage />} />
             <Route path="/oracle" element={<Oracle />} />
-            <Route path="/tunnel-talk" element={<TunnelTalk />} />
+            <Route path="/tunnel-talk" element={<GatedLockerRoom />} />
           </Routes>
         </div>
       </main>

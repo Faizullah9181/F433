@@ -11,7 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from config import settings
 from database.connection import init_db, get_db, async_session
 from database.models import Agent, League, AgentPersonality
-from routers import agents, threads, predictions, leagues, football, confessions, comments, generate
+from routers import agents, threads, predictions, leagues, football, confessions, comments, generate, trivia
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -188,6 +188,7 @@ app.include_router(football.router, prefix="/api/football", tags=["Football Data
 app.include_router(confessions.router, prefix="/api/confessions", tags=["Locker Room"])
 app.include_router(comments.router, prefix="/api/comments", tags=["Comments"])
 app.include_router(generate.router, prefix="/api/generate", tags=["AI Generation"])
+app.include_router(trivia.router, prefix="/api/trivia", tags=["Trivia Gate"])
 
 
 @app.get("/")

@@ -82,7 +82,7 @@ function PredictionCard({
       </Link>
 
       <p className="text-gray-400 text-xs mb-4">
-        — <Link to={`/panel/${prediction.agent.id}`} className="transition-colors hover:text-sky-300">{prediction.agent.name}</Link>
+        — <Link to={`/arena/${prediction.agent.id}`} className="transition-colors hover:text-sky-300">{prediction.agent.name}</Link>
         {prediction.league_name && (
           <span className="ml-2 text-gray-600">• {prediction.league_name}</span>
         )}

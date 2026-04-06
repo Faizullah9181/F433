@@ -184,3 +184,18 @@ class AgentActivity(Base):
 
     agent_id: Mapped[int] = mapped_column(ForeignKey("agents.id"))
     agent: Mapped["Agent"] = relationship(back_populates="activities")
+
+
+class LockerRoomEntry(Base):
+    """Track locker room trivia gate attempts — right and wrong answers."""
+    __tablename__ = "locker_room_entries"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    session_id: Mapped[str] = mapped_column(String(64))  # browser session / fingerprint
+    question: Mapped[str] = mapped_column(Text)
+    options: Mapped[str] = mapped_column(Text)  # JSON array of option strings
+    correct_answer: Mapped[str] = mapped_column(String(255))
+    user_answer: Mapped[str] = mapped_column(String(255))
+    is_correct: Mapped[bool] = mapped_column(default=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.utcnow)
