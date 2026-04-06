@@ -32,6 +32,9 @@ class Agent(Base):
     is_user_created: Mapped[bool] = mapped_column(default=False)
     is_active: Mapped[bool] = mapped_column(default=True)
     tone: Mapped[str] = mapped_column(String(200), nullable=True)
+    favorite_teams: Mapped[str] = mapped_column(Text, nullable=True)  # JSON array
+    favorite_players: Mapped[str] = mapped_column(Text, nullable=True)  # JSON array
+    favorite_countries: Mapped[str] = mapped_column(Text, nullable=True)  # JSON array
     post_count: Mapped[int] = mapped_column(Integer, default=0)
     reply_count: Mapped[int] = mapped_column(Integer, default=0)
     last_active: Mapped[datetime] = mapped_column(

@@ -1,6 +1,7 @@
 """
 Agents router - AI Analyst management & registration.
 """
+import json
 import re
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -75,6 +76,36 @@ AVATAR_EMOJIS = [
     "🧙", "🦾", "🫡", "😎", "🤓", "🗣️", "🎙️", "📡", "🛸", "⭐",
 ]
 
+# ── Country pool ────────────────────────────────────────────────
+COUNTRY_POOL = [
+    "England", "Spain", "Germany", "France", "Italy", "Portugal",
+    "Brazil", "Argentina", "Netherlands", "Belgium", "Croatia",
+    "Uruguay", "Colombia", "Mexico", "USA", "Japan", "South Korea",
+    "Morocco", "Senegal", "Nigeria", "Ghana", "Cameroon", "Egypt",
+    "Algeria", "Tunisia", "Turkey", "Scotland", "Wales", "Ireland",
+    "Poland", "Czech Republic", "Austria", "Switzerland", "Denmark",
+    "Sweden", "Norway", "Serbia", "Australia", "Canada", "Saudi Arabia",
+]
+
+# ── Player pool ─────────────────────────────────────────────────
+PLAYER_POOL = [
+    "Lionel Messi", "Cristiano Ronaldo", "Kylian Mbappé", "Erling Haaland",
+    "Vinicius Jr", "Jude Bellingham", "Bukayo Saka", "Phil Foden",
+    "Rodri", "Lamine Yamal", "Florian Wirtz", "Jamal Musiala",
+    "Kevin De Bruyne", "Mohamed Salah", "Robert Lewandowski",
+    "Harry Kane", "Neymar", "Pedri", "Gavi", "Declan Rice",
+    "Martin Ødegaard", "Bruno Fernandes", "Cole Palmer", "Khvicha Kvaratskhelia",
+    "Victor Osimhen", "Alexander Isak", "Ollie Watkins", "Lautaro Martinez",
+    "Julian Alvarez", "Endrick", "Alejandro Garnacho", "Federico Valverde",
+    "Trent Alexander-Arnold", "Virgil van Dijk", "William Saliba",
+    "Gianluigi Donnarumma", "Alisson Becker", "Thibaut Courtois",
+    "Ronaldinho", "Zinedine Zidane", "Thierry Henry", "Andrea Pirlo",
+    "Ronaldo Nazário", "Zlatan Ibrahimović", "Diego Maradona", "Pelé",
+    "Johan Cruyff", "Franz Beckenbauer", "Paolo Maldini", "Xavi Hernandez",
+    "Andres Iniesta", "Steven Gerrard", "Frank Lampard", "Wayne Rooney",
+    "Didier Drogba", "Samuel Eto'o", "George Weah", "Jay-Jay Okocha",
+]
+
 
 class AgentCreate(BaseModel):
     name: str
@@ -83,6 +114,9 @@ class AgentCreate(BaseModel):
     bio: str | None = None
     avatar_emoji: str | None = "🤖"
     tone: str | None = None
+    favorite_teams: list[str] | None = None
+    favorite_players: list[str] | None = None
+    favorite_countries: list[str] | None = None
 
     @field_validator("name")
     @classmethod
@@ -121,9 +155,35 @@ class AgentResponse(BaseModel):
     is_user_created: bool = False
     is_active: bool = True
     tone: str | None = None
+    favorite_teams: list[str] | None = None
+    favorite_players: list[str] | None = None
+    favorite_countries: list[str] | None = None
     post_count: int = 0
     reply_count: int = 0
     last_active: datetime | None = None
+
+    @classmethod
+    def from_agent(cls, agent: Agent) -> "AgentResponse":
+        data = {
+            "id": agent.id,
+            "name": agent.name,
+            "personality": agent.personality,
+            "team_allegiance": agent.team_allegiance,
+            "bio": agent.bio,
+            "avatar_emoji": agent.avatar_emoji,
+            "karma": agent.karma,
+            "is_claimed": agent.is_claimed,
+            "is_user_created": getattr(agent, "is_user_created", False),
+            "is_active": getattr(agent, "is_active", True),
+            "tone": getattr(agent, "tone", None),
+            "favorite_teams": json.loads(agent.favorite_teams) if getattr(agent, "favorite_teams", None) else None,
+            "favorite_players": json.loads(agent.favorite_players) if getattr(agent, "favorite_players", None) else None,
+            "favorite_countries": json.loads(agent.favorite_countries) if getattr(agent, "favorite_countries", None) else None,
+            "post_count": agent.post_count,
+            "reply_count": agent.reply_count,
+            "last_active": agent.last_active,
+        }
+        return cls(**data)
 
     class Config:
         from_attributes = True
@@ -156,7 +216,7 @@ async def list_agents(
 
     return {
         "items": [
-            AgentResponse.model_validate(a).model_dump() for a in items
+            AgentResponse.from_agent(a).model_dump() for a in items
         ],
         "total": total,
         "page": page,
@@ -181,6 +241,18 @@ async def get_personalities():
 async def get_avatar_emojis():
     """Get available avatar emojis for agent registration."""
     return {"emojis": AVATAR_EMOJIS}
+
+
+@router.get("/meta/countries")
+async def get_countries():
+    """Get available countries for agent registration selector."""
+    return {"countries": sorted(COUNTRY_POOL)}
+
+
+@router.get("/meta/players")
+async def get_players():
+    """Get available players for agent registration selector."""
+    return {"players": sorted(PLAYER_POOL)}
 
 
 @router.get("/{agent_id}")
@@ -239,9 +311,12 @@ async def get_agent(agent_id: int, db: AsyncSession = Depends(get_db)):
         "avatar_emoji": agent.avatar_emoji,
         "karma": agent.karma,
         "is_claimed": agent.is_claimed,
-        "is_user_created": agent.is_user_created,
-        "is_active": agent.is_active,
-        "tone": agent.tone,
+        "is_user_created": getattr(agent, "is_user_created", False),
+        "is_active": getattr(agent, "is_active", True),
+        "tone": getattr(agent, "tone", None),
+        "favorite_teams": json.loads(agent.favorite_teams) if getattr(agent, "favorite_teams", None) else None,
+        "favorite_players": json.loads(agent.favorite_players) if getattr(agent, "favorite_players", None) else None,
+        "favorite_countries": json.loads(agent.favorite_countries) if getattr(agent, "favorite_countries", None) else None,
         "post_count": agent.post_count,
         "reply_count": agent.reply_count,
         "last_active": agent.last_active,
@@ -306,13 +381,16 @@ async def create_agent(agent: AgentCreate, db: AsyncSession = Depends(get_db)):
         bio=agent.bio,
         avatar_emoji=agent.avatar_emoji or "🤖",
         tone=agent.tone,
+        favorite_teams=json.dumps(agent.favorite_teams) if agent.favorite_teams else None,
+        favorite_players=json.dumps(agent.favorite_players) if agent.favorite_players else None,
+        favorite_countries=json.dumps(agent.favorite_countries) if agent.favorite_countries else None,
         is_user_created=True,
         is_active=False,  # not deployed yet — needs "give a go"
     )
     db.add(db_agent)
     await db.commit()
     await db.refresh(db_agent)
-    return db_agent
+    return AgentResponse.from_agent(db_agent)
 
 
 @router.post("/{agent_id}/activate")

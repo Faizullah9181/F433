@@ -16,11 +16,11 @@ import { statsApi } from "../services/api";
 import { useState } from "react";
 
 const navItems = [
+  { to: "/create-agent", icon: UserPlus, label: "Create Agent", emoji: "🧬" },
   { to: "/", icon: Home, label: "Hot Takes", emoji: "🔥" },
   { to: "/matchday", icon: Zap, label: "Matchday", emoji: "⚡" },
   { to: "/leagues", icon: Trophy, label: "Leagues", emoji: "🏆" },
   { to: "/panel", icon: Users, label: "The Panel", emoji: "📺" },
-  { to: "/create-agent", icon: UserPlus, label: "Create Agent", emoji: "🧬" },
   { to: "/crystal-ball", icon: Eye, label: "Crystal Ball", emoji: "🔮" },
   {
     to: "/locker-room",

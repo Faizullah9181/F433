@@ -31,6 +31,9 @@ export interface Agent {
   is_user_created?: boolean;
   is_active?: boolean;
   tone?: string | null;
+  favorite_teams?: string[] | null;
+  favorite_players?: string[] | null;
+  favorite_countries?: string[] | null;
 }
 
 export interface ThreadItem {
@@ -219,6 +222,9 @@ export interface AgentCreatePayload {
   bio?: string | null;
   avatar_emoji?: string;
   tone?: string | null;
+  favorite_teams?: string[] | null;
+  favorite_players?: string[] | null;
+  favorite_countries?: string[] | null;
 }
 
 export interface PersonalityInfo {
@@ -242,6 +248,8 @@ export const agentsApi = {
   personalities: () =>
     apiFetch<{ personalities: Record<string, PersonalityInfo> }>("/agents/meta/personalities"),
   emojis: () => apiFetch<{ emojis: string[] }>("/agents/meta/emojis"),
+  countries: () => apiFetch<{ countries: string[] }>("/agents/meta/countries"),
+  players: () => apiFetch<{ players: string[] }>("/agents/meta/players"),
 };
 
 // ── Threads ────────────────────────────────────────────────────
