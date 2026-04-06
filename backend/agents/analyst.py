@@ -1,8 +1,11 @@
 """
-F433 AI Analyst System — Powered by Google ADK.
+F433 AI Analyst System — Powered by Google ADK + Unsloth Studio.
 
 Multi-personality football analyst agents using Google Agent Development Kit.
-Each personality is a specialized LlmAgent with football API tools.
+Supports two LLM backends:
+  • Google Gemini (native ADK)
+  • Unsloth Studio (via LiteLLM ADK bridge)
+Controlled by MODEL env var: "google" | "unsloth"
 """
 import json
 import random
@@ -11,6 +14,7 @@ import logging
 import os
 from typing import Optional
 
+import requests
 from google.adk.agents import LlmAgent
 from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
@@ -25,6 +29,70 @@ logger = logging.getLogger(__name__)
 os.environ.setdefault("GOOGLE_GENAI_USE_VERTEXAI", "FALSE")
 if settings.google_api_key:
     os.environ.setdefault("GOOGLE_API_KEY", settings.google_api_key)
+
+
+# ════════════════════════════════════════════════════════════════
+#  Unsloth Studio Auth & Model Discovery
+# ════════════════════════════════════════════════════════════════
+
+_unsloth_token: str | None = None
+_unsloth_active_model: str | None = None
+
+
+def _unsloth_login() -> str:
+    """Login to Unsloth Studio, return bearer token. Cached in module global."""
+    global _unsloth_token
+    if _unsloth_token:
+        return _unsloth_token
+    resp = requests.post(
+        f"{settings.unsloth_base_url}/api/auth/login",
+        json={"username": settings.unsloth_username, "password": settings.unsloth_password},
+        timeout=10,
+    )
+    resp.raise_for_status()
+    _unsloth_token = resp.json()["access_token"]
+    logger.info("🔑 Unsloth Studio login OK")
+    return _unsloth_token
+
+
+def _unsloth_get_active_model() -> str:
+    """Get the currently loaded model from Unsloth Studio."""
+    global _unsloth_active_model
+    if _unsloth_active_model:
+        return _unsloth_active_model
+    token = _unsloth_login()
+    resp = requests.get(
+        f"{settings.unsloth_base_url}/v1/status",
+        headers={"Authorization": f"Bearer {token}"},
+        timeout=10,
+    )
+    resp.raise_for_status()
+    _unsloth_active_model = resp.json().get("active_model", "default")
+    logger.info(f"🧠 Unsloth active model: {_unsloth_active_model}")
+    return _unsloth_active_model
+
+
+def _get_unsloth_litellm_model():
+    """Build LiteLlm model instance for Unsloth Studio."""
+    from google.adk.models.lite_llm import LiteLlm
+    token = _unsloth_login()
+    model_name = settings.unsloth_model or _unsloth_get_active_model()
+    return LiteLlm(
+        model=f"hosted_vllm/{model_name}",
+        api_base=f"{settings.unsloth_base_url}/v1",
+        api_key=token,
+        extra_body={"stream": False},
+    )
+
+
+def _get_model():
+    """Return the correct ADK model based on settings.model."""
+    if settings.use_unsloth:
+        logger.info("⚡ Using Unsloth Studio LLM backend")
+        return _get_unsloth_litellm_model()
+    else:
+        logger.debug("🌐 Using Google Gemini LLM backend")
+        return settings.gemini_model
 
 # ── Personality configs ─────────────────────────────────────────
 PERSONALITY_CONFIGS = {
@@ -393,7 +461,8 @@ FOOTBALL_TOOLS = [
 # ════════════════════════════════════════════════════════════════
 
 def _make_analyst_agent(name: str, personality: str, team_allegiance: str | None = None) -> LlmAgent:
-    """Create a single ADK LlmAgent with a specific football personality."""
+    """Create a single ADK LlmAgent with a specific football personality.
+    Uses Google Gemini or Unsloth Studio depending on MODEL setting."""
     config = PERSONALITY_CONFIGS.get(personality, PERSONALITY_CONFIGS["neutral_analyst"])
 
     team_ctx = ""
@@ -416,12 +485,17 @@ RULES:
 - Use relevant emojis sparingly for flavor
 - When you have access to football data tools, USE THEM to ground your arguments in real stats"""
 
+    model = _get_model()
+
+    # Unsloth local models may not support tool calling well — skip tools for unsloth
+    tools = FOOTBALL_TOOLS if not settings.use_unsloth else []
+
     return LlmAgent(
         name=name,
-        model=settings.gemini_model,
+        model=model,
         description=config["description"],
         instruction=instruction,
-        tools=FOOTBALL_TOOLS,
+        tools=tools,
         generate_content_config=genai_types.GenerateContentConfig(
             temperature=0.9,
             max_output_tokens=400,
