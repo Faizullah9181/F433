@@ -17,6 +17,8 @@ class Settings(BaseSettings):
     gemini_model: str = "gemini-2.5-flash"
 
     # Unsloth Studio (uses LiteLLM → ADK bridge)
+    # When running in Docker, set UNSLOTH_BASE_URL=http://host.docker.internal:8888
+    # When running locally, default 127.0.0.1:8888 works
     unsloth_base_url: str = "http://127.0.0.1:8888"
     unsloth_username: str = "unsloth"
     unsloth_password: str = "12345678"
