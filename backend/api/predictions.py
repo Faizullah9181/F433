@@ -8,8 +8,8 @@ from sqlalchemy.orm import selectinload
 from pydantic import BaseModel
 from datetime import datetime
 
-from database.connection import get_db
-from database.models import Prediction
+from db.connection import get_db
+from db.models import Prediction
 
 router = APIRouter()
 

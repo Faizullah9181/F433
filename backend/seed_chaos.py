@@ -37,15 +37,12 @@ from sqlalchemy.orm import selectinload
 
 # ── Bootstrap ────────────────────────────────────────────────────
 from config import settings
-from database.connection import init_db, async_session
-from database.models import (
+from db.connection import init_db, async_session
+from db.models import (
     Agent, Thread, Comment, Prediction, Confession,
     League, AgentActivity, AgentPersonality,
 )
-from agents.analyst import (
-    FootballAnalyst, get_random_topic, PERSONALITY_CONFIGS,
-    DEBATE_TOPICS,
-)
+from agents import DEBATE_TOPICS, FootballAnalyst, PERSONALITY_CONFIGS, root_agent
 
 logging.basicConfig(
     level=logging.INFO,
@@ -399,7 +396,7 @@ FAKE_MATCHES = [
 # ══════════════════════════════════════════════════════════════════
 
 def _analyst(agent: Agent) -> FootballAnalyst:
-    return FootballAnalyst(
+    return root_agent.create_analyst(
         name=agent.name,
         personality=agent.personality.value,
         team_allegiance=agent.team_allegiance,

@@ -9,9 +9,10 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from config import settings
-from database.connection import init_db, get_db, async_session
-from database.models import Agent, League, AgentPersonality
-from routers import agents, threads, predictions, leagues, football, confessions, comments, generate, trivia
+from agents.f433_agent import root_agent
+from db.connection import init_db, async_session
+from db.models import Agent, League, AgentPersonality
+from api import agents, threads, predictions, leagues, football, confessions, comments, generate, trivia
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -90,8 +91,6 @@ async def seed_database():
 
 async def background_content_generator():
     """Periodically run the autonomous engine to simulate agent behavior."""
-    from engine.autonomous import engine as autonomous_engine
-
     # Wait for initial seed content to be generated
     await asyncio.sleep(10)
 
@@ -102,7 +101,7 @@ async def background_content_generator():
         try:
             logger.info("🤖 Autonomous engine cycle starting...")
             async with async_session() as db:
-                results = await autonomous_engine.run_cycle(db)
+                results = await root_agent.run_cycle(db)
                 logger.info(f"✅ Autonomous cycle complete — {len(results)} actions executed")
         except Exception as e:
             logger.error(f"Autonomous engine error: {e}")
@@ -116,12 +115,10 @@ async def background_content_generator():
 
 async def initial_content_seed():
     """Generate a burst of initial content when the database is fresh."""
-    from engine.autonomous import engine as autonomous_engine
-
     await asyncio.sleep(5)  # Let the DB stabilize
 
     async with async_session() as db:
-        from database.models import Thread
+        from db.models import Thread
         from sqlalchemy import select, func
         thread_count = await db.scalar(select(func.count()).select_from(Thread))
 
@@ -132,7 +129,7 @@ async def initial_content_seed():
     logger.info("🌱 Generating initial content burst...")
     try:
         async with async_session() as db:
-            from routers.generate import generate_bulk_content
+            from api.generate import generate_bulk_content
             await generate_bulk_content(db)
             logger.info("✅ Initial content seed complete")
     except Exception as e:
@@ -208,7 +205,7 @@ async def global_stats():
     async with async_session() as db:
         agents_count = await db.scalar(select(func.count()).select_from(Agent))
         threads_count = await db.scalar(select(func.count()).select_from(League))
-        from database.models import Thread, Confession
+        from db.models import Thread, Confession
         debates_count = await db.scalar(select(func.count()).select_from(Thread))
         confessions_count = await db.scalar(select(func.count()).select_from(Confession))
     return {
@@ -224,7 +221,7 @@ async def activity_feed(limit: int = 30):
     """Get recent agent activity feed for the platform."""
     from sqlalchemy import select, desc
     from sqlalchemy.orm import selectinload
-    from database.models import AgentActivity
+    from db.models import AgentActivity
     async with async_session() as db:
         result = await db.execute(
             select(AgentActivity)

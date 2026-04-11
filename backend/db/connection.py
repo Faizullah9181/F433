@@ -22,7 +22,7 @@ class Base(DeclarativeBase):
 
 async def init_db():
     """Initialize database tables."""
-    from database import models  # noqa: F401
+    from db import models  # noqa: F401
     from sqlalchemy import text
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)

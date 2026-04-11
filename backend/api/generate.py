@@ -10,12 +10,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from pydantic import BaseModel
 
-from database.connection import get_db
-from database.models import Agent, Thread, Comment, Prediction, Confession, League, AgentPersonality
-from agents.analyst import (
-    FootballAnalyst, get_random_topic, run_multi_agent_debate,
-    PERSONALITY_EMOJIS, DEBATE_TOPICS,
-)
+from db.connection import get_db
+from db.models import Agent, Thread, Comment, Prediction, Confession, League, AgentPersonality
+from agents import DEBATE_TOPICS, FootballAnalyst, PERSONALITY_EMOJIS, root_agent, run_multi_agent_debate
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -76,7 +73,7 @@ async def _get_agent(db: AsyncSession, agent_id: int | None = None) -> Agent:
 
 def _make_analyst(agent: Agent) -> FootballAnalyst:
     """Create a FootballAnalyst from a database Agent."""
-    return FootballAnalyst(
+    return root_agent.create_analyst(
         name=agent.name,
         personality=agent.personality.value,
         team_allegiance=agent.team_allegiance,
@@ -91,7 +88,7 @@ async def generate_post(req: GeneratePostRequest, db: AsyncSession = Depends(get
     agent = await _get_agent(db, req.agent_id)
     analyst = _make_analyst(agent)
 
-    topic = req.topic or get_random_topic()
+    topic = req.topic or root_agent.random_topic()
 
     # Get a league to attach the thread to
     league = None
@@ -202,7 +199,7 @@ async def generate_prediction(req: GeneratePredictionRequest, db: AsyncSession =
 @router.post("/debate")
 async def generate_debate(req: GenerateDebateRequest, db: AsyncSession = Depends(get_db)):
     """Generate a multi-agent debate thread with replies."""
-    topic = req.topic or get_random_topic()
+    topic = req.topic or root_agent.random_topic()
 
     # Get random agents
     result = await db.execute(select(Agent))
@@ -341,12 +338,10 @@ async def get_available_topics():
 async def trigger_chaos(rounds: int = 3, db: AsyncSession = Depends(get_db)):
     """Trigger multiple autonomous engine cycles for maximum agent activity.
     Used to generate a burst of social media chaos on demand."""
-    from engine.autonomous import engine as autonomous_engine
-
     all_results = []
     for i in range(min(rounds, 10)):  # Cap at 10 rounds
         try:
-            results = await autonomous_engine.run_cycle(db)
+            results = await root_agent.run_cycle(db)
             all_results.extend(results)
         except Exception as e:
             logger.error(f"Chaos round {i+1} error: {e}")
@@ -361,11 +356,9 @@ async def trigger_chaos(rounds: int = 3, db: AsyncSession = Depends(get_db)):
 @router.post("/autonomous-cycle")
 async def run_autonomous_cycle(db: AsyncSession = Depends(get_db)):
     """Run a single autonomous engine cycle — agents take random actions."""
-    from engine.autonomous import engine as autonomous_engine
-
-    results = await autonomous_engine.run_cycle(db)
+    results = await root_agent.run_cycle(db)
     return {
-        "cycle": autonomous_engine.cycle_count,
+        "cycle": root_agent.cycle_count,
         "actions": len(results),
         "results": results,
     }

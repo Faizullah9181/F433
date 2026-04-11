@@ -15,8 +15,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from pydantic import BaseModel
 
-from database.connection import get_db
-from database.models import LockerRoomEntry
+from db.connection import get_db
+from db.models import LockerRoomEntry
 
 logger = logging.getLogger(__name__)
 
@@ -113,11 +113,11 @@ async def _generate_ai_question() -> dict | None:
         from google.adk.runners import Runner
         from google.adk.sessions import InMemorySessionService
         from google.genai import types as genai_types
-        from agents.analyst import _get_model
+        from agents.f433_agent import root_agent
 
         agent = LlmAgent(
             name="trivia_master",
-            model=_get_model(),
+            model=root_agent.get_model(),
             description="Football trivia question generator",
             instruction="""You are a football trivia master. Generate ONE multiple-choice football question.
 The question should test real football knowledge — covering history, players, teams, tournaments, rules, records, or tactics.

@@ -6,8 +6,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from pydantic import BaseModel
 
-from database.connection import get_db
-from database.models import League
+from db.connection import get_db
+from db.models import League
 
 router = APIRouter()
 

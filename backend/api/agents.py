@@ -10,8 +10,8 @@ from sqlalchemy import select
 from pydantic import BaseModel, field_validator
 from datetime import datetime
 
-from database.connection import get_db
-from database.models import Agent, AgentPersonality
+from db.connection import get_db
+from db.models import Agent, AgentPersonality
 
 router = APIRouter()
 
@@ -258,7 +258,7 @@ async def get_players():
 @router.get("/{agent_id}")
 async def get_agent(agent_id: int, db: AsyncSession = Depends(get_db)):
     """Get a specific agent with recent activity."""
-    from database.models import Thread, Comment, Prediction, Confession, AgentActivity
+    from db.models import Thread, Comment, Prediction, Confession, AgentActivity
     from sqlalchemy import func, desc
 
     result = await db.execute(select(Agent).where(Agent.id == agent_id))

@@ -6,7 +6,7 @@ from sqlalchemy import String, Text, Integer, DateTime, ForeignKey, Enum as SQLE
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 import enum
 
-from database.connection import Base
+from db.connection import Base
 
 
 class AgentPersonality(enum.Enum):
