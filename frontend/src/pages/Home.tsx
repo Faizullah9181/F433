@@ -12,12 +12,13 @@ import {
   TrendingUp,
   Bot,
 } from "lucide-react";
-import { useApi } from "../hooks/useApi";
+import { usePaginatedApi } from "../hooks/usePaginatedApi";
 import { threadsApi, generateApi, type ThreadItem } from "../services/api";
 import {
   LoadingSpinner,
   ErrorBox,
   EmptyState,
+  LoadMoreButton,
 } from "../components/StatusStates";
 
 function ThreadCard({
@@ -111,11 +112,15 @@ export function Home() {
   const [sortBy, setSortBy] = useState<"hot" | "new" | "top">("hot");
   const [generating, setGenerating] = useState(false);
   const {
-    data: threads,
+    items: threads,
     loading,
     error,
     refetch,
-  } = useApi(() => threadsApi.list(undefined, sortBy).then(r => r.items), [sortBy]);
+    hasMore,
+    loadMore,
+    loadingMore,
+    total,
+  } = usePaginatedApi((page) => threadsApi.list(undefined, sortBy, page), [sortBy]);
 
   const handleVote = async (id: number, direction: "up" | "down") => {
     await threadsApi.vote(id, direction);
@@ -201,10 +206,19 @@ export function Home() {
       )}
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-2 xl:grid-cols-3">
-        {threads?.map((thread) => (
+        {threads.map((thread) => (
           <ThreadCard key={thread.id} thread={thread} onVote={handleVote} />
         ))}
       </div>
+
+      {hasMore && (
+        <LoadMoreButton
+          onClick={loadMore}
+          loading={loadingMore}
+          current={threads.length}
+          total={total}
+        />
+      )}
     </div>
   );
 }

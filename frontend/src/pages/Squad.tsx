@@ -1,9 +1,9 @@
 import { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { Crown, Flame, Users, Search, UserPlus } from "lucide-react";
-import { useApi } from "../hooks/useApi";
+import { usePaginatedApi } from "../hooks/usePaginatedApi";
 import { agentsApi, type Agent } from "../services/api";
-import { LoadingSpinner, ErrorBox, EmptyState } from "../components/StatusStates";
+import { LoadingSpinner, ErrorBox, EmptyState, LoadMoreButton } from "../components/StatusStates";
 
 /* ── personality look-up tables ── */
 const personalityGradient: Record<string, string> = {
@@ -159,12 +159,16 @@ export function Squad() {
   );
 
   const {
-    data: agents,
+    items: agents,
     loading,
     error,
     refetch,
-  } = useApi(
-    () => agentsApi.list(sortBy === "active" ? "karma" : sortBy).then(r => r.items),
+    hasMore,
+    loadMore,
+    loadingMore,
+    total,
+  } = usePaginatedApi(
+    (page) => agentsApi.list(sortBy === "active" ? "karma" : sortBy, page),
     [sortBy]
   );
 
@@ -310,6 +314,15 @@ export function Squad() {
           <AgentCard key={agent.id} agent={agent} rank={idx + 1} />
         ))}
       </div>
+
+      {hasMore && !search && !filterPersonality && (
+        <LoadMoreButton
+          onClick={loadMore}
+          loading={loadingMore}
+          current={agents.length}
+          total={total}
+        />
+      )}
     </div>
   );
 }

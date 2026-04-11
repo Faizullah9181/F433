@@ -2519,3 +2519,646 @@ body {
     width: calc(50% - 0.25rem);
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ORACLE — CRYSTAL BALL CARDS
+   Futuristic holographic prediction cards with scan lines and data overlays
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.oracle-page {
+  position: relative;
+}
+
+/* ── Card base ── */
+.oracle-card {
+  position: relative;
+  overflow: hidden;
+  padding: 1.5rem;
+  border-radius: 20px;
+  border: 1px solid rgba(6, 182, 212, 0.12);
+  background:
+    linear-gradient(165deg, rgba(6, 182, 212, 0.04) 0%, transparent 40%),
+    linear-gradient(180deg, rgba(12, 17, 30, 0.95), rgba(6, 10, 20, 0.98));
+  box-shadow:
+    0 20px 50px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(6, 182, 212, 0.08),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.02);
+  transition: all 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+  animation: oracle-card-enter 0.5s ease-out both;
+}
+
+.oracle-card:hover {
+  border-color: rgba(6, 182, 212, 0.25);
+  transform: translateY(-4px);
+  box-shadow:
+    0 30px 70px rgba(0, 0, 0, 0.5),
+    0 0 30px rgba(6, 182, 212, 0.06),
+    inset 0 1px 0 rgba(6, 182, 212, 0.15);
+}
+
+@keyframes oracle-card-enter {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* ── Scan line effect ── */
+.oracle-card-scanline {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  border-radius: inherit;
+}
+
+.oracle-card-scanline::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, rgba(6, 182, 212, 0.3) 30%, rgba(6, 182, 212, 0.5) 50%, rgba(6, 182, 212, 0.3) 70%, transparent 100%);
+  animation: oracle-scan 4s ease-in-out infinite;
+  opacity: 0;
+}
+
+.oracle-card:hover .oracle-card-scanline::before {
+  opacity: 1;
+}
+
+@keyframes oracle-scan {
+  0%   { top: -2px; }
+  100% { top: calc(100% + 2px); }
+}
+
+/* ── Correctness verdict badge ── */
+.oracle-card-verdict {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  padding: 0.2rem 0.6rem;
+  font-size: 0.6rem;
+  font-weight: 900;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  border-radius: 6px;
+  z-index: 2;
+}
+
+.oracle-card-verdict--correct {
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.1);
+}
+
+.oracle-card-verdict--wrong {
+  background: rgba(244, 63, 94, 0.12);
+  color: #fb7185;
+  border: 1px solid rgba(244, 63, 94, 0.2);
+}
+
+/* ── Score badge — central holographic element ── */
+.oracle-score-badge {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 4rem;
+  height: 2.75rem;
+  border-radius: 12px;
+  background:
+    linear-gradient(135deg, rgba(6, 182, 212, 0.12), rgba(139, 92, 246, 0.08)),
+    rgba(10, 15, 26, 0.9);
+  border: 1px solid rgba(6, 182, 212, 0.2);
+  color: #67e8f9;
+  font-family: "JetBrains Mono", "Fira Code", monospace;
+  box-shadow:
+    0 0 20px rgba(6, 182, 212, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.oracle-card:hover .oracle-score-badge {
+  border-color: rgba(6, 182, 212, 0.4);
+  box-shadow:
+    0 0 24px rgba(6, 182, 212, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+/* ── Confidence gauge ── */
+.oracle-confidence-gauge {
+  position: relative;
+}
+
+.oracle-confidence-number {
+  font-family: "JetBrains Mono", "Fira Code", monospace;
+  font-size: 1.1rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.oracle-confidence-track {
+  position: relative;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 4px;
+  overflow: visible;
+}
+
+.oracle-confidence-fill {
+  height: 100%;
+  border-radius: 4px;
+  background: linear-gradient(90deg, #06b6d4, #8b5cf6, #ec4899);
+  box-shadow: 0 0 10px rgba(6, 182, 212, 0.3);
+  transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.oracle-confidence-ticks {
+  position: absolute;
+  inset: 0;
+}
+
+.oracle-confidence-tick {
+  position: absolute;
+  top: -2px;
+  width: 1px;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* ── Prediction text ── */
+.oracle-card-text {
+  font-size: 0.875rem;
+  line-height: 1.7;
+  color: rgba(255, 255, 255, 0.7);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  transition: color 0.2s;
+}
+
+.oracle-card:hover .oracle-card-text {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+/* ── Trust bar ── */
+.oracle-trust-bar {
+  position: relative;
+  height: 3px;
+  border-radius: 3px;
+  background: rgba(244, 63, 94, 0.2);
+  overflow: hidden;
+}
+
+.oracle-trust-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #10b981, #06b6d4);
+  transition: width 0.4s ease;
+}
+
+.oracle-trust-labels {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  justify-content: space-between;
+  top: 6px;
+}
+
+/* ── Vote buttons ── */
+.oracle-vote-section {
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.oracle-vote-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 0.85rem;
+  border-radius: 10px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  transition: all 0.2s;
+  border: 1px solid transparent;
+  cursor: pointer;
+  background: none;
+}
+
+.oracle-vote-btn--believe {
+  color: #34d399;
+  border-color: rgba(16, 185, 129, 0.15);
+  background: rgba(16, 185, 129, 0.06);
+}
+
+.oracle-vote-btn--believe:hover {
+  background: rgba(16, 185, 129, 0.14);
+  border-color: rgba(16, 185, 129, 0.3);
+  box-shadow: 0 0 14px rgba(16, 185, 129, 0.08);
+}
+
+.oracle-vote-btn--doubt {
+  color: #fb7185;
+  border-color: rgba(244, 63, 94, 0.12);
+  background: rgba(244, 63, 94, 0.05);
+}
+
+.oracle-vote-btn--doubt:hover {
+  background: rgba(244, 63, 94, 0.12);
+  border-color: rgba(244, 63, 94, 0.25);
+  box-shadow: 0 0 14px rgba(244, 63, 94, 0.06);
+}
+
+.oracle-vote-label {
+  display: none;
+}
+
+@media (min-width: 640px) {
+  .oracle-vote-label {
+    display: inline;
+  }
+}
+
+/* ── Stat pills ── */
+.oracle-stat-pill {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.85rem;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.oracle-stat-value {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 900;
+  color: white;
+  line-height: 1;
+}
+
+.oracle-stat-label {
+  display: block;
+  font-size: 0.6rem;
+  color: rgba(255, 255, 255, 0.35);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 600;
+}
+
+/* ── Generate button ── */
+.oracle-generate-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1.25rem;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #67e8f9;
+  border: 1px solid rgba(6, 182, 212, 0.2);
+  background: linear-gradient(135deg, rgba(6, 182, 212, 0.1), rgba(139, 92, 246, 0.06));
+  cursor: pointer;
+  transition: all 0.25s;
+}
+
+.oracle-generate-btn:hover {
+  background: linear-gradient(135deg, rgba(6, 182, 212, 0.18), rgba(139, 92, 246, 0.1));
+  border-color: rgba(6, 182, 212, 0.35);
+  box-shadow: 0 0 20px rgba(6, 182, 212, 0.1);
+}
+
+.oracle-generate-btn:disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   LOCKER ROOM — CONFESSION CARDS
+   Dark, moody, redacted-file aesthetic with danger accents
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.tunneltalk-page {
+  position: relative;
+}
+
+/* ── Card base ── */
+.confession-card {
+  position: relative;
+  overflow: hidden;
+  padding: 1.5rem;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background:
+    linear-gradient(180deg, rgba(15, 10, 18, 0.96), rgba(8, 6, 14, 0.98));
+  box-shadow:
+    0 20px 50px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  transition: all 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+  animation: confession-card-enter 0.45s ease-out both;
+}
+
+.confession-card:hover {
+  border-color: rgba(255, 255, 255, 0.1);
+  transform: translateY(-3px);
+  box-shadow:
+    0 28px 65px rgba(0, 0, 0, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+@keyframes confession-card-enter {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* ── Heat tiers — border glow ── */
+.confession-card--warm {
+  border-color: rgba(251, 146, 60, 0.12);
+}
+
+.confession-card--hot {
+  border-color: rgba(244, 63, 94, 0.16);
+  background:
+    linear-gradient(165deg, rgba(244, 63, 94, 0.03) 0%, transparent 35%),
+    linear-gradient(180deg, rgba(15, 10, 18, 0.96), rgba(8, 6, 14, 0.98));
+}
+
+.confession-card--hot:hover {
+  border-color: rgba(244, 63, 94, 0.28);
+  box-shadow:
+    0 28px 65px rgba(0, 0, 0, 0.55),
+    0 0 25px rgba(244, 63, 94, 0.04);
+}
+
+.confession-card--viral {
+  border-color: rgba(251, 146, 60, 0.2);
+  background:
+    linear-gradient(165deg, rgba(251, 146, 60, 0.04) 0%, rgba(244, 63, 94, 0.02) 40%, transparent 60%),
+    linear-gradient(180deg, rgba(15, 10, 18, 0.96), rgba(8, 6, 14, 0.98));
+}
+
+.confession-card--viral:hover {
+  border-color: rgba(251, 146, 60, 0.35);
+  box-shadow:
+    0 28px 65px rgba(0, 0, 0, 0.55),
+    0 0 30px rgba(251, 146, 60, 0.06);
+}
+
+/* ── Redacted corner ── */
+.confession-card-redacted {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 3px;
+  height: 100%;
+  background: linear-gradient(180deg, rgba(244, 63, 94, 0.4), rgba(251, 146, 60, 0.2), transparent 80%);
+  border-radius: 20px 0 0 20px;
+}
+
+/* ── Anonymous avatar ── */
+.confession-avatar {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(244, 63, 94, 0.08);
+  border: 1px solid rgba(244, 63, 94, 0.15);
+  color: rgba(244, 63, 94, 0.6);
+}
+
+/* ── Badges ── */
+.confession-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 6px;
+  font-size: 0.6rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.confession-badge--viral {
+  background: rgba(251, 146, 60, 0.15);
+  color: #fb923c;
+  border: 1px solid rgba(251, 146, 60, 0.2);
+}
+
+.confession-badge--hot {
+  background: rgba(244, 63, 94, 0.12);
+  color: #fb7185;
+  border: 1px solid rgba(244, 63, 94, 0.18);
+}
+
+/* ── Confession text — the dramatic center ── */
+.confession-content-wrap {
+  position: relative;
+  padding: 0.5rem 0;
+}
+
+.confession-quote-mark {
+  position: absolute;
+  font-family: "Georgia", serif;
+  font-size: 3.5rem;
+  line-height: 1;
+  color: rgba(244, 63, 94, 0.12);
+  font-weight: 700;
+  top: -0.6rem;
+  left: -0.25rem;
+  pointer-events: none;
+  user-select: none;
+}
+
+.confession-quote-mark--end {
+  position: static;
+  display: inline;
+  font-size: 2rem;
+  vertical-align: bottom;
+  margin-left: 0.15rem;
+}
+
+.confession-text {
+  font-size: 1.05rem;
+  font-weight: 500;
+  line-height: 1.8;
+  color: rgba(255, 255, 255, 0.8);
+  font-style: italic;
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  transition: color 0.2s;
+}
+
+.confession-card:hover .confession-text {
+  color: rgba(255, 255, 255, 0.92);
+}
+
+/* ── Reaction bar ── */
+.confession-reaction-bar {
+  display: flex;
+  height: 3px;
+  border-radius: 3px;
+  overflow: hidden;
+  gap: 1px;
+}
+
+.confession-reaction-segment {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.4s ease;
+}
+
+.confession-reaction-segment--absolve {
+  background: linear-gradient(90deg, #ec4899, #f472b6);
+}
+
+.confession-reaction-segment--damn {
+  background: linear-gradient(90deg, #6b7280, #9ca3af);
+}
+
+.confession-reaction-segment--fire {
+  background: linear-gradient(90deg, #f97316, #fb923c);
+}
+
+/* ── React buttons ── */
+.confession-react-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.5rem 0.7rem;
+  border-radius: 10px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  transition: all 0.2s;
+  border: 1px solid transparent;
+  cursor: pointer;
+  background: none;
+}
+
+.confession-react-count {
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+}
+
+.confession-react-label {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .confession-react-label {
+    display: inline;
+    font-weight: 600;
+    opacity: 0.7;
+  }
+}
+
+.confession-react-btn--absolve {
+  color: #f472b6;
+  border-color: rgba(236, 72, 153, 0.12);
+  background: rgba(236, 72, 153, 0.05);
+}
+
+.confession-react-btn--absolve:hover {
+  background: rgba(236, 72, 153, 0.14);
+  border-color: rgba(236, 72, 153, 0.28);
+  box-shadow: 0 0 14px rgba(236, 72, 153, 0.06);
+}
+
+.confession-react-btn--damn {
+  color: #9ca3af;
+  border-color: rgba(156, 163, 175, 0.1);
+  background: rgba(156, 163, 175, 0.04);
+}
+
+.confession-react-btn--damn:hover {
+  background: rgba(156, 163, 175, 0.12);
+  border-color: rgba(156, 163, 175, 0.22);
+}
+
+.confession-react-btn--fire {
+  color: #fb923c;
+  border-color: rgba(249, 115, 22, 0.12);
+  background: rgba(249, 115, 22, 0.05);
+}
+
+.confession-react-btn--fire:hover {
+  background: rgba(249, 115, 22, 0.14);
+  border-color: rgba(249, 115, 22, 0.28);
+  box-shadow: 0 0 14px rgba(249, 115, 22, 0.06);
+}
+
+.confession-react-btn--dominant {
+  transform: scale(1.04);
+}
+
+/* ── Stat pills ── */
+.confession-stat-pill {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.85rem;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.confession-stat-value {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 900;
+  color: white;
+  line-height: 1;
+}
+
+.confession-stat-label {
+  display: block;
+  font-size: 0.6rem;
+  color: rgba(255, 255, 255, 0.35);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 600;
+}
+
+/* ── Generate button ── */
+.confession-generate-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1.25rem;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #fb7185;
+  border: 1px solid rgba(244, 63, 94, 0.18);
+  background: linear-gradient(135deg, rgba(244, 63, 94, 0.08), rgba(251, 146, 60, 0.04));
+  cursor: pointer;
+  transition: all 0.25s;
+}
+
+.confession-generate-btn:hover {
+  background: linear-gradient(135deg, rgba(244, 63, 94, 0.16), rgba(251, 146, 60, 0.08));
+  border-color: rgba(244, 63, 94, 0.32);
+  box-shadow: 0 0 20px rgba(244, 63, 94, 0.08);
+}
+
+.confession-generate-btn:disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}

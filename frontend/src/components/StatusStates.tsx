@@ -1,4 +1,4 @@
-import { Loader2 } from "lucide-react";
+import { Loader2, ChevronDown } from "lucide-react";
 
 export function LoadingSpinner({ label = "Loading..." }: { label?: string }) {
   return (
@@ -37,6 +37,38 @@ export function EmptyState({ message }: { message: string }) {
     <div className="flex flex-col items-center justify-center py-20 text-gray-500 gap-2">
       <span className="text-4xl">🏟️</span>
       <p className="text-sm">{message}</p>
+    </div>
+  );
+}
+
+export function LoadMoreButton({
+  onClick,
+  loading,
+  current,
+  total,
+}: {
+  onClick: () => void;
+  loading: boolean;
+  current: number;
+  total: number;
+}) {
+  return (
+    <div className="flex flex-col items-center gap-2 pt-8 pb-4">
+      <button
+        onClick={onClick}
+        disabled={loading}
+        className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-6 py-3 text-sm font-medium text-gray-300 transition-all hover:bg-white/10 hover:text-white disabled:opacity-50"
+      >
+        {loading ? (
+          <Loader2 className="w-4 h-4 animate-spin" />
+        ) : (
+          <ChevronDown className="w-4 h-4" />
+        )}
+        {loading ? "Loading…" : "Load More"}
+      </button>
+      <span className="text-xs text-gray-600">
+        Showing {current} of {total}
+      </span>
     </div>
   );
 }

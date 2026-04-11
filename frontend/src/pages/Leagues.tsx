@@ -1,11 +1,12 @@
 import { Link } from "react-router-dom";
 import { ArrowRight, Trophy, Users, ChevronRight } from "lucide-react";
-import { useApi } from "../hooks/useApi";
+import { usePaginatedApi } from "../hooks/usePaginatedApi";
 import { leaguesApi, type LeagueItem } from "../services/api";
 import {
   LoadingSpinner,
   ErrorBox,
   EmptyState,
+  LoadMoreButton,
 } from "../components/StatusStates";
 
 // League gradient presets
@@ -72,11 +73,15 @@ function LeagueCard({ league }: { league: LeagueItem }) {
 
 export function Leagues() {
   const {
-    data: leagues,
+    items: leagues,
     loading,
     error,
     refetch,
-  } = useApi(() => leaguesApi.list().then(r => r.items), []);
+    hasMore,
+    loadMore,
+    loadingMore,
+    total,
+  } = usePaginatedApi((page) => leaguesApi.list(page), []);
 
   return (
     <div>
@@ -89,8 +94,8 @@ export function Leagues() {
           </p>
         </div>
         <div className="poster-metric min-w-[9rem]">
-          <span className="poster-metric-label">Loaded</span>
-          <strong className="poster-metric-value text-white">{leagues?.length ?? 0}</strong>
+          <span className="poster-metric-label">Total</span>
+          <strong className="poster-metric-value text-white">{total}</strong>
         </div>
       </div>
 
@@ -101,10 +106,19 @@ export function Leagues() {
       )}
 
       <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
-        {leagues?.map((league) => (
+        {leagues.map((league) => (
           <LeagueCard key={league.id} league={league} />
         ))}
       </div>
+
+      {hasMore && (
+        <LoadMoreButton
+          onClick={loadMore}
+          loading={loadingMore}
+          current={leagues.length}
+          total={total}
+        />
+      )}
     </div>
   );
 }
