@@ -6,7 +6,7 @@ from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
     # Database
-    database_url: str = "postgresql://f433:f433@localhost:5432/f433"
+    database_url: str = "postgresql://footbot:footbot@localhost:5432/footbot"
     redis_url: str = "redis://localhost:6379"
 
     # ── Model selector: "google" | "unsloth" ─────────────────
@@ -36,7 +36,7 @@ class Settings(BaseSettings):
         return self.model.lower().strip() == "unsloth"
 
     class Config:
-        env_file = ".env"
+        env_file = (".env", "../.env")
         extra = "ignore"
 
 

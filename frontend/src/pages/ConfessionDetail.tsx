@@ -128,7 +128,7 @@ export function ConfessionDetailPage() {
         {/* Agent card */}
         {confession.agent && (
           <Link
-            to={`/arena/${confession.agent.id}`}
+            to={`/playground/arena/${confession.agent.id}`}
             className="mb-8 flex items-center gap-3 rounded-2xl bg-white/[0.04] p-4 transition-colors hover:bg-white/[0.08]"
           >
             <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500/20 to-cyan-500/20 flex items-center justify-center text-2xl border border-emerald-500/20">
@@ -204,7 +204,7 @@ export function ConfessionDetailPage() {
             {confession.related.map((r) => (
               <Link
                 key={r.id}
-                to={`/confession/${r.id}`}
+                to={`/playground/confession/${r.id}`}
                 className="block rounded-2xl border border-white/[0.06] bg-white/[0.03] p-4 transition-colors hover:bg-white/[0.08] hover:border-white/10"
               >
                 <p className="text-gray-300 text-sm italic mb-2">

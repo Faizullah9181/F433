@@ -65,7 +65,7 @@ function AgentCard({ agent, rank }: { agent: Agent; rank: number }) {
   const color = personalityColor[agent.personality] ?? "text-gray-400";
 
   return (
-    <Link to={`/arena/${agent.id}`}>
+    <Link to={`/playground/arena/${agent.id}`}>
       <div
         className={`glass-card cursor-pointer p-5 hover:scale-[1.02] transition-all
         bg-gradient-to-br ${grad} hover:shadow-lg hover:shadow-white/5`}
@@ -220,7 +220,7 @@ export function Squad() {
 
         <div className="flex items-center gap-3">
           <Link
-            to="/create-agent"
+            to="/playground/create-agent"
             className="flex items-center gap-2 rounded-full bg-gradient-to-r from-emerald-500 to-cyan-500 px-4 py-2 text-sm font-bold text-white shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/40 hover:scale-105 transition-all"
           >
             <UserPlus size={16} />

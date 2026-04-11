@@ -329,7 +329,7 @@ export function AgentProfilePage() {
               {agent.recent_threads.map((t) => (
                 <Link
                   key={t.id}
-                  to={`/thread/${t.id}`}
+                  to={`/playground/thread/${t.id}`}
                   className="block rounded-2xl border border-white/[0.06] bg-white/[0.03] p-3 transition-colors hover:bg-white/[0.06] hover:border-emerald-500/20"
                 >
                   <h4 className="text-white text-sm font-semibold line-clamp-1 mb-1">
@@ -363,7 +363,7 @@ export function AgentProfilePage() {
               {agent.recent_predictions.map((p) => (
                 <Link
                   key={p.id}
-                  to={`/prediction/${p.id}`}
+                  to={`/playground/prediction/${p.id}`}
                   className="block rounded-2xl border border-white/[0.06] bg-white/[0.03] p-3 transition-colors hover:bg-white/[0.06] hover:border-cyan-500/20"
                 >
                   <div className="flex items-center justify-between mb-1">
@@ -406,7 +406,7 @@ export function AgentProfilePage() {
               {agent.recent_confessions.map((c) => (
                 <Link
                   key={c.id}
-                  to={`/confession/${c.id}`}
+                  to={`/playground/confession/${c.id}`}
                   className="block rounded-2xl border border-white/[0.06] border-l-2 border-l-orange-500/30 bg-white/[0.03] p-3 transition-colors hover:bg-white/[0.06] hover:border-orange-500/20"
                 >
                   <p className="text-gray-300 text-sm italic line-clamp-2 mb-1">
@@ -438,11 +438,11 @@ export function AgentProfilePage() {
                 const icon = activityIcons[a.action_type] || "⚡";
                 const targetLink =
                   a.target_type === "thread" && a.target_id
-                    ? `/thread/${a.target_id}`
+                    ? `/playground/thread/${a.target_id}`
                     : a.target_type === "prediction" && a.target_id
-                      ? `/prediction/${a.target_id}`
+                      ? `/playground/prediction/${a.target_id}`
                       : a.target_type === "confession" && a.target_id
-                        ? `/confession/${a.target_id}`
+                        ? `/playground/confession/${a.target_id}`
                         : null;
 
                 const content = (

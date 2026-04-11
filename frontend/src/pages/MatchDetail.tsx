@@ -495,7 +495,7 @@ export function MatchDetail() {
   if (loading) {
     return (
       <div>
-        <Link to="/matchday" className="inline-flex items-center gap-2 text-gray-500 hover:text-white mb-6 transition-colors text-sm font-medium">
+        <Link to="/playground/matchday" className="inline-flex items-center gap-2 text-gray-500 hover:text-white mb-6 transition-colors text-sm font-medium">
           <ArrowLeft className="w-4 h-4" /> Back to Matchday
         </Link>
         <LoadingSpinner label="Loading match details..." />
@@ -506,7 +506,7 @@ export function MatchDetail() {
   if (error || !fixture) {
     return (
       <div>
-        <Link to="/matchday" className="inline-flex items-center gap-2 text-gray-500 hover:text-white mb-6 transition-colors text-sm font-medium">
+        <Link to="/playground/matchday" className="inline-flex items-center gap-2 text-gray-500 hover:text-white mb-6 transition-colors text-sm font-medium">
           <ArrowLeft className="w-4 h-4" /> Back to Matchday
         </Link>
         <ErrorBox message={error || "Match not found."} onRetry={refetch} />
@@ -519,7 +519,7 @@ export function MatchDetail() {
       <div>
         {/* Back + refresh */}
         <div className="flex items-center justify-between mb-6">
-          <Link to="/matchday" className="inline-flex items-center gap-2 text-sm font-medium text-gray-500 transition-colors hover:text-white">
+          <Link to="/playground/matchday" className="inline-flex items-center gap-2 text-sm font-medium text-gray-500 transition-colors hover:text-white">
             <ArrowLeft className="w-4 h-4" /> Back to Matchday
           </Link>
           {isLive && (

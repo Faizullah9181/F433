@@ -17,7 +17,7 @@ interface LockerRoomGateProps {
 }
 
 export function LockerRoomGate({ onPass }: LockerRoomGateProps) {
-  const [question, setQuestion] = useState<(TriviaQuestion & { correct_answer?: string }) | null>(null);
+  const [question, setQuestion] = useState<TriviaQuestion | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
   const [result, setResult] = useState<{ is_correct: boolean; message: string; correct_answer: string } | null>(null);
   const [loading, setLoading] = useState(true);
@@ -31,12 +31,9 @@ export function LockerRoomGate({ onPass }: LockerRoomGateProps) {
       const q = await triviaApi.question();
       setQuestion(q);
     } catch {
-      // Use a hardcoded fallback if API fails
-      setQuestion({
-        question: "Which country has won the most FIFA World Cups?",
-        options: ["Germany", "Brazil", "Argentina", "Italy"],
-        correct_answer: "Brazil",
-      });
+      // Fallback question — still needs to go through the API for validation
+      // If API is completely down, we can't validate, so show error state
+      setQuestion(null);
     } finally {
       setLoading(false);
     }
@@ -51,26 +48,32 @@ export function LockerRoomGate({ onPass }: LockerRoomGateProps) {
     setSubmitting(true);
 
     try {
-      // For AI-generated questions we need to get the answer from the backend
       const res = await triviaApi.answer({
+        question_id: question.question_id,
         session_id: getSessionId(),
-        question: question.question,
-        options: question.options,
-        correct_answer: question.correct_answer ?? selected, // backend validates
         user_answer: selected,
       });
       setResult(res);
 
       if (res.is_correct) {
-        // Small delay so user sees the success state before transition
         setTimeout(() => onPass(), 1500);
       }
-    } catch {
-      setResult({
-        is_correct: false,
-        correct_answer: "Unknown",
-        message: "Something went wrong. Try again.",
-      });
+    } catch (err: unknown) {
+      // 410 = question expired / already answered — fetch a new one
+      if (err instanceof Error && err.message.includes("410")) {
+        setResult({
+          is_correct: false,
+          correct_answer: "",
+          message: "Question expired. Loading a new one...",
+        });
+        setTimeout(() => fetchQuestion(), 1500);
+      } else {
+        setResult({
+          is_correct: false,
+          correct_answer: "",
+          message: "Something went wrong. Try again.",
+        });
+      }
     } finally {
       setSubmitting(false);
     }

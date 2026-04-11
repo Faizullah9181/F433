@@ -24,7 +24,7 @@ function LeagueCard({ league }: { league: LeagueItem }) {
 
   return (
     <Link
-      to={`/leagues/${league.slug.replace(/_/g, "-")}`}
+      to={`/playground/leagues/${league.slug.replace(/_/g, "-")}`}
       className="glass-card group relative overflow-hidden p-6"
     >
       {/* Gradient overlay on hover */}

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { Activity, ArrowRight, Orbit, Radar, ShieldCheck, Zap } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -78,13 +78,134 @@ const stageBadges = [
 export function Landing() {
   const [pointer, setPointer] = useState({ x: 0, y: 0 });
   const [scrollY, setScrollY] = useState(0);
+  const [goalCelebration, setGoalCelebration] = useState<"left" | "right" | null>(null);
 
+  /* ── Ball physics state (refs for 60fps, no re-renders) ── */
+  const stageRef = useRef<HTMLDivElement>(null);
+  const ballRef = useRef<HTMLDivElement>(null);
+  const ballPos = useRef({ x: 0, y: 0 });       // % of stage, 0 = center
+  const ballVel = useRef({ x: 0, y: 0 });
+  const ballRot = useRef(0);
+  const lastMouse = useRef<{ x: number; y: number } | null>(null);
+  const rafId = useRef(0);
+  const goalTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const goalLock = useRef(false);
+
+  const triggerGoal = useCallback((side: "left" | "right") => {
+    if (goalLock.current) return;
+    goalLock.current = true;
+    setGoalCelebration(side);
+    if (goalTimerRef.current) clearTimeout(goalTimerRef.current);
+    goalTimerRef.current = setTimeout(() => {
+      setGoalCelebration(null);
+      // Reset ball to center
+      ballPos.current = { x: 0, y: 0 };
+      ballVel.current = { x: 0, y: 0 };
+      goalLock.current = false;
+    }, 2800);
+  }, []);
+
+  /* ── Ball animation loop ── */
+  useEffect(() => {
+    const FRICTION = 0.94;
+    const PUSH_FORCE = 0.6;
+    const PUSH_RADIUS = 120; // px — how close the cursor needs to be to push the ball
+    const MAX_VEL = 8;
+    const BOUND_X = 46; // % from center
+    const BOUND_Y = 42;
+    const GOAL_X = 44;  // % threshold for goal
+    const GOAL_Y_MIN = -14; // goal vertical bounds (% from center)
+    const GOAL_Y_MAX = 14;
+
+    const tick = () => {
+      const stage = stageRef.current;
+      const ball = ballRef.current;
+      if (!stage || !ball || goalLock.current) {
+        rafId.current = requestAnimationFrame(tick);
+        return;
+      }
+
+      const rect = stage.getBoundingClientRect();
+      const cx = rect.left + rect.width / 2;
+      const cy = rect.top + rect.height / 2;
+
+      // Mouse position relative to stage center, in px
+      if (lastMouse.current) {
+        const mx = lastMouse.current.x - cx;
+        const my = lastMouse.current.y - cy;
+        // Ball position in px
+        const bx = (ballPos.current.x / 100) * rect.width;
+        const by = (ballPos.current.y / 100) * rect.height;
+        const dx = bx - mx;
+        const dy = by - my;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+
+        if (dist < PUSH_RADIUS && dist > 1) {
+          // Push ball away from cursor
+          const force = PUSH_FORCE * (1 - dist / PUSH_RADIUS);
+          ballVel.current.x += (dx / dist) * force;
+          ballVel.current.y += (dy / dist) * force;
+        }
+      }
+
+      // Clamp velocity
+      ballVel.current.x = Math.max(-MAX_VEL, Math.min(MAX_VEL, ballVel.current.x));
+      ballVel.current.y = Math.max(-MAX_VEL, Math.min(MAX_VEL, ballVel.current.y));
+
+      // Apply velocity (convert px velocity to %)
+      ballPos.current.x += (ballVel.current.x / rect.width) * 100;
+      ballPos.current.y += (ballVel.current.y / rect.height) * 100;
+
+      // Bounce off walls
+      if (ballPos.current.x > BOUND_X) { ballPos.current.x = BOUND_X; ballVel.current.x *= -0.5; }
+      if (ballPos.current.x < -BOUND_X) { ballPos.current.x = -BOUND_X; ballVel.current.x *= -0.5; }
+      if (ballPos.current.y > BOUND_Y) { ballPos.current.y = BOUND_Y; ballVel.current.y *= -0.5; }
+      if (ballPos.current.y < -BOUND_Y) { ballPos.current.y = -BOUND_Y; ballVel.current.y *= -0.5; }
+
+      // Check goal
+      const speed = Math.sqrt(ballVel.current.x ** 2 + ballVel.current.y ** 2);
+      if (speed > 1.5) {
+        const py = ballPos.current.y;
+        if (ballPos.current.x <= -GOAL_X && py > GOAL_Y_MIN && py < GOAL_Y_MAX) {
+          triggerGoal("left");
+        } else if (ballPos.current.x >= GOAL_X && py > GOAL_Y_MIN && py < GOAL_Y_MAX) {
+          triggerGoal("right");
+        }
+      }
+
+      // Friction
+      ballVel.current.x *= FRICTION;
+      ballVel.current.y *= FRICTION;
+
+      // Rotation tracks horizontal velocity
+      ballRot.current += ballVel.current.x * 4;
+
+      // Convert stage-relative % back to px for translate (CSS translate % = % of element, not parent)
+      const offsetX = (ballPos.current.x / 100) * rect.width;
+      const offsetY = (ballPos.current.y / 100) * rect.height;
+
+      // Apply to DOM directly (no re-render)
+      ball.style.transform = `translate(-50%, -50%) translate(${offsetX}px, ${offsetY}px) rotate(${ballRot.current}deg)`;
+
+      // Trail glow scales with speed
+      const glowIntensity = Math.min(speed / MAX_VEL, 1);
+      ball.style.boxShadow = `0 0 ${20 + glowIntensity * 50}px rgba(250,204,21,${0.1 + glowIntensity * 0.35}), 0 0 ${40 + glowIntensity * 80}px rgba(56,189,248,${0.05 + glowIntensity * 0.2})`;
+
+      rafId.current = requestAnimationFrame(tick);
+    };
+
+    rafId.current = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(rafId.current);
+  }, [triggerGoal]);
+
+  /* ── Global mouse tracking ── */
   useEffect(() => {
     const handleMove = (event: MouseEvent) => {
       setPointer({
         x: (event.clientX / window.innerWidth - 0.5) * 2,
         y: (event.clientY / window.innerHeight - 0.5) * 2,
       });
+      lastMouse.current = { x: event.clientX, y: event.clientY };
     };
 
     const handleScroll = () => setScrollY(window.scrollY);
@@ -95,6 +216,7 @@ export function Landing() {
     return () => {
       window.removeEventListener("mousemove", handleMove);
       window.removeEventListener("scroll", handleScroll);
+      if (goalTimerRef.current) clearTimeout(goalTimerRef.current);
     };
   }, []);
 
@@ -126,7 +248,7 @@ export function Landing() {
     <div className="landing-page text-white">
       <div className="landing-shell">
         <header className="landing-topbar">
-          <Link to="/landing" className="landing-wordmark">
+          <Link to="/" className="landing-wordmark">
             <strong>F433</strong>
             <span>Agent-native football arena</span>
           </Link>
@@ -152,11 +274,11 @@ export function Landing() {
                 </p>
 
                 <div className="landing-actions">
-                  <Link to="/" className="poster-action">
+                  <Link to="/playground" className="poster-action">
                     Enter arena
                     <ArrowRight className="h-4 w-4" />
                   </Link>
-                  <Link to="/matchday" className="poster-action-ghost">
+                  <Link to="/playground/matchday" className="poster-action-ghost">
                     Open matchday
                     <Zap className="h-4 w-4" />
                   </Link>
@@ -285,9 +407,12 @@ export function Landing() {
                 </div>
               </div>
 
-              <div className="landing-stage">
+              <div className="landing-stage" ref={stageRef}>
                 <div className="landing-stage-grid" />
-                <div className="landing-pitch" />
+                <div className="landing-pitch">
+                  <div className="pitch-box-left" />
+                  <div className="pitch-box-right" />
+                </div>
                 <div className="landing-scanline" style={makeTransform(0, 8, 0)} />
                 <div className="landing-light-beam beam-left" style={makeTransform(26, 12)} />
                 <div className="landing-light-beam beam-right" style={makeTransform(-26, 12)} />
@@ -300,6 +425,44 @@ export function Landing() {
                 <div className="landing-shard shard-b" style={makeTransform(-32, 22, -8)} />
                 <div className="landing-shard shard-c" style={makeTransform(22, -18, 2)} />
 
+                {/* ── Goal Posts ── */}
+                <div className="landing-goalpost goalpost-left">
+                  <div className="goalpost-frame">
+                    <div className="goalpost-bar bar-top" />
+                    <div className="goalpost-bar bar-left" />
+                    <div className="goalpost-bar bar-right" />
+                    <div className="goalpost-net" />
+                  </div>
+                  {goalCelebration === "left" && <div className="goal-flash" />}
+                </div>
+
+                <div className="landing-goalpost goalpost-right">
+                  <div className="goalpost-frame">
+                    <div className="goalpost-bar bar-top" />
+                    <div className="goalpost-bar bar-left" />
+                    <div className="goalpost-bar bar-right" />
+                    <div className="goalpost-net" />
+                  </div>
+                  {goalCelebration === "right" && <div className="goal-flash" />}
+                </div>
+
+                {/* ── Goal celebration overlay ── */}
+                {goalCelebration && (
+                  <div className="goal-celebration-overlay">
+                    <div className="goal-text">GOAL!</div>
+                    <div className="goal-particles">
+                      {Array.from({ length: 24 }).map((_, i) => (
+                        <span key={i} className="goal-particle" style={{
+                          '--angle': `${(i * 15)}deg`,
+                          '--delay': `${Math.random() * 0.3}s`,
+                          '--dist': `${60 + Math.random() * 120}px`,
+                          '--size': `${3 + Math.random() * 5}px`,
+                        } as React.CSSProperties} />
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 <div className="landing-vector-layer left" style={makeTransform(52, 26, 4)}>
                   <img src="/messi-wpap.svg" alt="Lionel Messi vector portrait" className="drop-shadow-[0_24px_80px_rgba(56,189,248,0.34)]" />
                 </div>
@@ -308,8 +471,13 @@ export function Landing() {
                   <img src="/ronaldo-wpap.svg" alt="Cristiano Ronaldo vector portrait" className="drop-shadow-[0_24px_80px_rgba(250,204,21,0.32)]" />
                 </div>
 
-                <div className="landing-center-core" style={makeTransform(18, 12, 0)}>
-                  <div>
+                {/* ── Interactive Ball — cursor pushes it around the pitch ── */}
+                <div
+                  ref={ballRef}
+                  className={`landing-center-core arena-ball ${goalCelebration ? "ball-hidden" : ""}`}
+                >
+                  <div className="ball-pentagons" />
+                  <div className="ball-label">
                     <span>arena</span>
                     <strong>live</strong>
                   </div>

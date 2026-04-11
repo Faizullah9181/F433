@@ -2,10 +2,13 @@
 Trivia router — Locker Room gate.
 
 Generates football trivia questions via AI and records every attempt (right or wrong).
+The correct answer is NEVER sent to the client — it stays server-side.
 """
 import json
 import logging
 import random
+import time
+import uuid
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -18,6 +21,10 @@ from database.models import LockerRoomEntry
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
+# ── Server-side answer store (question_id → {answer, question, options, expires}) ──
+_pending_questions: dict[str, dict] = {}
+_QUESTION_TTL = 600  # 10 minutes
 
 # ── Fallback questions (used when AI is unavailable) ────────────
 FALLBACK_QUESTIONS = [
@@ -193,15 +200,14 @@ Rules:
 
 # ── Schemas ─────────────────────────────────────────────────────
 
-class TriviaQuestion(BaseModel):
+class TriviaQuestionResponse(BaseModel):
+    question_id: str
     question: str
     options: list[str]
 
-class TriviaAnswer(BaseModel):
+class TriviaAnswerRequest(BaseModel):
+    question_id: str
     session_id: str
-    question: str
-    options: list[str]
-    correct_answer: str
     user_answer: str
 
 class TriviaResult(BaseModel):
@@ -210,31 +216,64 @@ class TriviaResult(BaseModel):
     message: str
 
 
+def _purge_expired():
+    """Remove expired pending questions."""
+    now = time.time()
+    expired = [k for k, v in _pending_questions.items() if v["expires"] < now]
+    for k in expired:
+        del _pending_questions[k]
+
+
 # ── Endpoints ───────────────────────────────────────────────────
 
-@router.get("/question", response_model=TriviaQuestion)
+@router.get("/question", response_model=TriviaQuestionResponse)
 async def get_trivia_question():
-    """Generate a random football trivia question (AI-powered with fallback)."""
+    """Generate a random football trivia question (AI-powered with fallback).
+    The correct answer is stored server-side — only question_id is returned."""
+    _purge_expired()
+
     q = await _generate_ai_question()
     if q is None:
         q = random.choice(FALLBACK_QUESTIONS)
+
     # Shuffle options so correct answer isn't always in the same position
     options = list(q["options"])
     random.shuffle(options)
-    return TriviaQuestion(question=q["question"], options=options)
+
+    question_id = str(uuid.uuid4())
+    _pending_questions[question_id] = {
+        "question": q["question"],
+        "options": options,
+        "answer": q["answer"],
+        "expires": time.time() + _QUESTION_TTL,
+    }
+
+    return TriviaQuestionResponse(
+        question_id=question_id,
+        question=q["question"],
+        options=options,
+    )
 
 
 @router.post("/answer", response_model=TriviaResult)
-async def submit_trivia_answer(answer: TriviaAnswer, db: AsyncSession = Depends(get_db)):
-    """Check answer and record the attempt in the database."""
-    is_correct = answer.user_answer.strip().lower() == answer.correct_answer.strip().lower()
+async def submit_trivia_answer(body: TriviaAnswerRequest, db: AsyncSession = Depends(get_db)):
+    """Validate answer against the server-side stored correct answer.
+    Each question_id can only be answered once (one-shot)."""
+    pending = _pending_questions.pop(body.question_id, None)
 
+    if pending is None or pending["expires"] < time.time():
+        raise HTTPException(status_code=410, detail="Question expired or already answered. Request a new one.")
+
+    correct_answer = pending["answer"]
+    is_correct = body.user_answer.strip().lower() == correct_answer.strip().lower()
+
+    # Record every attempt in the database
     entry = LockerRoomEntry(
-        session_id=answer.session_id,
-        question=answer.question,
-        options=json.dumps(answer.options),
-        correct_answer=answer.correct_answer,
-        user_answer=answer.user_answer,
+        session_id=body.session_id,
+        question=pending["question"],
+        options=json.dumps(pending["options"]),
+        correct_answer=correct_answer,
+        user_answer=body.user_answer,
         is_correct=is_correct,
     )
     db.add(entry)
@@ -249,15 +288,15 @@ async def submit_trivia_answer(answer: TriviaAnswer, db: AsyncSession = Depends(
         ]
     else:
         messages = [
-            f"Wrong. The answer was {answer.correct_answer}. Try again, casual. ❌",
-            f"Nope — it's {answer.correct_answer}. Real fans know this. Come back when you're ready. 🚫",
-            f"Not quite. {answer.correct_answer} was the one. Football isn't for everyone. 😤",
-            f"Incorrect. The answer is {answer.correct_answer}. Study up and try again. 📚",
+            f"Wrong. The answer was {correct_answer}. Try again, casual. ❌",
+            f"Nope — it's {correct_answer}. Real fans know this. Come back when you're ready. 🚫",
+            f"Not quite. {correct_answer} was the one. Football isn't for everyone. 😤",
+            f"Incorrect. The answer is {correct_answer}. Study up and try again. 📚",
         ]
 
     return TriviaResult(
         is_correct=is_correct,
-        correct_answer=answer.correct_answer,
+        correct_answer=correct_answer,
         message=random.choice(messages),
     )
 

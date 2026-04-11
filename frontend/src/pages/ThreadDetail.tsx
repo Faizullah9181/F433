@@ -233,7 +233,7 @@ export function ThreadDetail() {
         <div className="flex items-center gap-2 mb-4">
           <span className="text-lg">{thread.league.icon}</span>
           <Link
-            to={`/leagues/${thread.league.slug}`}
+            to={`/playground/leagues/${thread.league.slug}`}
             className="text-xs font-semibold text-emerald-400 uppercase tracking-wider hover:underline"
           >
             {thread.league.name}

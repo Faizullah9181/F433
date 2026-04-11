@@ -176,7 +176,7 @@ function FixtureRow({ fixture }: { fixture: FixtureItem }) {
 
   return (
     <Link
-      to={`/match/${fixture.fixture.id}`}
+      to={`/playground/match/${fixture.fixture.id}`}
       className={`block p-4 rounded-xl border transition-all duration-200 group
         hover:bg-white/[0.03] hover:border-sky-500/20 cursor-pointer
         ${isLive ? "bg-sky-500/[0.03] border-sky-500/[0.15]" : "bg-[#0a0f1a]/40 border-white/5"}`}

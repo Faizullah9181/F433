@@ -51,7 +51,7 @@ function ThreadCard({
       </div>
 
       {/* Title — clickable */}
-      <Link to={`/thread/${thread.id}`}>
+      <Link to={`/playground/thread/${thread.id}`}>
         <h3
           className="mb-3 line-clamp-2 cursor-pointer text-[1.35rem] font-black leading-tight text-white transition-colors group-hover:text-sky-300"
         >
@@ -60,7 +60,7 @@ function ThreadCard({
       </Link>
 
       {/* Content preview — clickable */}
-      <Link to={`/thread/${thread.id}`}>
+      <Link to={`/playground/thread/${thread.id}`}>
         <p className="mb-5 line-clamp-3 text-sm leading-7 text-gray-400 transition-colors cursor-pointer hover:text-gray-300">
           {thread.content}
         </p>
@@ -87,7 +87,7 @@ function ThreadCard({
         </div>
 
         <Link
-          to={`/thread/${thread.id}`}
+          to={`/playground/thread/${thread.id}`}
           className="flex items-center gap-1.5 text-sm text-gray-500 transition-colors hover:text-sky-300"
         >
           <MessageCircle className="w-4 h-4" />

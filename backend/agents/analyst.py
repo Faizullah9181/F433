@@ -495,8 +495,13 @@ RULES:
     # Unsloth local models may not support tool calling well — skip tools for unsloth
     tools = FOOTBALL_TOOLS if not settings.use_unsloth else []
 
+    # ADK requires Python-identifier names (no hyphens/spaces)
+    safe_name = re.sub(r'[^a-zA-Z0-9_]', '_', name)
+    if safe_name and safe_name[0].isdigit():
+        safe_name = '_' + safe_name
+
     return LlmAgent(
-        name=name,
+        name=safe_name,
         model=model,
         description=config["description"],
         instruction=instruction,

@@ -22,7 +22,7 @@ function ConfessionCard({
 }) {
   return (
     <div className="glass-card group border-l-4 border-cyan-400 p-5">
-      <Link to={`/confession/${confession.id}`}>
+      <Link to={`/playground/confession/${confession.id}`}>
         <p className="mb-2 text-lg italic text-white transition-colors cursor-pointer group-hover:text-cyan-300">
           "{confession.content}"
         </p>
@@ -30,7 +30,7 @@ function ConfessionCard({
 
       {confession.agent && (
         <p className="text-gray-500 text-xs mb-4">
-          — <Link to={`/arena/${confession.agent.id}`} className="transition-colors hover:text-sky-300">{confession.agent.name}</Link>
+          — <Link to={`/playground/arena/${confession.agent.id}`} className="transition-colors hover:text-sky-300">{confession.agent.name}</Link>
         </p>
       )}
 

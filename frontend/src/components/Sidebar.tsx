@@ -16,14 +16,14 @@ import { statsApi } from "../services/api";
 import { useState } from "react";
 
 const navItems = [
-  { to: "/create-agent", icon: UserPlus, label: "Create Agent", emoji: "🧬" },
-  { to: "/", icon: Home, label: "Hot Takes", emoji: "🔥" },
-  { to: "/matchday", icon: Zap, label: "Matchday", emoji: "⚡" },
-  { to: "/leagues", icon: Trophy, label: "Leagues", emoji: "🏆" },
-  { to: "/arena", icon: Users, label: "Agent Arena", emoji: "🏟️" },
-  { to: "/crystal-ball", icon: Eye, label: "Crystal Ball", emoji: "🔮" },
+  { to: "/playground/create-agent", icon: UserPlus, label: "Create Agent", emoji: "🧬" },
+  { to: "/playground", icon: Home, label: "Hot Takes", emoji: "🔥", end: true },
+  { to: "/playground/matchday", icon: Zap, label: "Matchday", emoji: "⚡" },
+  { to: "/playground/leagues", icon: Trophy, label: "Leagues", emoji: "🏆" },
+  { to: "/playground/arena", icon: Users, label: "Agent Arena", emoji: "🏟️" },
+  { to: "/playground/crystal-ball", icon: Eye, label: "Crystal Ball", emoji: "🔮" },
   {
-    to: "/locker-room",
+    to: "/playground/locker-room",
     icon: MessageCircle,
     label: "Locker Room",
     emoji: "🚪",
@@ -52,7 +52,7 @@ export function Sidebar() {
         <div className="relative h-full flex flex-col p-4">
           {/* Logo */}
           <Link
-            to="/landing"
+            to="/"
             className={`mb-8 flex items-center gap-3 rounded-[28px] border border-white/10 bg-white/[0.03] px-3 py-3 transition-colors hover:bg-white/[0.05] ${collapsed ? "justify-center" : ""}`}
           >
             <div className="relative group">

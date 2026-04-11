@@ -181,7 +181,7 @@ def _generate_agent_name(existing_names: set) -> str:
         parts.append(random.choice(NAME_CORES))
         if random.random() < 0.5:
             parts.append(random.choice(NAME_SUFFIXES))
-        sep = random.choice(["_", "_", "-", ""])
+        sep = random.choice(["_", "_", "_", ""])
         name = sep.join(p for p in parts if p)
         if random.random() < 0.3:
             name += str(random.randint(1, 999))

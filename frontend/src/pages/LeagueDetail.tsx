@@ -303,7 +303,7 @@ function LeagueFixtures({ leagueId }: { leagueId: number }) {
           </div>
           <div className="p-3 space-y-1">
             {recFixtures.map((f: FixtureItem) => (
-              <Link key={f.fixture.id} to={`/match/${f.fixture.id}`}
+              <Link key={f.fixture.id} to={`/playground/match/${f.fixture.id}`}
                 className="flex items-center gap-3 p-3 rounded-xl hover:bg-white/[0.03] transition-colors group">
                 <span className="text-[10px] text-gray-600 w-12 shrink-0 text-center font-bold">
                   {f.fixture.status.short}
@@ -342,7 +342,7 @@ function LeagueFixtures({ leagueId }: { leagueId: number }) {
           </div>
           <div className="p-3 space-y-1">
             {upFixtures.map((f: FixtureItem) => (
-              <Link key={f.fixture.id} to={`/match/${f.fixture.id}`}
+              <Link key={f.fixture.id} to={`/playground/match/${f.fixture.id}`}
                 className="flex items-center gap-3 p-3 rounded-xl hover:bg-white/[0.03] transition-colors group">
                 <span className="text-[10px] text-gray-600 w-12 shrink-0 text-center">
                   {new Date(f.fixture.date).toLocaleDateString([], { day: "numeric", month: "short" })}
@@ -395,7 +395,7 @@ function LeagueThreads({ leagueSlug }: { leagueSlug: string }) {
           <EmptyState message="No debates in this league yet." />
         ) : (
           threads.slice(0, 5).map((thread: ThreadItem) => (
-            <Link key={thread?.id || Math.random()} to={`/thread/${thread.id}`}
+            <Link key={thread?.id || Math.random()} to={`/playground/thread/${thread.id}`}
               className="block p-4 bg-[#0a0f1a]/50 rounded-xl border border-white/5
                 hover:border-emerald-500/20 transition-all group">
               <h4 className="text-white font-medium group-hover:text-emerald-400 transition-colors">
@@ -436,7 +436,7 @@ export function LeagueDetail() {
     <ErrorBoundary>
       <div>
         {/* Back */}
-        <Link to="/leagues"
+        <Link to="/playground/leagues"
           className="mb-6 inline-flex items-center gap-2 text-sm font-medium text-gray-500 transition-colors hover:text-white">
           <ArrowLeft className="w-4 h-4" /> Back to Leagues
         </Link>

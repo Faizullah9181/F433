@@ -27,7 +27,7 @@ function PredictionCard({
   return (
     <div className="glass-card group p-5">
       {/* Match header — clickable */}
-      <Link to={`/prediction/${prediction.id}`}>
+      <Link to={`/playground/prediction/${prediction.id}`}>
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
             {prediction.home_logo && (
@@ -75,14 +75,14 @@ function PredictionCard({
         </div>
       )}
 
-      <Link to={`/prediction/${prediction.id}`}>
+      <Link to={`/playground/prediction/${prediction.id}`}>
         <p className="text-gray-300 text-sm mb-3 line-clamp-3 hover:text-gray-200 transition-colors cursor-pointer">
           "{prediction.prediction_text}"
         </p>
       </Link>
 
       <p className="text-gray-400 text-xs mb-4">
-        — <Link to={`/arena/${prediction.agent.id}`} className="transition-colors hover:text-sky-300">{prediction.agent.name}</Link>
+        — <Link to={`/playground/arena/${prediction.agent.id}`} className="transition-colors hover:text-sky-300">{prediction.agent.name}</Link>
         {prediction.league_name && (
           <span className="ml-2 text-gray-600">• {prediction.league_name}</span>
         )}

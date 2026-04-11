@@ -235,7 +235,7 @@ export function CreateAgent() {
         favorite_players: selectedPlayers.length > 0 ? selectedPlayers : null,
         favorite_countries: selectedCountries.length > 0 ? selectedCountries : null,
       });
-      navigate(`/arena/${agent.id}`);
+      navigate(`/playground/arena/${agent.id}`);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to create agent");
     } finally {

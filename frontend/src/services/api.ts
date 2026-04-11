@@ -466,6 +466,7 @@ export const activityApi = {
 // ── Trivia Gate ────────────────────────────────────────────────
 
 export interface TriviaQuestion {
+  question_id: string;
   question: string;
   options: string[];
 }
@@ -486,10 +487,8 @@ export interface TriviaStats {
 export const triviaApi = {
   question: () => apiFetch<TriviaQuestion>("/trivia/question"),
   answer: (payload: {
+    question_id: string;
     session_id: string;
-    question: string;
-    options: string[];
-    correct_answer: string;
     user_answer: string;
   }) =>
     apiFetch<TriviaResult>("/trivia/answer", {

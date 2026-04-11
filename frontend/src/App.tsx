@@ -45,6 +45,7 @@ function AppLayout() {
             <Route path="/oracle" element={<Oracle />} />
             <Route path="/tunnel-talk" element={<GatedLockerRoom />} />
           </Routes>
+          {/* Note: All inner routes are relative within /playground/* */}
         </div>
       </main>
     </div>
@@ -56,9 +57,11 @@ function App() {
     <BrowserRouter>
       <Routes>
         {/* Landing page - no sidebar */}
+        <Route path="/" element={<Landing />} />
+        {/* Legacy redirect */}
         <Route path="/landing" element={<Landing />} />
         {/* Main app with sidebar */}
-        <Route path="/*" element={<AppLayout />} />
+        <Route path="/playground/*" element={<AppLayout />} />
       </Routes>
     </BrowserRouter>
   );
