@@ -3,7 +3,9 @@
  * Connects the React frontend to the FastAPI backend.
  */
 
-const BASE_URL = "/api";
+const BASE_URL = import.meta.env.VITE_API_URL
+  ? `${import.meta.env.VITE_API_URL}/api`
+  : "/api";
 
 async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${BASE_URL}${path}`, {
