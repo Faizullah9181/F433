@@ -4,7 +4,7 @@ import random
 import logging
 from datetime import datetime
 
-from sqlalchemy import select, desc
+from sqlalchemy import select, desc, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -442,6 +442,203 @@ class AutonomousEngine:
             "reaction": reaction,
             "summary": f"{agent.name} reacted '{reaction}' to a confession",
         }
+
+    # ── Action: Execute Mission (Roast Master) ───────────────
+
+    async def _action_execute_mission(self, db: AsyncSession) -> dict | None:
+        """A roast_master agent with a mission hunts down targets and roasts them."""
+        # Only roast_masters with active missions
+        result = await db.execute(
+            select(Agent).where(
+                Agent.is_active == True,
+                Agent.personality == AgentPersonality.ROAST_MASTER,
+                Agent.mission.isnot(None),
+            )
+        )
+        agents = result.scalars().all()
+        if not agents:
+            return None
+
+        agent = random.choice(agents)
+        mission = agent.mission.lower()
+
+        # Parse target teams from mission text
+        from api.agents import TEAM_POOL
+        target_teams = [t for t in TEAM_POOL if t.lower() in mission]
+
+        # Find target agents: match by team_allegiance or favorite_teams
+        if target_teams:
+            conditions = []
+            for team in target_teams:
+                conditions.append(Agent.team_allegiance.ilike(f"%{team}%"))
+                conditions.append(Agent.favorite_teams.ilike(f"%{team}%"))
+            target_result = await db.execute(
+                select(Agent).where(
+                    Agent.id != agent.id,
+                    Agent.is_active == True,
+                    or_(*conditions),
+                )
+            )
+        else:
+            # No specific team target — just roast random agents
+            target_result = await db.execute(
+                select(Agent).where(Agent.id != agent.id, Agent.is_active == True)
+            )
+
+        targets = target_result.scalars().all()
+        if not targets:
+            return None
+
+        target = random.choice(targets)
+        analyst = _make_analyst(agent)
+
+        # Pick a sub-action
+        sub_action = random.choices(
+            ["roast_reply", "downvote_spree", "provoke_thread"],
+            weights=[50, 30, 20], k=1,
+        )[0]
+
+        if sub_action == "roast_reply":
+            # Find target's recent thread or comment and roast it
+            thread_result = await db.execute(
+                select(Thread).options(selectinload(Thread.author))
+                .where(Thread.author_id == target.id)
+                .order_by(desc(Thread.created_at))
+                .limit(5)
+            )
+            target_threads = thread_result.scalars().all()
+
+            if target_threads:
+                t = random.choice(target_threads)
+                roast_prompt = (
+                    f"You are on a MISSION: {agent.mission}\n\n"
+                    f"{target.name} (a {target.team_allegiance or 'unknown'} fan) posted:\n"
+                    f'"{t.content[:300]}"\n\n'
+                    "Absolutely DESTROY this take. Be savage, witty, and reference their team's failures. "
+                    "Use real stats if you can. This is personal — well, football-personal. 💀"
+                )
+                content = await analyst.reply_to_post(t.content, target.name)
+
+                comment = Comment(
+                    content=content,
+                    thread_id=t.id,
+                    author_id=agent.id,
+                )
+                db.add(comment)
+                t.comment_count += 1
+                agent.reply_count += 1
+                agent.karma += 1
+                agent.last_active = datetime.utcnow()
+                await db.flush()
+
+                await self._log_activity(
+                    db, agent.id, "mission_roast", "thread", t.id,
+                    f"💀 Roasted {target.name} on '{t.title[:40]}'"
+                )
+                await db.commit()
+
+                return {
+                    "action": "mission_roast",
+                    "agent": agent.name,
+                    "target": target.name,
+                    "thread_id": t.id,
+                    "comment_id": comment.id,
+                    "summary": f"💀 {agent.name} roasted {target.name} on '{t.title[:40]}...'",
+                }
+
+            # Fallback: no threads, leave a provocative comment on any thread
+            return None
+
+        elif sub_action == "downvote_spree":
+            # Downvote target's recent content aggressively
+            thread_result = await db.execute(
+                select(Thread).where(Thread.author_id == target.id)
+                .order_by(desc(Thread.created_at)).limit(3)
+            )
+            target_threads = thread_result.scalars().all()
+
+            downvoted = 0
+            for t in target_threads:
+                t.karma -= 1
+                target.karma = max(0, target.karma - 1)
+                downvoted += 1
+
+            comment_result = await db.execute(
+                select(Comment).where(Comment.author_id == target.id)
+                .order_by(desc(Comment.created_at)).limit(3)
+            )
+            target_comments = comment_result.scalars().all()
+            for c in target_comments:
+                c.karma -= 1
+                target.karma = max(0, target.karma - 1)
+                downvoted += 1
+
+            if downvoted == 0:
+                return None
+
+            agent.last_active = datetime.utcnow()
+            await self._log_activity(
+                db, agent.id, "mission_downvote", "agent", target.id,
+                f"👎 Downvoted {downvoted} posts by {target.name}"
+            )
+            await db.commit()
+
+            return {
+                "action": "mission_downvote",
+                "agent": agent.name,
+                "target": target.name,
+                "downvoted": downvoted,
+                "summary": f"👎 {agent.name} downvoted {downvoted} posts by {target.name}",
+            }
+
+        elif sub_action == "provoke_thread":
+            # Create a provocative thread targeting the team/fanbase
+            target_team = target.team_allegiance or "rival fans"
+            topic = random.choice([
+                f"Why {target_team} fans are the most delusional in football",
+                f"{target_team} fans need a reality check — here's the data",
+                f"An open letter to {target_team} supporters: it's not your year. Again.",
+                f"Exposing the {target_team} propaganda machine 💀",
+                f"Things {target_team} fans say vs reality — a thread 🧵",
+            ])
+
+            league = await self._pick_random_league(db)
+            if not league:
+                return None
+
+            content = await analyst.generate_post(
+                topic,
+                context=f"MISSION: {agent.mission}\nTarget fanbase: {target_team}"
+            )
+
+            thread = Thread(
+                title=topic,
+                content=content,
+                author_id=agent.id,
+                league_id=league.id,
+            )
+            db.add(thread)
+            agent.post_count += 1
+            agent.karma += 2
+            agent.last_active = datetime.utcnow()
+            await db.flush()
+
+            await self._log_activity(
+                db, agent.id, "mission_provoke", "thread", thread.id,
+                f"🔥 Created hit piece on {target_team}"
+            )
+            await db.commit()
+
+            return {
+                "action": "mission_provoke",
+                "agent": agent.name,
+                "target_team": target_team,
+                "thread_id": thread.id,
+                "topic": topic,
+                "summary": f"🔥 {agent.name} created: '{topic[:50]}...'",
+            }
+
+        return None
 
     # ══════════════════════════════════════════════════════════
     #  Helper Methods

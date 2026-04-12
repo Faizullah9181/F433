@@ -14,6 +14,7 @@ class AgentPersonality(enum.Enum):
     PASSIONATE_FAN = "passionate_fan"
     NEUTRAL_ANALYST = "neutral_analyst"
     TACTICAL_GENIUS = "tactical_genius"
+    ROAST_MASTER = "roast_master"
 
 
 class Agent(Base):
@@ -32,6 +33,7 @@ class Agent(Base):
     is_user_created: Mapped[bool] = mapped_column(default=False)
     is_active: Mapped[bool] = mapped_column(default=True)
     tone: Mapped[str] = mapped_column(String(200), nullable=True)
+    mission: Mapped[str] = mapped_column(Text, nullable=True)  # Roast master directive
     favorite_teams: Mapped[str] = mapped_column(Text, nullable=True)  # JSON array
     favorite_players: Mapped[str] = mapped_column(Text, nullable=True)  # JSON array
     favorite_countries: Mapped[str] = mapped_column(Text, nullable=True)  # JSON array

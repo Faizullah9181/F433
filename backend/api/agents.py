@@ -44,11 +44,11 @@ TEAM_POOL = [
 ]
 
 PERSONALITY_INFO = {
-    "stats_nerd": {
-        "label": "Stats Analyst",
-        "emoji": "📊",
-        "description": "Data-obsessed. Backs every argument with xG, metrics, and advanced analytics.",
-        "tone_hint": "e.g. 'Condescending data professor', 'Chill numbers guy'",
+    "roast_master": {
+        "label": "Roast Master",
+        "emoji": "💀",
+        "description": "Savage banter merchant. Give it a target and watch it hunt down rival fans with devastating burns.",
+        "tone_hint": "e.g. 'Ruthless meme lord', 'Deadpan savage'",
     },
     "passionate_fan": {
         "label": "Die-Hard Fan",
@@ -114,6 +114,7 @@ class AgentCreate(BaseModel):
     bio: str | None = None
     avatar_emoji: str | None = "🤖"
     tone: str | None = None
+    mission: str | None = None
     favorite_teams: list[str] | None = None
     favorite_players: list[str] | None = None
     favorite_countries: list[str] | None = None
@@ -155,6 +156,7 @@ class AgentResponse(BaseModel):
     is_user_created: bool = False
     is_active: bool = True
     tone: str | None = None
+    mission: str | None = None
     favorite_teams: list[str] | None = None
     favorite_players: list[str] | None = None
     favorite_countries: list[str] | None = None
@@ -176,6 +178,7 @@ class AgentResponse(BaseModel):
             "is_user_created": getattr(agent, "is_user_created", False),
             "is_active": getattr(agent, "is_active", True),
             "tone": getattr(agent, "tone", None),
+            "mission": getattr(agent, "mission", None),
             "favorite_teams": json.loads(agent.favorite_teams) if getattr(agent, "favorite_teams", None) else None,
             "favorite_players": json.loads(agent.favorite_players) if getattr(agent, "favorite_players", None) else None,
             "favorite_countries": json.loads(agent.favorite_countries) if getattr(agent, "favorite_countries", None) else None,
@@ -381,6 +384,7 @@ async def create_agent(agent: AgentCreate, db: AsyncSession = Depends(get_db)):
         bio=agent.bio,
         avatar_emoji=agent.avatar_emoji or "🤖",
         tone=agent.tone,
+        mission=agent.mission,
         favorite_teams=json.dumps(agent.favorite_teams) if agent.favorite_teams else None,
         favorite_players=json.dumps(agent.favorite_players) if agent.favorite_players else None,
         favorite_countries=json.dumps(agent.favorite_countries) if agent.favorite_countries else None,
@@ -427,3 +431,62 @@ async def deactivate_agent(agent_id: int, db: AsyncSession = Depends(get_db)):
     await db.commit()
 
     return {"message": f"{agent.name} has been benched.", "is_active": False}
+
+
+class MissionPayload(BaseModel):
+    mission: str
+
+
+@router.post("/{agent_id}/mission")
+async def set_mission(agent_id: int, payload: MissionPayload, db: AsyncSession = Depends(get_db)):
+    """Assign a targeted mission to a roast_master agent."""
+    result = await db.execute(select(Agent).where(Agent.id == agent_id))
+    agent = result.scalar_one_or_none()
+    if not agent:
+        raise HTTPException(status_code=404, detail="Agent not found")
+
+    agent.mission = payload.mission
+    agent.last_active = datetime.utcnow()
+    await db.commit()
+
+    return {
+        "message": f"💀 Mission assigned to {agent.name}: {payload.mission[:80]}",
+        "mission": agent.mission,
+    }
+
+
+@router.get("/{agent_id}/mission/feed")
+async def mission_feed(agent_id: int, limit: int = 30, db: AsyncSession = Depends(get_db)):
+    """Get the live mission activity feed for an agent — recent targeted actions."""
+    from db.models import AgentActivity
+    from sqlalchemy import desc
+
+    result = await db.execute(select(Agent).where(Agent.id == agent_id))
+    agent = result.scalar_one_or_none()
+    if not agent:
+        raise HTTPException(status_code=404, detail="Agent not found")
+
+    activity_result = await db.execute(
+        select(AgentActivity)
+        .where(AgentActivity.agent_id == agent_id)
+        .order_by(desc(AgentActivity.created_at))
+        .limit(min(limit, 100))
+    )
+    activities = activity_result.scalars().all()
+
+    return {
+        "agent_name": agent.name,
+        "mission": agent.mission,
+        "is_active": agent.is_active,
+        "feed": [
+            {
+                "id": a.id,
+                "action": a.action_type,
+                "target_type": a.target_type,
+                "target_id": a.target_id,
+                "detail": a.detail,
+                "created_at": a.created_at,
+            }
+            for a in activities
+        ],
+    }

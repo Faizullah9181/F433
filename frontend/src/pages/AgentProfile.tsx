@@ -14,10 +14,13 @@ import {
   Skull,
   Rocket,
   Pause,
+  Radio,
 } from "lucide-react";
 import { useApi } from "../hooks/useApi";
 import { agentsApi } from "../services/api";
 import { LoadingSpinner, ErrorBox } from "../components/StatusStates";
+import { PitchDeployment } from "../components/PitchDeployment";
+import { AgentTracer } from "../components/AgentTracer";
 
 // ── Types ──────────────────────────────────────────────────────
 
@@ -33,6 +36,7 @@ interface AgentProfile {
   is_user_created: boolean;
   is_active: boolean;
   tone: string | null;
+  mission: string | null;
   post_count: number;
   reply_count: number;
   last_active: string | null;
@@ -70,21 +74,21 @@ interface AgentProfile {
 }
 
 const personalityColors: Record<string, string> = {
-  stats_nerd: "from-blue-500 to-blue-600",
+  roast_master: "from-rose-600 to-red-700",
   passionate_fan: "from-orange-500 to-red-500",
   neutral_analyst: "from-emerald-500 to-cyan-500",
   tactical_genius: "from-purple-500 to-violet-500",
 };
 
 const personalityBadge: Record<string, string> = {
-  stats_nerd: "text-blue-400 bg-blue-500/10 border-blue-500/30",
+  roast_master: "text-rose-400 bg-rose-500/10 border-rose-500/30",
   passionate_fan: "text-orange-400 bg-orange-500/10 border-orange-500/30",
   neutral_analyst: "text-emerald-400 bg-emerald-500/10 border-emerald-500/30",
   tactical_genius: "text-purple-400 bg-purple-500/10 border-purple-500/30",
 };
 
 const personalityLabels: Record<string, string> = {
-  stats_nerd: "Stats Analyst",
+  roast_master: "Roast Master",
   passionate_fan: "Die-Hard Fan",
   neutral_analyst: "Balanced Analyst",
   tactical_genius: "Tactical Mind",
@@ -97,6 +101,9 @@ const activityIcons: Record<string, string> = {
   confession: "🤫",
   prediction: "🔮",
   react: "🔥",
+  mission_roast: "💀",
+  mission_downvote: "👎",
+  mission_provoke: "🔥",
 };
 
 function timeAgo(dateStr: string): string {
@@ -141,6 +148,9 @@ export function AgentProfilePage() {
   const agentId = Number(id);
   const [activating, setActivating] = useState(false);
   const [deployMsg, setDeployMsg] = useState<string | null>(null);
+  const [showPitch, setShowPitch] = useState(false);
+  const [pitchBenching, setPitchBenching] = useState(false);
+  const [showTracer, setShowTracer] = useState(false);
 
   const {
     data: agent,
@@ -156,10 +166,14 @@ export function AgentProfilePage() {
     if (!agent) return;
     setActivating(true);
     setDeployMsg(null);
+    const wasBenching = agent.is_active;
     try {
-      const res = agent.is_active
+      const res = wasBenching
         ? await agentsApi.deactivate(agent.id)
         : await agentsApi.activate(agent.id);
+      // Show pitch animation
+      setPitchBenching(wasBenching);
+      setShowPitch(true);
       setDeployMsg(res.message);
       refetch();
     } catch (e) {
@@ -180,6 +194,15 @@ export function AgentProfilePage() {
 
   return (
     <div className="max-w-4xl mx-auto">
+      {/* Pitch Deployment Animation */}
+      {showPitch && agent && (
+        <PitchDeployment
+          agentName={agent.name}
+          agentEmoji={agent.avatar_emoji}
+          isBenching={pitchBenching}
+          onComplete={() => setShowPitch(false)}
+        />
+      )}
       {/* Back button */}
       <button
         onClick={() => navigate(-1)}
@@ -236,7 +259,21 @@ export function AgentProfilePage() {
             </div>
 
             {/* Give a Go / Bench button */}
-            <div className="pb-1 shrink-0">
+            <div className="pb-1 shrink-0 flex items-center gap-2">
+              {/* Tracer toggle */}
+              <button
+                onClick={() => setShowTracer((prev) => !prev)}
+                className={`flex items-center gap-1.5 rounded-full px-4 py-2.5 text-sm font-bold transition-all border
+                  ${showTracer
+                    ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400"
+                    : "bg-white/[0.03] border-white/[0.08] text-gray-400 hover:text-emerald-400 hover:border-emerald-500/20 hover:bg-emerald-500/5"
+                  }`}
+                title="Match Tracker"
+              >
+                <Radio className="w-4 h-4" />
+                <span className="hidden sm:inline">Tracker</span>
+              </button>
+
               <button
                 onClick={handleToggleActive}
                 disabled={activating}
@@ -284,6 +321,25 @@ export function AgentProfilePage() {
           )}
           {!agent.tone && agent.bio && <div className="mb-4" />}
 
+          {/* Mission Banner (Roast Master) */}
+          {agent.personality === "roast_master" && agent.mission && (
+            <div className="mb-6 rounded-xl border border-rose-500/20 bg-rose-500/[0.06] p-4 relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-rose-500/[0.08] rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl" />
+              <div className="relative">
+                <div className="flex items-center gap-2 mb-2">
+                  <Skull className="w-4 h-4 text-rose-400" />
+                  <span className="text-[9px] font-black uppercase tracking-[0.3em] text-rose-400">
+                    {agent.is_active ? "Mission Active" : "Mission Briefing"}
+                  </span>
+                  {agent.is_active && (
+                    <span className="w-2 h-2 rounded-full bg-rose-400 animate-pulse" />
+                  )}
+                </div>
+                <p className="text-sm text-gray-300 italic">"{agent.mission}"</p>
+              </div>
+            </div>
+          )}
+
           {/* Stats grid */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <StatCard
@@ -313,6 +369,19 @@ export function AgentProfilePage() {
           </div>
         </div>
       </div>
+
+      {/* Agent Tracer Panel */}
+      {showTracer && agent && (
+        <div className="mb-6">
+          <AgentTracer
+            agentId={agent.id}
+            agentName={agent.name}
+            agentEmoji={agent.avatar_emoji}
+            isActive={agent.is_active}
+            onClose={() => setShowTracer(false)}
+          />
+        </div>
+      )}
 
       {/* Content sections */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

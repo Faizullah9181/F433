@@ -20,11 +20,11 @@ const PERSONALITY_THEME: Record<
   string,
   { gradient: string; glow: string; ring: string; accent: string }
 > = {
-  stats_nerd: {
-    gradient: "from-cyan-500/20 via-blue-600/15 to-indigo-700/20",
-    glow: "rgba(6,182,212,0.35)",
-    ring: "ring-cyan-400/70",
-    accent: "text-cyan-300",
+  roast_master: {
+    gradient: "from-rose-600/20 via-red-700/15 to-orange-800/20",
+    glow: "rgba(225,29,72,0.35)",
+    ring: "ring-rose-400/70",
+    accent: "text-rose-300",
   },
   passionate_fan: {
     gradient: "from-rose-500/20 via-orange-500/15 to-amber-600/20",
@@ -53,6 +53,12 @@ const STEP_LABELS: Record<Step, string> = {
   personality: "ARCHETYPE",
   identity: "IDENTITY",
   allegiance: "ALLEGIANCE",
+  deploy: "DEPLOY",
+};
+const ROAST_STEP_LABELS: Record<Step, string> = {
+  personality: "ARCHETYPE",
+  identity: "IDENTITY",
+  allegiance: "TARGET",
   deploy: "DEPLOY",
 };
 
@@ -178,6 +184,7 @@ export function CreateAgent() {
   const [bio, setBio] = useState("");
   const [tone, setTone] = useState("");
   const [avatar, setAvatar] = useState("🤖");
+  const [mission, setMission] = useState("");
 
   /* multi-select */
   const [selectedTeams, setSelectedTeams] = useState<string[]>([]);
@@ -234,6 +241,7 @@ export function CreateAgent() {
         favorite_teams: selectedTeams.length > 0 ? selectedTeams : null,
         favorite_players: selectedPlayers.length > 0 ? selectedPlayers : null,
         favorite_countries: selectedCountries.length > 0 ? selectedCountries : null,
+        mission: personality === "roast_master" && mission.trim() ? mission.trim() : null,
       });
       navigate(`/playground/arena/${agent.id}`);
     } catch (e) {
@@ -330,7 +338,7 @@ export function CreateAgent() {
                     className={`text-[9px] font-black tracking-[0.25em] transition-colors duration-300
                       ${isDone ? "text-cyan-400/60" : isActive ? "text-white/80" : "text-gray-700"}`}
                   >
-                    {STEP_LABELS[s]}
+                    {(personality === "roast_master" ? ROAST_STEP_LABELS : STEP_LABELS)[s]}
                   </span>
                 </div>
                 <div
@@ -576,15 +584,86 @@ export function CreateAgent() {
            ═══════════════════════════════════════════════════ */}
         {step === "allegiance" && (
           <div className="animate-[fadeIn_0.4s_ease-out]">
-            <div className="mb-6">
-              <h2 className="text-xl font-black text-white tracking-tight">
-                Declare Allegiances
-              </h2>
-              <p className="text-xs text-gray-500 mt-1">
-                Pick the teams, players, and countries your agent cares about.
-                All optional — neutral agents can skip ahead.
-              </p>
-            </div>
+            {personality === "roast_master" ? (
+              /* ── ROAST MASTER: TARGET STEP ── */
+              <>
+                <div className="mb-6">
+                  <h2 className="text-xl font-black text-white tracking-tight">
+                    💀 Set Your Target
+                  </h2>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Arm your agent with a mission. Tell it who to hunt, roast, and destroy.
+                  </p>
+                </div>
+
+                {/* Mission directive */}
+                <div className="mb-6">
+                  <label className="block text-[10px] font-black uppercase tracking-[0.3em] text-rose-400 mb-2">
+                    Mission Directive <span className="text-rose-300">*</span>
+                  </label>
+                  <textarea
+                    value={mission}
+                    onChange={(e) => setMission(e.target.value)}
+                    placeholder="e.g. Hunt down all Barcelona fans and expose their delusions. Go after anyone who thinks Pedri is world-class."
+                    maxLength={500}
+                    rows={3}
+                    className="w-full rounded-xl border border-rose-500/20 bg-rose-500/[0.04] px-4 py-3
+                      text-white text-sm placeholder-gray-600
+                      focus:outline-none focus:border-rose-400/40 focus:bg-rose-500/[0.06]
+                      focus:shadow-[0_0_20px_rgba(225,29,72,0.15)]
+                      transition-all duration-300 resize-none"
+                  />
+                  <p className="text-[10px] text-gray-600 mt-1.5 flex items-center justify-between">
+                    <span>Your agent will autonomously find targets matching this directive and roast them.</span>
+                    <span className="tabular-nums">{mission.length}/500</span>
+                  </p>
+                </div>
+
+                {/* Target teams (still useful for matching) */}
+                <div className="mb-4">
+                  <label className="block text-[10px] font-black uppercase tracking-[0.3em] text-gray-500 mb-2">
+                    Target Fanbases <span className="text-gray-600">(optional — helps targeting)</span>
+                  </label>
+                  <ChipSelector
+                    items={teamPool}
+                    selected={selectedTeams}
+                    onToggle={(item) => toggleItem(selectedTeams, setSelectedTeams, item, 5)}
+                    searchPlaceholder="Search target fanbases..."
+                    maxSelect={5}
+                    accentColor="rose"
+                  />
+                </div>
+
+                {/* Preview */}
+                {mission && (
+                  <div className="mt-6 rounded-xl border border-rose-500/20 bg-rose-500/[0.05] p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-lg">💀</span>
+                      <p className="text-[9px] font-black uppercase tracking-[0.3em] text-rose-400">
+                        Mission Briefing
+                      </p>
+                    </div>
+                    <p className="text-sm text-gray-300 italic">"{mission}"</p>
+                    {selectedTeams.length > 0 && (
+                      <p className="text-[11px] text-rose-300/70 mt-2">
+                        Targets: {selectedTeams.join(", ")} fans
+                      </p>
+                    )}
+                  </div>
+                )}
+              </>
+            ) : (
+              /* ── NORMAL: ALLEGIANCE STEP ── */
+              <>
+                <div className="mb-6">
+                  <h2 className="text-xl font-black text-white tracking-tight">
+                    Declare Allegiances
+                  </h2>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Pick the teams, players, and countries your agent cares about.
+                    All optional — neutral agents can skip ahead.
+                  </p>
+                </div>
 
             {/* Tab bar */}
             <div className="flex gap-1 mb-6 p-1 rounded-xl bg-white/[0.03] border border-white/[0.06]">
@@ -675,6 +754,8 @@ export function CreateAgent() {
                 </div>
               </div>
             )}
+              </>
+            )}
           </div>
         )}
 
@@ -759,6 +840,24 @@ export function CreateAgent() {
                     </div>
                   )}
                 </div>
+
+                {/* Mission briefing (roast_master) */}
+                {personality === "roast_master" && mission && (
+                  <div className="rounded-xl border border-rose-500/20 bg-rose-500/[0.06] p-4 mb-6">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-lg">💀</span>
+                      <p className="text-[9px] font-black uppercase tracking-[0.2em] text-rose-400">
+                        Mission Directive
+                      </p>
+                    </div>
+                    <p className="text-xs text-gray-300 italic leading-relaxed">"{mission}"</p>
+                    {selectedTeams.length > 0 && (
+                      <p className="text-[10px] text-rose-400/60 mt-2">
+                        Targeting: {selectedTeams.join(", ")} fanbases
+                      </p>
+                    )}
+                  </div>
+                )}
 
                 {/* Status line */}
                 <div className="flex items-center gap-2 text-[10px] text-gray-600 border-t border-white/[0.06] pt-4">

@@ -1,0 +1,26 @@
+[MAIN]
+# Specify a configuration file.
+# ignore patterns, paths or module names
+ignore-patterns=test_*,*_test.py
+
+[MESSAGES CONTROL]
+# Disable specific messages here
+disable=
+    C0114,  # missing-module-docstring
+    C0115,  # missing-class-docstring
+    C0116,  # missing-function-docstring
+
+[FORMAT]
+# Maximum number of characters on a single line.
+max-line-length=120
+
+[DESIGN]
+# Maximum number of arguments for function / method.
+max-args=10
+
+# Maximum number of attributes for a class.
+max-attributes=15
+
+[SIMILARITIES]
+# Minimum lines number of a similarity.
+min-similarity-lines=10

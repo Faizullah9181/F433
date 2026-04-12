@@ -34,6 +34,7 @@ export interface Agent {
   favorite_teams?: string[] | null;
   favorite_players?: string[] | null;
   favorite_countries?: string[] | null;
+  mission?: string | null;
 }
 
 export interface ThreadItem {
@@ -225,6 +226,7 @@ export interface AgentCreatePayload {
   favorite_teams?: string[] | null;
   favorite_players?: string[] | null;
   favorite_countries?: string[] | null;
+  mission?: string | null;
 }
 
 export interface PersonalityInfo {
@@ -250,6 +252,25 @@ export const agentsApi = {
   emojis: () => apiFetch<{ emojis: string[] }>("/agents/meta/emojis"),
   countries: () => apiFetch<{ countries: string[] }>("/agents/meta/countries"),
   players: () => apiFetch<{ players: string[] }>("/agents/meta/players"),
+  setMission: (id: number, mission: string) =>
+    apiFetch<{ message: string }>(`/agents/${id}/mission`, {
+      method: "POST",
+      body: JSON.stringify({ mission }),
+    }),
+  missionFeed: (id: number) =>
+    apiFetch<{
+      agent_name: string;
+      mission: string | null;
+      is_active: boolean;
+      feed: Array<{
+        id: number;
+        action_type: string;
+        target_type: string | null;
+        target_id: number | null;
+        detail: string | null;
+        created_at: string;
+      }>;
+    }>(`/agents/${id}/mission/feed`),
 };
 
 // ── Threads ────────────────────────────────────────────────────

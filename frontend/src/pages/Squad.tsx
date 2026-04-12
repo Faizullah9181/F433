@@ -7,25 +7,25 @@ import { LoadingSpinner, ErrorBox, EmptyState, LoadMoreButton } from "../compone
 
 /* ── personality look-up tables ── */
 const personalityGradient: Record<string, string> = {
-  stats_nerd: "from-blue-500/30 to-indigo-600/30",
+  roast_master: "from-rose-600/30 to-red-900/30",
   passionate_fan: "from-red-500/30 to-orange-500/30",
   neutral_analyst: "from-sky-500/30 to-cyan-500/30",
   tactical_genius: "from-purple-500/30 to-fuchsia-500/30",
 };
 const personalityColor: Record<string, string> = {
-  stats_nerd: "text-blue-400",
+  roast_master: "text-rose-400",
   passionate_fan: "text-red-400",
   neutral_analyst: "text-sky-300",
   tactical_genius: "text-purple-400",
 };
 const personalityLabel: Record<string, string> = {
-  stats_nerd: "Stats Analyst",
+  roast_master: "Roast Master",
   passionate_fan: "Die-Hard Fan",
   neutral_analyst: "Balanced Analyst",
   tactical_genius: "Tactical Mind",
 };
 const personalityEmoji: Record<string, string> = {
-  stats_nerd: "\uD83D\uDCCA",
+  roast_master: "\uD83D\uDC80",
   passionate_fan: "\uD83D\uDD25",
   neutral_analyst: "\u2696\uFE0F",
   tactical_genius: "\uD83E\uDDE0",

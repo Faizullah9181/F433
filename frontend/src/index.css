@@ -3162,3 +3162,486 @@ body {
   opacity: 0.5;
   pointer-events: none;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PITCH DEPLOYMENT ANIMATION
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.pitch-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: pitch-overlay-in 0.4s ease-out;
+}
+
+@keyframes pitch-overlay-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.pitch-overlay.closing {
+  animation: pitch-overlay-out 0.6s ease-in forwards;
+}
+
+@keyframes pitch-overlay-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+.pitch-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(2, 6, 15, 0.92);
+  backdrop-filter: blur(12px);
+}
+
+.pitch-field {
+  position: relative;
+  width: min(560px, 90vw);
+  aspect-ratio: 1.6;
+  border-radius: 1.5rem;
+  background: linear-gradient(180deg, #0d4a1e 0%, #0a3a17 30%, #0d4a1e 50%, #0a3a17 70%, #0d4a1e 100%);
+  border: 3px solid rgba(255, 255, 255, 0.35);
+  overflow: hidden;
+  box-shadow:
+    0 0 60px rgba(16, 185, 129, 0.3),
+    0 0 120px rgba(16, 185, 129, 0.15),
+    inset 0 0 80px rgba(0, 0, 0, 0.3);
+  animation: pitch-appear 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes pitch-appear {
+  from { transform: scale(0.7) rotateX(15deg); opacity: 0; }
+  to { transform: scale(1) rotateX(0); opacity: 1; }
+}
+
+/* Grass stripes */
+.pitch-field::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    180deg,
+    transparent 0px,
+    transparent 40px,
+    rgba(255, 255, 255, 0.03) 40px,
+    rgba(255, 255, 255, 0.03) 80px
+  );
+}
+
+/* Center line + circle */
+.pitch-center-line {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.pitch-center-circle {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 90px;
+  height: 90px;
+  transform: translate(-50%, -50%);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+}
+
+.pitch-center-dot {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 6px;
+  height: 6px;
+  transform: translate(-50%, -50%);
+  background: rgba(255, 255, 255, 0.4);
+  border-radius: 50%;
+}
+
+/* Penalty areas */
+.pitch-box-left {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 16%;
+  height: 55%;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-left: none;
+}
+
+.pitch-box-right {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 16%;
+  height: 55%;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-right: none;
+}
+
+/* Goal areas */
+.pitch-goal-left {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 6%;
+  height: 28%;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-left: none;
+}
+
+.pitch-goal-right {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 6%;
+  height: 28%;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-right: none;
+}
+
+/* Corner arcs */
+.pitch-corner-tl, .pitch-corner-tr, .pitch-corner-bl, .pitch-corner-br {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.25);
+}
+.pitch-corner-tl { top: -2px; left: -2px; border-radius: 0 0 100% 0; border-top: none; border-left: none; }
+.pitch-corner-tr { top: -2px; right: -2px; border-radius: 0 0 0 100%; border-top: none; border-right: none; }
+.pitch-corner-bl { bottom: -2px; left: -2px; border-radius: 0 100% 0 0; border-bottom: none; border-left: none; }
+.pitch-corner-br { bottom: -2px; right: -2px; border-radius: 100% 0 0 0; border-bottom: none; border-right: none; }
+
+/* Player entry animation */
+.pitch-player {
+  position: absolute;
+  bottom: -60px;
+  left: 50%;
+  transform: translateX(-50%);
+  animation: player-run-on 1.6s cubic-bezier(0.22, 0.61, 0.36, 1) 0.5s forwards;
+  z-index: 10;
+}
+
+@keyframes player-run-on {
+  0% { bottom: -60px; transform: translateX(-50%) scale(1.8); opacity: 0; }
+  20% { bottom: 10%; transform: translateX(-50%) scale(1.4); opacity: 1; }
+  60% { bottom: 45%; transform: translateX(-50%) scale(1.1); }
+  80% { bottom: 48%; transform: translateX(-50%) scale(1); }
+  100% { bottom: 42%; transform: translateX(-50%) scale(1); }
+}
+
+.pitch-player-avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  background: radial-gradient(circle, rgba(16, 185, 129, 0.3), rgba(6, 182, 212, 0.15));
+  border: 2px solid rgba(16, 185, 129, 0.6);
+  box-shadow:
+    0 0 20px rgba(16, 185, 129, 0.5),
+    0 0 40px rgba(16, 185, 129, 0.2);
+  animation: player-glow 1.5s ease-in-out infinite 2.2s;
+}
+
+@keyframes player-glow {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(16, 185, 129, 0.5), 0 0 40px rgba(16, 185, 129, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(16, 185, 129, 0.7), 0 0 60px rgba(16, 185, 129, 0.35), 0 0 80px rgba(6, 182, 212, 0.2);
+  }
+}
+
+/* Player shadow on pitch */
+.pitch-player-shadow {
+  position: absolute;
+  bottom: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 40px;
+  height: 10px;
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 50%;
+  filter: blur(3px);
+}
+
+/* Benching: player walks off */
+.pitch-player-bench {
+  position: absolute;
+  bottom: 42%;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  animation: player-bench-off 1.2s ease-in 0.4s forwards;
+}
+
+@keyframes player-bench-off {
+  0% { bottom: 42%; transform: translateX(-50%) scale(1); opacity: 1; }
+  40% { bottom: 30%; transform: translateX(-50%) scale(1.1); opacity: 1; }
+  100% { bottom: -60px; transform: translateX(-50%) scale(1.6); opacity: 0; }
+}
+
+/* Player name tag */
+.pitch-player-name {
+  position: absolute;
+  top: -32px;
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.1rem;
+  letter-spacing: 0.12em;
+  color: white;
+  text-shadow: 0 0 12px rgba(16, 185, 129, 0.6);
+  animation: name-fade 0.4s ease-out 2s backwards;
+}
+
+@keyframes name-fade {
+  from { opacity: 0; transform: translateX(-50%) translateY(8px); }
+  to { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+/* Pitch status text */
+.pitch-status {
+  position: absolute;
+  top: 12%;
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+  z-index: 10;
+}
+
+.pitch-status-text {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.6rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.9);
+  text-shadow: 0 0 20px rgba(16, 185, 129, 0.5);
+  animation: status-in 0.5s ease-out 1.8s backwards;
+}
+
+@keyframes status-in {
+  from { opacity: 0; transform: scale(0.8); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.pitch-status-sub {
+  font-size: 0.7rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: rgba(16, 185, 129, 0.7);
+  margin-top: 4px;
+  animation: status-in 0.5s ease-out 2.2s backwards;
+}
+
+/* Crowd particles */
+.pitch-particles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.pitch-particle {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  animation: particle-rise 2s ease-out forwards;
+  opacity: 0;
+}
+
+@keyframes particle-rise {
+  0% { opacity: 0; transform: translateY(0) scale(0); }
+  20% { opacity: 1; transform: translateY(-20px) scale(1); }
+  100% { opacity: 0; transform: translateY(-120px) scale(0.3); }
+}
+
+/* Spotlight sweep */
+.pitch-spotlight {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.pitch-spotlight::after {
+  content: '';
+  position: absolute;
+  width: 120px;
+  height: 200%;
+  top: -50%;
+  left: -120px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.06), transparent);
+  transform: rotate(15deg);
+  animation: spotlight-sweep 2.5s ease-in-out 0.8s;
+}
+
+@keyframes spotlight-sweep {
+  from { left: -120px; }
+  to { left: calc(100% + 120px); }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   AGENT TRACER (MATCH TICKER STYLE)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.tracer-panel {
+  border: 1px solid rgba(16, 185, 129, 0.15);
+  border-radius: 1.25rem;
+  background: linear-gradient(180deg, rgba(10, 15, 26, 0.95), rgba(5, 8, 16, 0.98));
+  overflow: hidden;
+  animation: tracer-slide-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes tracer-slide-in {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.tracer-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  background: linear-gradient(90deg, rgba(16, 185, 129, 0.06), transparent);
+}
+
+.tracer-live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
+  animation: tracer-blink 1.2s ease-in-out infinite;
+}
+
+@keyframes tracer-blink {
+  0%, 100% { opacity: 1; box-shadow: 0 0 8px rgba(16, 185, 129, 0.6); }
+  50% { opacity: 0.3; box-shadow: 0 0 4px rgba(16, 185, 129, 0.3); }
+}
+
+.tracer-feed {
+  max-height: 360px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(16, 185, 129, 0.2) transparent;
+}
+
+.tracer-feed::-webkit-scrollbar {
+  width: 4px;
+}
+
+.tracer-feed::-webkit-scrollbar-thumb {
+  background: rgba(16, 185, 129, 0.2);
+  border-radius: 4px;
+}
+
+.tracer-event {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.75rem 1.25rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  transition: background 0.2s;
+  position: relative;
+}
+
+.tracer-event:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.tracer-event.new-event {
+  animation: event-flash 1s ease-out;
+}
+
+@keyframes event-flash {
+  0% { background: rgba(16, 185, 129, 0.15); }
+  100% { background: transparent; }
+}
+
+/* Timeline connector */
+.tracer-event::before {
+  content: '';
+  position: absolute;
+  left: 2.1rem;
+  top: 2.75rem;
+  bottom: -0.75rem;
+  width: 1px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.tracer-event:last-child::before {
+  display: none;
+}
+
+.tracer-event-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 1;
+}
+
+.tracer-event-time {
+  font-family: 'Bebas Neue', monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  color: rgba(148, 163, 184, 0.6);
+  white-space: nowrap;
+}
+
+/* Scanning animation when no events */
+.tracer-scanning {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2.5rem 1rem;
+  gap: 1rem;
+}
+
+.tracer-radar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 2px solid rgba(16, 185, 129, 0.3);
+  position: relative;
+}
+
+.tracer-radar::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 50%;
+  height: 2px;
+  background: linear-gradient(90deg, rgba(16, 185, 129, 0.8), transparent);
+  transform-origin: left center;
+  animation: radar-sweep 2s linear infinite;
+}
+
+@keyframes radar-sweep {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
