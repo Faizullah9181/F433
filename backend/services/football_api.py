@@ -5,6 +5,7 @@ https://v3.football.api-sports.io
 Covers: fixtures, standings, teams, players, leagues, predictions,
 head-to-head, events, lineups, statistics, top scorers, injuries, transfers.
 """
+
 import logging
 from typing import Any
 
@@ -21,9 +22,7 @@ class FootballAPIClient:
     BASE_URL = "https://v3.football.api-sports.io"
 
     def __init__(self):
-        self.headers = {
-            "x-apisports-key": settings.api_football_key
-        }
+        self.headers = {"x-apisports-key": settings.api_football_key}
 
     async def _request(self, endpoint: str, params: dict | None = None) -> dict[str, Any]:
         """Make GET request to API-Football."""
@@ -48,8 +47,9 @@ class FootballAPIClient:
         data = await self._request("fixtures", params)
         return data.get("response", [])
 
-    async def get_fixtures_by_date(self, date_str: str, league_id: int | None = None,
-                                    season: int | None = None, timezone: str = "Europe/London") -> list[dict]:
+    async def get_fixtures_by_date(
+        self, date_str: str, league_id: int | None = None, season: int | None = None, timezone: str = "Europe/London"
+    ) -> list[dict]:
         params: dict[str, Any] = {"date": date_str, "timezone": timezone}
         if league_id:
             params["league"] = league_id
@@ -68,8 +68,9 @@ class FootballAPIClient:
         data = await self._request("fixtures", {"ids": ids_str})
         return data.get("response", [])
 
-    async def get_next_fixtures(self, team_id: int | None = None, league_id: int | None = None,
-                                 count: int = 10) -> list[dict]:
+    async def get_next_fixtures(
+        self, team_id: int | None = None, league_id: int | None = None, count: int = 10
+    ) -> list[dict]:
         params: dict[str, Any] = {"next": min(count, 99)}
         if team_id:
             params["team"] = team_id
@@ -78,8 +79,9 @@ class FootballAPIClient:
         data = await self._request("fixtures", params)
         return data.get("response", [])
 
-    async def get_last_fixtures(self, team_id: int | None = None, league_id: int | None = None,
-                                 count: int = 10) -> list[dict]:
+    async def get_last_fixtures(
+        self, team_id: int | None = None, league_id: int | None = None, count: int = 10
+    ) -> list[dict]:
         params: dict[str, Any] = {"last": min(count, 99)}
         if team_id:
             params["team"] = team_id
@@ -118,9 +120,7 @@ class FootballAPIClient:
         return data.get("response", [])
 
     async def get_head_to_head(self, team1_id: int, team2_id: int, last: int = 10) -> list[dict]:
-        data = await self._request("fixtures/headtohead", {
-            "h2h": f"{team1_id}-{team2_id}", "last": last
-        })
+        data = await self._request("fixtures/headtohead", {"h2h": f"{team1_id}-{team2_id}", "last": last})
         return data.get("response", [])
 
     # ─── Standings ───────────────────────────────────────────────────
@@ -152,14 +152,13 @@ class FootballAPIClient:
         return data.get("response", [])
 
     async def get_team_stats(self, team_id: int, league_id: int, season: int) -> dict | None:
-        data = await self._request("teams/statistics", {
-            "team": team_id, "league": league_id, "season": season
-        })
+        data = await self._request("teams/statistics", {"team": team_id, "league": league_id, "season": season})
         return data.get("response")
 
     # ─── Leagues ─────────────────────────────────────────────────────
-    async def get_leagues(self, country: str | None = None, season: int | None = None,
-                          current: bool = False, search: str | None = None) -> list[dict]:
+    async def get_leagues(
+        self, country: str | None = None, season: int | None = None, current: bool = False, search: str | None = None
+    ) -> list[dict]:
         params: dict[str, Any] = {}
         if country:
             params["country"] = country
@@ -217,8 +216,13 @@ class FootballAPIClient:
         return predictions[0] if predictions else None
 
     # ─── Injuries ────────────────────────────────────────────────────
-    async def get_injuries(self, fixture_id: int | None = None, league_id: int | None = None,
-                            season: int | None = None, team_id: int | None = None) -> list[dict]:
+    async def get_injuries(
+        self,
+        fixture_id: int | None = None,
+        league_id: int | None = None,
+        season: int | None = None,
+        team_id: int | None = None,
+    ) -> list[dict]:
         params: dict[str, Any] = {}
         if fixture_id:
             params["fixture"] = fixture_id

@@ -3,6 +3,7 @@ Generate router — AI content generation endpoints.
 Triggers ADK-powered football analyst agents to create content.
 Includes autonomous engine integration for continuous social simulation.
 """
+
 import logging
 import random
 
@@ -20,6 +21,7 @@ router = APIRouter()
 
 
 # ── Request models ──────────────────────────────────────────────
+
 
 class GeneratePostRequest(BaseModel):
     topic: str | None = None
@@ -50,6 +52,7 @@ class GenerateReactionRequest(BaseModel):
 
 
 # ── Helpers ─────────────────────────────────────────────────────
+
 
 async def _get_random_agent(db: AsyncSession) -> Agent | None:
     """Pick a random agent from the database."""
@@ -82,6 +85,7 @@ def _make_analyst(agent: Agent) -> FootballAnalyst:
 
 
 # ── Endpoints ───────────────────────────────────────────────────
+
 
 @router.post("/post")
 async def generate_post(req: GeneratePostRequest, db: AsyncSession = Depends(get_db)):
@@ -141,19 +145,16 @@ async def generate_prediction(req: GeneratePredictionRequest, db: AsyncSession =
     # Auto-discover upcoming fixture if none specified
     if not fixture_id:
         from services.football_api import FootballAPIClient
+
         api = FootballAPIClient()
         # Pick a random tracked league to find upcoming fixtures
-        result = await db.execute(
-            select(League).where(League.api_league_id.isnot(None))
-        )
+        result = await db.execute(select(League).where(League.api_league_id.isnot(None)))
         leagues = result.scalars().all()
         if leagues:
             random.shuffle(leagues)
             for league in leagues:
                 try:
-                    upcoming = await api.get_next_fixtures(
-                        league_id=league.api_league_id, count=5
-                    )
+                    upcoming = await api.get_next_fixtures(league_id=league.api_league_id, count=5)
                     if upcoming:
                         picked = random.choice(upcoming)
                         fixture_id = picked.get("fixture", {}).get("id")
@@ -164,8 +165,7 @@ async def generate_prediction(req: GeneratePredictionRequest, db: AsyncSession =
 
     if not fixture_id:
         raise HTTPException(
-            status_code=400,
-            detail="No upcoming fixtures found. Try again later or provide a fixture_id."
+            status_code=400, detail="No upcoming fixtures found. Try again later or provide a fixture_id."
         )
 
     pred_data = await analyst.make_prediction(fixture_id)
@@ -223,8 +223,7 @@ async def generate_debate(req: GenerateDebateRequest, db: AsyncSession = Depends
 
     # Run debate
     analysts_data = [
-        {"name": a.name, "personality": a.personality.value, "team_allegiance": a.team_allegiance}
-        for a in picked
+        {"name": a.name, "personality": a.personality.value, "team_allegiance": a.team_allegiance} for a in picked
     ]
     chain = await run_multi_agent_debate(topic, analysts_data)
 
@@ -345,7 +344,7 @@ async def trigger_chaos(rounds: int = 3, db: AsyncSession = Depends(get_db)):
             results = await root_agent.run_cycle(db)
             all_results.extend(results)
         except Exception as e:
-            logger.error(f"Chaos round {i+1} error: {e}")
+            logger.error(f"Chaos round {i + 1} error: {e}")
 
     return {
         "rounds": min(rounds, 10),

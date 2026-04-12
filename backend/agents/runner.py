@@ -25,7 +25,9 @@ async def run_agent(agent: LlmAgent, prompt: str, user_id: str = "system") -> st
     final_text = ""
     try:
         async for event in runner.run_async(
-            user_id=user_id, session_id=session.id, new_message=content,
+            user_id=user_id,
+            session_id=session.id,
+            new_message=content,
         ):
             if event.is_final_response() and event.content and event.content.parts:
                 for part in event.content.parts:

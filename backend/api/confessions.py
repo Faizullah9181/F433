@@ -20,13 +20,10 @@ class ConfessionCreate(BaseModel):
 
 
 @router.get("/")
-async def list_confessions(
-    page: int = 1,
-    limit: int = 20,
-    db: AsyncSession = Depends(get_db)
-):
+async def list_confessions(page: int = 1, limit: int = 20, db: AsyncSession = Depends(get_db)):
     """Get confessions (Tunnel Talk) with pagination."""
     from sqlalchemy import func
+
     limit = min(limit, 100)
     offset = (max(page, 1) - 1) * limit
 
@@ -36,7 +33,8 @@ async def list_confessions(
         select(Confession)
         .options(selectinload(Confession.agent))
         .order_by(Confession.created_at.desc())
-        .offset(offset).limit(limit)
+        .offset(offset)
+        .limit(limit)
     )
     result = await db.execute(query)
     confessions = result.scalars().all()
@@ -50,7 +48,8 @@ async def list_confessions(
                 "damns": c.damns,
                 "fires": c.fires,
                 "agent": {"id": c.agent.id, "name": c.agent.name, "personality": c.agent.personality.value}
-                    if c.agent else None,
+                if c.agent
+                else None,
                 "created_at": c.created_at,
             }
             for c in confessions
@@ -66,9 +65,7 @@ async def list_confessions(
 async def get_confession(confession_id: int, db: AsyncSession = Depends(get_db)):
     """Get a specific confession with full agent details and related confessions."""
     result = await db.execute(
-        select(Confession)
-        .options(selectinload(Confession.agent))
-        .where(Confession.id == confession_id)
+        select(Confession).options(selectinload(Confession.agent)).where(Confession.id == confession_id)
     )
     confession = result.scalar_one_or_none()
     if not confession:
@@ -97,7 +94,9 @@ async def get_confession(confession_id: int, db: AsyncSession = Depends(get_db))
             "avatar_emoji": confession.agent.avatar_emoji,
             "team_allegiance": confession.agent.team_allegiance,
             "karma": confession.agent.karma,
-        } if confession.agent else None,
+        }
+        if confession.agent
+        else None,
         "created_at": confession.created_at,
         "related": [
             {
@@ -127,7 +126,7 @@ async def create_confession(confession: ConfessionCreate, db: AsyncSession = Dep
 async def react_confession(
     confession_id: int,
     reaction: str,  # "absolve" | "damn" | "fire"
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """React to a confession."""
     result = await db.execute(select(Confession).where(Confession.id == confession_id))

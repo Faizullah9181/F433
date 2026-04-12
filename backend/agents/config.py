@@ -7,8 +7,7 @@ PERSONALITY_CONFIGS = {
     "stats_nerd": {
         "emoji": "📊",
         "description": (
-            "Data-obsessed football analyst who backs every argument "
-            "with xG, possession stats, and advanced metrics."
+            "Data-obsessed football analyst who backs every argument with xG, possession stats, and advanced metrics."
         ),
         "instruction": (
             "You are a football statistics analyst on F433, an AI-only football social network.\n"
@@ -37,8 +36,7 @@ PERSONALITY_CONFIGS = {
     "neutral_analyst": {
         "emoji": "⚖️",
         "description": (
-            "Balanced professional football analyst who gives credit "
-            "where due and provides tactical analysis."
+            "Balanced professional football analyst who gives credit where due and provides tactical analysis."
         ),
         "instruction": (
             "You are a balanced, professional football analyst on F433, an AI-only football social network.\n"
@@ -83,9 +81,7 @@ PERSONALITY_CONFIGS = {
     },
 }
 
-PERSONALITY_EMOJIS: dict[str, str] = {
-    k: v["emoji"] for k, v in PERSONALITY_CONFIGS.items()
-}
+PERSONALITY_EMOJIS: dict[str, str] = {k: v["emoji"] for k, v in PERSONALITY_CONFIGS.items()}
 
 
 # ── Debate Topics ───────────────────────────────────────────────
@@ -119,9 +115,13 @@ PERSONALITY_TRAITS = {
         "beef_probability": 0.15,
         "caps_lock_usage": 0.0,
         "topics": [
-            "xG analysis", "Expected goals breakdown", "Pass completion metrics",
-            "Pressing intensity data", "Transfer market analytics",
-            "Shot map analysis", "Progressive carries leaders",
+            "xG analysis",
+            "Expected goals breakdown",
+            "Pass completion metrics",
+            "Pressing intensity data",
+            "Transfer market analytics",
+            "Shot map analysis",
+            "Progressive carries leaders",
         ],
     },
     "passionate_fan": {
@@ -131,9 +131,12 @@ PERSONALITY_TRAITS = {
         "beef_probability": 0.5,
         "caps_lock_usage": 0.4,
         "topics": [
-            "Why my team is the GOAT", "Ref decisions are rigged",
-            "Derby day predictions", "Transfer rumors and drama",
-            "Individual player brilliance", "The best football chants",
+            "Why my team is the GOAT",
+            "Ref decisions are rigged",
+            "Derby day predictions",
+            "Transfer rumors and drama",
+            "Individual player brilliance",
+            "The best football chants",
         ],
     },
     "neutral_analyst": {
@@ -143,9 +146,12 @@ PERSONALITY_TRAITS = {
         "beef_probability": 0.1,
         "caps_lock_usage": 0.0,
         "topics": [
-            "Tactical evolution in modern football", "Manager of the season debate",
-            "Ballon d'Or candidates", "Youth development systems",
-            "League comparison analysis", "Referee performance review",
+            "Tactical evolution in modern football",
+            "Manager of the season debate",
+            "Ballon d'Or candidates",
+            "Youth development systems",
+            "League comparison analysis",
+            "Referee performance review",
         ],
     },
     "tactical_genius": {
@@ -155,9 +161,12 @@ PERSONALITY_TRAITS = {
         "beef_probability": 0.25,
         "caps_lock_usage": 0.05,
         "topics": [
-            "False 9 effectiveness analysis", "Pressing trap systems",
-            "Inverted fullback revolution", "Build-up play under pressure",
-            "Set piece coaching revolution", "4-2-3-1 vs 3-5-2 debate",
+            "False 9 effectiveness analysis",
+            "Pressing trap systems",
+            "Inverted fullback revolution",
+            "Build-up play under pressure",
+            "Set piece coaching revolution",
+            "4-2-3-1 vs 3-5-2 debate",
         ],
     },
     "roast_master": {
@@ -238,7 +247,4 @@ def are_rivals(team1: str | None, team2: str | None) -> bool:
     if not team1 or not team2:
         return False
     t1, t2 = team1.lower(), team2.lower()
-    return any(
-        (a.lower() in t1 and b.lower() in t2) or (b.lower() in t1 and a.lower() in t2)
-        for a, b in RIVAL_PAIRS
-    )
+    return any((a.lower() in t1 and b.lower() in t2) or (b.lower() in t1 and a.lower() in t2) for a, b in RIVAL_PAIRS)

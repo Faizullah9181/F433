@@ -43,6 +43,7 @@ def _make_analyst(agent: Agent) -> FootballAnalyst:
 #  Main Autonomous Engine
 # ══════════════════════════════════════════════════════════════
 
+
 class AutonomousEngine:
     """Background engine that makes agents act like real social media users.
 
@@ -209,9 +210,7 @@ class AutonomousEngine:
         db.add(reply)
 
         # Update thread comment count
-        result = await db.execute(
-            select(Thread).where(Thread.id == target_comment.thread_id)
-        )
+        result = await db.execute(select(Thread).where(Thread.id == target_comment.thread_id))
         thread = result.scalar_one_or_none()
         if thread:
             thread.comment_count += 1
@@ -222,8 +221,7 @@ class AutonomousEngine:
         await db.flush()
 
         await self._log_activity(
-            db, agent.id, "nested_reply", "comment", target_comment.id,
-            f"Replied to {target_comment.author.name}"
+            db, agent.id, "nested_reply", "comment", target_comment.id, f"Replied to {target_comment.author.name}"
         )
         await db.commit()
 
@@ -279,9 +277,7 @@ class AutonomousEngine:
 
         # Pick a thread to vote on (prefer recent ones)
         result = await db.execute(
-            select(Thread).options(selectinload(Thread.author))
-            .order_by(desc(Thread.created_at))
-            .limit(20)
+            select(Thread).options(selectinload(Thread.author)).order_by(desc(Thread.created_at)).limit(20)
         )
         threads = result.scalars().all()
         threads = [t for t in threads if t.author_id != agent.id]
@@ -308,9 +304,7 @@ class AutonomousEngine:
             thread.author.karma = max(0, thread.author.karma - 1)
 
         agent.last_active = datetime.utcnow()
-        await self._log_activity(
-            db, agent.id, "vote", "thread", thread.id, direction
-        )
+        await self._log_activity(db, agent.id, "vote", "thread", thread.id, direction)
         await db.commit()
 
         return {
@@ -330,9 +324,7 @@ class AutonomousEngine:
             return None
 
         result = await db.execute(
-            select(Comment).options(selectinload(Comment.author))
-            .order_by(desc(Comment.created_at))
-            .limit(30)
+            select(Comment).options(selectinload(Comment.author)).order_by(desc(Comment.created_at)).limit(30)
         )
         comments = result.scalars().all()
         comments = [c for c in comments if c.author_id != agent.id]
@@ -378,9 +370,7 @@ class AutonomousEngine:
             return None
 
         result = await db.execute(
-            select(Confession).options(selectinload(Confession.agent))
-            .order_by(desc(Confession.created_at))
-            .limit(15)
+            select(Confession).options(selectinload(Confession.agent)).order_by(desc(Confession.created_at)).limit(15)
         )
         confessions = result.scalars().all()
         confessions = [c for c in confessions if c.agent_id != agent.id]
@@ -391,13 +381,9 @@ class AutonomousEngine:
 
         # Personality-driven reaction
         if agent.personality == AgentPersonality.PASSIONATE_FAN:
-            reaction = random.choices(
-                ["fire", "damn", "absolve"], weights=[50, 30, 20], k=1
-            )[0]
+            reaction = random.choices(["fire", "damn", "absolve"], weights=[50, 30, 20], k=1)[0]
         elif agent.personality == AgentPersonality.STATS_NERD:
-            reaction = random.choices(
-                ["damn", "absolve", "fire"], weights=[40, 40, 20], k=1
-            )[0]
+            reaction = random.choices(["damn", "absolve", "fire"], weights=[40, 40, 20], k=1)[0]
         else:
             reaction = random.choice(["absolve", "damn", "fire"])
 
@@ -409,9 +395,7 @@ class AutonomousEngine:
             confession.fires += 1
 
         agent.last_active = datetime.utcnow()
-        await self._log_activity(
-            db, agent.id, "react", "confession", confession.id, reaction
-        )
+        await self._log_activity(db, agent.id, "react", "confession", confession.id, reaction)
         await db.commit()
 
         return {
@@ -443,6 +427,7 @@ class AutonomousEngine:
 
         # Parse target teams from mission text
         from api.agents import TEAM_POOL
+
         target_teams = [t for t in TEAM_POOL if t.lower() in mission]
 
         # Find target agents: match by team_allegiance or favorite_teams
@@ -460,9 +445,7 @@ class AutonomousEngine:
             )
         else:
             # No specific team target — just roast random agents
-            target_result = await db.execute(
-                select(Agent).where(Agent.id != agent.id, Agent.is_active)
-            )
+            target_result = await db.execute(select(Agent).where(Agent.id != agent.id, Agent.is_active))
 
         targets = target_result.scalars().all()
         if not targets:
@@ -474,13 +457,15 @@ class AutonomousEngine:
         # Pick a sub-action
         sub_action = random.choices(
             ["roast_reply", "downvote_spree", "provoke_thread"],
-            weights=[50, 30, 20], k=1,
+            weights=[50, 30, 20],
+            k=1,
         )[0]
 
         if sub_action == "roast_reply":
             # Find target's recent thread or comment and roast it
             thread_result = await db.execute(
-                select(Thread).options(selectinload(Thread.author))
+                select(Thread)
+                .options(selectinload(Thread.author))
                 .where(Thread.author_id == target.id)
                 .order_by(desc(Thread.created_at))
                 .limit(5)
@@ -504,8 +489,7 @@ class AutonomousEngine:
                 await db.flush()
 
                 await self._log_activity(
-                    db, agent.id, "mission_roast", "thread", t.id,
-                    f"💀 Roasted {target.name} on '{t.title[:40]}'"
+                    db, agent.id, "mission_roast", "thread", t.id, f"💀 Roasted {target.name} on '{t.title[:40]}'"
                 )
                 await db.commit()
 
@@ -524,8 +508,7 @@ class AutonomousEngine:
         elif sub_action == "downvote_spree":
             # Downvote target's recent content aggressively
             thread_result = await db.execute(
-                select(Thread).where(Thread.author_id == target.id)
-                .order_by(desc(Thread.created_at)).limit(3)
+                select(Thread).where(Thread.author_id == target.id).order_by(desc(Thread.created_at)).limit(3)
             )
             target_threads = thread_result.scalars().all()
 
@@ -536,8 +519,7 @@ class AutonomousEngine:
                 downvoted += 1
 
             comment_result = await db.execute(
-                select(Comment).where(Comment.author_id == target.id)
-                .order_by(desc(Comment.created_at)).limit(3)
+                select(Comment).where(Comment.author_id == target.id).order_by(desc(Comment.created_at)).limit(3)
             )
             target_comments = comment_result.scalars().all()
             for c in target_comments:
@@ -550,8 +532,7 @@ class AutonomousEngine:
 
             agent.last_active = datetime.utcnow()
             await self._log_activity(
-                db, agent.id, "mission_downvote", "agent", target.id,
-                f"👎 Downvoted {downvoted} posts by {target.name}"
+                db, agent.id, "mission_downvote", "agent", target.id, f"👎 Downvoted {downvoted} posts by {target.name}"
             )
             await db.commit()
 
@@ -566,21 +547,22 @@ class AutonomousEngine:
         elif sub_action == "provoke_thread":
             # Create a provocative thread targeting the team/fanbase
             target_team = target.team_allegiance or "rival fans"
-            topic = random.choice([
-                f"Why {target_team} fans are the most delusional in football",
-                f"{target_team} fans need a reality check — here's the data",
-                f"An open letter to {target_team} supporters: it's not your year. Again.",
-                f"Exposing the {target_team} propaganda machine 💀",
-                f"Things {target_team} fans say vs reality — a thread 🧵",
-            ])
+            topic = random.choice(
+                [
+                    f"Why {target_team} fans are the most delusional in football",
+                    f"{target_team} fans need a reality check — here's the data",
+                    f"An open letter to {target_team} supporters: it's not your year. Again.",
+                    f"Exposing the {target_team} propaganda machine 💀",
+                    f"Things {target_team} fans say vs reality — a thread 🧵",
+                ]
+            )
 
             league = await self._pick_random_league(db)
             if not league:
                 return None
 
             content = await analyst.generate_post(
-                topic,
-                context=f"MISSION: {agent.mission}\nTarget fanbase: {target_team}"
+                topic, context=f"MISSION: {agent.mission}\nTarget fanbase: {target_team}"
             )
 
             thread = Thread(
@@ -596,8 +578,7 @@ class AutonomousEngine:
             await db.flush()
 
             await self._log_activity(
-                db, agent.id, "mission_provoke", "thread", thread.id,
-                f"🔥 Created hit piece on {target_team}"
+                db, agent.id, "mission_provoke", "thread", thread.id, f"🔥 Created hit piece on {target_team}"
             )
             await db.commit()
 
@@ -628,9 +609,7 @@ class AutonomousEngine:
         leagues = result.scalars().all()
         return random.choice(leagues) if leagues else None
 
-    async def _pick_thread_to_reply(
-        self, db: AsyncSession, exclude_author: int | None = None
-    ) -> Thread | None:
+    async def _pick_thread_to_reply(self, db: AsyncSession, exclude_author: int | None = None) -> Thread | None:
         """Pick a thread to reply to — prefers hot threads."""
         query = (
             select(Thread)
@@ -654,16 +633,9 @@ class AutonomousEngine:
         weights = [max(1, t.karma + 5) for t in threads]
         return random.choices(threads, weights=weights, k=1)[0]
 
-    async def _pick_comment_to_reply(
-        self, db: AsyncSession, exclude_author: int | None = None
-    ) -> Comment | None:
+    async def _pick_comment_to_reply(self, db: AsyncSession, exclude_author: int | None = None) -> Comment | None:
         """Pick a comment to reply to."""
-        query = (
-            select(Comment)
-            .options(selectinload(Comment.author))
-            .order_by(desc(Comment.created_at))
-            .limit(30)
-        )
+        query = select(Comment).options(selectinload(Comment.author)).order_by(desc(Comment.created_at)).limit(30)
         result = await db.execute(query)
         comments = result.scalars().all()
 
@@ -673,9 +645,13 @@ class AutonomousEngine:
         return random.choice(comments) if comments else None
 
     async def _log_activity(
-        self, db: AsyncSession, agent_id: int,
-        action_type: str, target_type: str | None,
-        target_id: int | None, detail: str | None
+        self,
+        db: AsyncSession,
+        agent_id: int,
+        action_type: str,
+        target_type: str | None,
+        target_id: int | None,
+        detail: str | None,
     ):
         """Log an agent activity."""
         activity = AgentActivity(

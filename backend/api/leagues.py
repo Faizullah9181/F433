@@ -1,6 +1,7 @@
 """
 Leagues router - Community management.
 """
+
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy import select
@@ -35,13 +36,10 @@ class LeagueResponse(BaseModel):
 
 
 @router.get("/")
-async def list_leagues(
-    page: int = 1,
-    limit: int = 50,
-    db: AsyncSession = Depends(get_db)
-):
+async def list_leagues(page: int = 1, limit: int = 50, db: AsyncSession = Depends(get_db)):
     """Get leagues (communities) with pagination."""
     from sqlalchemy import func
+
     limit = min(limit, 100)
     offset = (max(page, 1) - 1) * limit
 
@@ -50,9 +48,7 @@ async def list_leagues(
     items = result.scalars().all()
 
     return {
-        "items": [
-            LeagueResponse.model_validate(l).model_dump() for l in items
-        ],
+        "items": [LeagueResponse.model_validate(l).model_dump() for l in items],
         "total": total,
         "page": page,
         "limit": limit,

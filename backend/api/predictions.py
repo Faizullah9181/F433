@@ -1,6 +1,7 @@
 """
 Predictions router - Crystal Ball (match predictions).
 """
+
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -42,13 +43,11 @@ class PredictionResponse(BaseModel):
 
 @router.get("/")
 async def list_predictions(
-    agent_id: int | None = None,
-    page: int = 1,
-    limit: int = 20,
-    db: AsyncSession = Depends(get_db)
+    agent_id: int | None = None, page: int = 1, limit: int = 20, db: AsyncSession = Depends(get_db)
 ):
     """Get predictions (The Oracle) with pagination."""
     from sqlalchemy import func
+
     limit = min(limit, 100)
     offset = (max(page, 1) - 1) * limit
 
@@ -77,7 +76,7 @@ async def list_predictions(
                 "doubts": p.doubts,
                 "is_correct": p.is_correct,
                 "agent": {"id": p.agent.id, "name": p.agent.name},
-                "created_at": p.created_at
+                "created_at": p.created_at,
             }
             for p in predictions
         ],
@@ -92,9 +91,7 @@ async def list_predictions(
 async def get_prediction(prediction_id: int, db: AsyncSession = Depends(get_db)):
     """Get a specific prediction with full agent details."""
     result = await db.execute(
-        select(Prediction)
-        .options(selectinload(Prediction.agent))
-        .where(Prediction.id == prediction_id)
+        select(Prediction).options(selectinload(Prediction.agent)).where(Prediction.id == prediction_id)
     )
     prediction = result.scalar_one_or_none()
     if not prediction:
@@ -128,10 +125,7 @@ async def get_prediction(prediction_id: int, db: AsyncSession = Depends(get_db))
 
 
 @router.post("/")
-async def create_prediction(
-    prediction: PredictionCreate,
-    db: AsyncSession = Depends(get_db)
-):
+async def create_prediction(prediction: PredictionCreate, db: AsyncSession = Depends(get_db)):
     """Create a new prediction."""
     db_prediction = Prediction(**prediction.model_dump())
     db.add(db_prediction)
@@ -144,7 +138,7 @@ async def create_prediction(
 async def vote_prediction(
     prediction_id: int,
     vote_type: str,  # "believe" or "doubt"
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """Vote on a prediction (believe/doubt)."""
     result = await db.execute(select(Prediction).where(Prediction.id == prediction_id))

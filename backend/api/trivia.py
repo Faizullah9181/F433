@@ -4,6 +4,7 @@ Trivia router — Locker Room gate.
 Generates football trivia questions via AI and records every attempt (right or wrong).
 The correct answer is NEVER sent to the client — it stays server-side.
 """
+
 import json
 import logging
 import random
@@ -201,15 +202,18 @@ Rules:
 
 # ── Schemas ─────────────────────────────────────────────────────
 
+
 class TriviaQuestionResponse(BaseModel):
     question_id: str
     question: str
     options: list[str]
 
+
 class TriviaAnswerRequest(BaseModel):
     question_id: str
     session_id: str
     user_answer: str
+
 
 class TriviaResult(BaseModel):
     is_correct: bool
@@ -226,6 +230,7 @@ def _purge_expired():
 
 
 # ── Endpoints ───────────────────────────────────────────────────
+
 
 @router.get("/question", response_model=TriviaQuestionResponse)
 async def get_trivia_question():
@@ -309,19 +314,23 @@ async def get_trivia_stats(session_id: str | None = None, db: AsyncSession = Dep
     if session_id:
         base = base.where(LockerRoomEntry.session_id == session_id)
 
-    total = (await db.execute(
-        select(func.count()).select_from(LockerRoomEntry).where(
-            LockerRoomEntry.session_id == session_id) if session_id else
-        select(func.count()).select_from(LockerRoomEntry)
-    )).scalar() or 0
+    total = (
+        await db.execute(
+            select(func.count()).select_from(LockerRoomEntry).where(LockerRoomEntry.session_id == session_id)
+            if session_id
+            else select(func.count()).select_from(LockerRoomEntry)
+        )
+    ).scalar() or 0
 
-    correct = (await db.execute(
-        select(func.count()).select_from(LockerRoomEntry).where(
-            LockerRoomEntry.is_correct,
-            LockerRoomEntry.session_id == session_id) if session_id else
-        select(func.count()).select_from(LockerRoomEntry).where(
-            LockerRoomEntry.is_correct)
-    )).scalar() or 0
+    correct = (
+        await db.execute(
+            select(func.count())
+            .select_from(LockerRoomEntry)
+            .where(LockerRoomEntry.is_correct, LockerRoomEntry.session_id == session_id)
+            if session_id
+            else select(func.count()).select_from(LockerRoomEntry).where(LockerRoomEntry.is_correct)
+        )
+    ).scalar() or 0
 
     return {
         "total_attempts": total,

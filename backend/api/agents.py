@@ -1,6 +1,7 @@
 """
 Agents router - AI Analyst management & registration.
 """
+
 import json
 import re
 from datetime import datetime
@@ -18,29 +19,77 @@ router = APIRouter()
 # ── Team pool for the selector ──────────────────────────────────
 TEAM_POOL = [
     # England
-    "Arsenal", "Aston Villa", "Chelsea", "Crystal Palace", "Everton",
-    "Fulham", "Leeds United", "Leicester City", "Liverpool",
-    "Manchester City", "Manchester United", "Newcastle United",
-    "Nottingham Forest", "Tottenham", "West Ham", "Wolverhampton",
-    "Brighton", "Bournemouth", "Brentford",
+    "Arsenal",
+    "Aston Villa",
+    "Chelsea",
+    "Crystal Palace",
+    "Everton",
+    "Fulham",
+    "Leeds United",
+    "Leicester City",
+    "Liverpool",
+    "Manchester City",
+    "Manchester United",
+    "Newcastle United",
+    "Nottingham Forest",
+    "Tottenham",
+    "West Ham",
+    "Wolverhampton",
+    "Brighton",
+    "Bournemouth",
+    "Brentford",
     # Spain
-    "Real Madrid", "Barcelona", "Atletico Madrid", "Real Sociedad",
-    "Athletic Bilbao", "Real Betis", "Sevilla", "Villarreal", "Valencia",
+    "Real Madrid",
+    "Barcelona",
+    "Atletico Madrid",
+    "Real Sociedad",
+    "Athletic Bilbao",
+    "Real Betis",
+    "Sevilla",
+    "Villarreal",
+    "Valencia",
     "Girona",
     # Italy
-    "AC Milan", "Inter Milan", "Juventus", "Napoli", "Roma", "Lazio",
-    "Atalanta", "Fiorentina", "Bologna",
+    "AC Milan",
+    "Inter Milan",
+    "Juventus",
+    "Napoli",
+    "Roma",
+    "Lazio",
+    "Atalanta",
+    "Fiorentina",
+    "Bologna",
     # Germany
-    "Bayern Munich", "Borussia Dortmund", "RB Leipzig", "Bayer Leverkusen",
-    "Eintracht Frankfurt", "Wolfsburg", "Stuttgart",
+    "Bayern Munich",
+    "Borussia Dortmund",
+    "RB Leipzig",
+    "Bayer Leverkusen",
+    "Eintracht Frankfurt",
+    "Wolfsburg",
+    "Stuttgart",
     # France
-    "PSG", "Marseille", "Lyon", "Monaco", "Lille", "Nice", "Lens",
+    "PSG",
+    "Marseille",
+    "Lyon",
+    "Monaco",
+    "Lille",
+    "Nice",
+    "Lens",
     # Portugal
-    "Benfica", "Porto", "Sporting CP",
+    "Benfica",
+    "Porto",
+    "Sporting CP",
     # Others
-    "Ajax", "Galatasaray", "Fenerbahce",
-    "River Plate", "Boca Juniors", "Flamengo", "Al Hilal", "Al Ahly",
-    "Celtic", "Rangers",
+    "Ajax",
+    "Galatasaray",
+    "Fenerbahce",
+    "River Plate",
+    "Boca Juniors",
+    "Flamengo",
+    "Al Hilal",
+    "Al Ahly",
+    "Celtic",
+    "Rangers",
 ]
 
 PERSONALITY_INFO = {
@@ -71,39 +120,142 @@ PERSONALITY_INFO = {
 }
 
 AVATAR_EMOJIS = [
-    "🤖", "⚽", "🏟️", "🎯", "🧠", "📊", "🔥", "⚖️", "👑", "🦁",
-    "🐺", "🦅", "🐝", "🦊", "🐉", "🎭", "💀", "👻", "🤡", "🥷",
-    "🧙", "🦾", "🫡", "😎", "🤓", "🗣️", "🎙️", "📡", "🛸", "⭐",
+    "🤖",
+    "⚽",
+    "🏟️",
+    "🎯",
+    "🧠",
+    "📊",
+    "🔥",
+    "⚖️",
+    "👑",
+    "🦁",
+    "🐺",
+    "🦅",
+    "🐝",
+    "🦊",
+    "🐉",
+    "🎭",
+    "💀",
+    "👻",
+    "🤡",
+    "🥷",
+    "🧙",
+    "🦾",
+    "🫡",
+    "😎",
+    "🤓",
+    "🗣️",
+    "🎙️",
+    "📡",
+    "🛸",
+    "⭐",
 ]
 
 # ── Country pool ────────────────────────────────────────────────
 COUNTRY_POOL = [
-    "England", "Spain", "Germany", "France", "Italy", "Portugal",
-    "Brazil", "Argentina", "Netherlands", "Belgium", "Croatia",
-    "Uruguay", "Colombia", "Mexico", "USA", "Japan", "South Korea",
-    "Morocco", "Senegal", "Nigeria", "Ghana", "Cameroon", "Egypt",
-    "Algeria", "Tunisia", "Turkey", "Scotland", "Wales", "Ireland",
-    "Poland", "Czech Republic", "Austria", "Switzerland", "Denmark",
-    "Sweden", "Norway", "Serbia", "Australia", "Canada", "Saudi Arabia",
+    "England",
+    "Spain",
+    "Germany",
+    "France",
+    "Italy",
+    "Portugal",
+    "Brazil",
+    "Argentina",
+    "Netherlands",
+    "Belgium",
+    "Croatia",
+    "Uruguay",
+    "Colombia",
+    "Mexico",
+    "USA",
+    "Japan",
+    "South Korea",
+    "Morocco",
+    "Senegal",
+    "Nigeria",
+    "Ghana",
+    "Cameroon",
+    "Egypt",
+    "Algeria",
+    "Tunisia",
+    "Turkey",
+    "Scotland",
+    "Wales",
+    "Ireland",
+    "Poland",
+    "Czech Republic",
+    "Austria",
+    "Switzerland",
+    "Denmark",
+    "Sweden",
+    "Norway",
+    "Serbia",
+    "Australia",
+    "Canada",
+    "Saudi Arabia",
 ]
 
 # ── Player pool ─────────────────────────────────────────────────
 PLAYER_POOL = [
-    "Lionel Messi", "Cristiano Ronaldo", "Kylian Mbappé", "Erling Haaland",
-    "Vinicius Jr", "Jude Bellingham", "Bukayo Saka", "Phil Foden",
-    "Rodri", "Lamine Yamal", "Florian Wirtz", "Jamal Musiala",
-    "Kevin De Bruyne", "Mohamed Salah", "Robert Lewandowski",
-    "Harry Kane", "Neymar", "Pedri", "Gavi", "Declan Rice",
-    "Martin Ødegaard", "Bruno Fernandes", "Cole Palmer", "Khvicha Kvaratskhelia",
-    "Victor Osimhen", "Alexander Isak", "Ollie Watkins", "Lautaro Martinez",
-    "Julian Alvarez", "Endrick", "Alejandro Garnacho", "Federico Valverde",
-    "Trent Alexander-Arnold", "Virgil van Dijk", "William Saliba",
-    "Gianluigi Donnarumma", "Alisson Becker", "Thibaut Courtois",
-    "Ronaldinho", "Zinedine Zidane", "Thierry Henry", "Andrea Pirlo",
-    "Ronaldo Nazário", "Zlatan Ibrahimović", "Diego Maradona", "Pelé",
-    "Johan Cruyff", "Franz Beckenbauer", "Paolo Maldini", "Xavi Hernandez",
-    "Andres Iniesta", "Steven Gerrard", "Frank Lampard", "Wayne Rooney",
-    "Didier Drogba", "Samuel Eto'o", "George Weah", "Jay-Jay Okocha",
+    "Lionel Messi",
+    "Cristiano Ronaldo",
+    "Kylian Mbappé",
+    "Erling Haaland",
+    "Vinicius Jr",
+    "Jude Bellingham",
+    "Bukayo Saka",
+    "Phil Foden",
+    "Rodri",
+    "Lamine Yamal",
+    "Florian Wirtz",
+    "Jamal Musiala",
+    "Kevin De Bruyne",
+    "Mohamed Salah",
+    "Robert Lewandowski",
+    "Harry Kane",
+    "Neymar",
+    "Pedri",
+    "Gavi",
+    "Declan Rice",
+    "Martin Ødegaard",
+    "Bruno Fernandes",
+    "Cole Palmer",
+    "Khvicha Kvaratskhelia",
+    "Victor Osimhen",
+    "Alexander Isak",
+    "Ollie Watkins",
+    "Lautaro Martinez",
+    "Julian Alvarez",
+    "Endrick",
+    "Alejandro Garnacho",
+    "Federico Valverde",
+    "Trent Alexander-Arnold",
+    "Virgil van Dijk",
+    "William Saliba",
+    "Gianluigi Donnarumma",
+    "Alisson Becker",
+    "Thibaut Courtois",
+    "Ronaldinho",
+    "Zinedine Zidane",
+    "Thierry Henry",
+    "Andrea Pirlo",
+    "Ronaldo Nazário",
+    "Zlatan Ibrahimović",
+    "Diego Maradona",
+    "Pelé",
+    "Johan Cruyff",
+    "Franz Beckenbauer",
+    "Paolo Maldini",
+    "Xavi Hernandez",
+    "Andres Iniesta",
+    "Steven Gerrard",
+    "Frank Lampard",
+    "Wayne Rooney",
+    "Didier Drogba",
+    "Samuel Eto'o",
+    "George Weah",
+    "Jay-Jay Okocha",
 ]
 
 
@@ -125,7 +277,7 @@ class AgentCreate(BaseModel):
         v = v.strip()
         if len(v) < 3 or len(v) > 60:
             raise ValueError("Name must be 3-60 characters")
-        if not re.match(r'^[a-zA-Z0-9_\- .]+$', v):
+        if not re.match(r"^[a-zA-Z0-9_\- .]+$", v):
             raise ValueError("Name can only contain letters, numbers, underscores, hyphens, dots, spaces")
         return v
 
@@ -180,8 +332,12 @@ class AgentResponse(BaseModel):
             "tone": getattr(agent, "tone", None),
             "mission": getattr(agent, "mission", None),
             "favorite_teams": json.loads(agent.favorite_teams) if getattr(agent, "favorite_teams", None) else None,
-            "favorite_players": json.loads(agent.favorite_players) if getattr(agent, "favorite_players", None) else None,
-            "favorite_countries": json.loads(agent.favorite_countries) if getattr(agent, "favorite_countries", None) else None,
+            "favorite_players": json.loads(agent.favorite_players)
+            if getattr(agent, "favorite_players", None)
+            else None,
+            "favorite_countries": json.loads(agent.favorite_countries)
+            if getattr(agent, "favorite_countries", None)
+            else None,
             "post_count": agent.post_count,
             "reply_count": agent.reply_count,
             "last_active": agent.last_active,
@@ -193,14 +349,10 @@ class AgentResponse(BaseModel):
 
 
 @router.get("/")
-async def list_agents(
-    sort_by: str = "karma",
-    page: int = 1,
-    limit: int = 20,
-    db: AsyncSession = Depends(get_db)
-):
+async def list_agents(sort_by: str = "karma", page: int = 1, limit: int = 20, db: AsyncSession = Depends(get_db)):
     """Get AI analysts (The Panel) with pagination."""
     from sqlalchemy import func
+
     limit = min(limit, 100)
     offset = (max(page, 1) - 1) * limit
 
@@ -218,9 +370,7 @@ async def list_agents(
     items = result.scalars().all()
 
     return {
-        "items": [
-            AgentResponse.from_agent(a).model_dump() for a in items
-        ],
+        "items": [AgentResponse.from_agent(a).model_dump() for a in items],
         "total": total,
         "page": page,
         "limit": limit,
@@ -272,28 +422,19 @@ async def get_agent(agent_id: int, db: AsyncSession = Depends(get_db)):
 
     # Recent threads
     threads_result = await db.execute(
-        select(Thread)
-        .where(Thread.author_id == agent_id)
-        .order_by(desc(Thread.created_at))
-        .limit(5)
+        select(Thread).where(Thread.author_id == agent_id).order_by(desc(Thread.created_at)).limit(5)
     )
     threads = threads_result.scalars().all()
 
     # Recent predictions
     preds_result = await db.execute(
-        select(Prediction)
-        .where(Prediction.agent_id == agent_id)
-        .order_by(desc(Prediction.created_at))
-        .limit(5)
+        select(Prediction).where(Prediction.agent_id == agent_id).order_by(desc(Prediction.created_at)).limit(5)
     )
     predictions = preds_result.scalars().all()
 
     # Recent confessions
     confs_result = await db.execute(
-        select(Confession)
-        .where(Confession.agent_id == agent_id)
-        .order_by(desc(Confession.created_at))
-        .limit(5)
+        select(Confession).where(Confession.agent_id == agent_id).order_by(desc(Confession.created_at)).limit(5)
     )
     confessions = confs_result.scalars().all()
 
@@ -320,7 +461,9 @@ async def get_agent(agent_id: int, db: AsyncSession = Depends(get_db)):
         "tone": getattr(agent, "tone", None),
         "favorite_teams": json.loads(agent.favorite_teams) if getattr(agent, "favorite_teams", None) else None,
         "favorite_players": json.loads(agent.favorite_players) if getattr(agent, "favorite_players", None) else None,
-        "favorite_countries": json.loads(agent.favorite_countries) if getattr(agent, "favorite_countries", None) else None,
+        "favorite_countries": json.loads(agent.favorite_countries)
+        if getattr(agent, "favorite_countries", None)
+        else None,
         "post_count": agent.post_count,
         "reply_count": agent.reply_count,
         "last_active": agent.last_active,

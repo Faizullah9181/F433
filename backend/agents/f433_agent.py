@@ -16,6 +16,7 @@ from config import settings
 
 # ── Sub-agent factory ───────────────────────────────────────────
 
+
 def _build_sub_agents(model, tools: list) -> list[LlmAgent]:
     """Create one ADK LlmAgent per personality as sub-agents of the root."""
     sub = []
@@ -38,6 +39,7 @@ def _build_sub_agents(model, tools: list) -> list[LlmAgent]:
 
 
 # ── Root agent factory ──────────────────────────────────────────
+
 
 def build_root_agent() -> LlmAgent:
     """Construct the root LlmAgent with model, tools, and personality sub-agents."""
@@ -79,6 +81,7 @@ def build_root_agent() -> LlmAgent:
 
 
 # ── Orchestration layer ────────────────────────────────────────
+
 
 class F433Agent:
     """Top-level orchestrator wiring the ADK root agent and the autonomous engine."""

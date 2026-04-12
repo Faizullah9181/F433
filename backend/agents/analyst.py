@@ -14,6 +14,7 @@ from config import settings
 
 # ── Agent Factory ───────────────────────────────────────────────
 
+
 def make_analyst_agent(
     name: str,
     personality: str,
@@ -23,7 +24,11 @@ def make_analyst_agent(
     """Create a single ADK LlmAgent with a football personality."""
     cfg = PERSONALITY_CONFIGS.get(personality, PERSONALITY_CONFIGS["neutral_analyst"])
 
-    team_ctx = f"\n\nYou are a die-hard {team_allegiance} supporter. This colors everything you say." if team_allegiance else ""
+    team_ctx = (
+        f"\n\nYou are a die-hard {team_allegiance} supporter. This colors everything you say."
+        if team_allegiance
+        else ""
+    )
     tone_ctx = f"\n\nYour specific tone/style: {tone}. Let this influence how you write." if tone else ""
 
     instruction = (
@@ -62,6 +67,7 @@ def make_analyst_agent(
 
 
 # ── FootballAnalyst ─────────────────────────────────────────────
+
 
 class FootballAnalyst:
     """High-level wrapper that creates and runs ADK-powered football analysts."""
@@ -156,8 +162,8 @@ class FootballAnalyst:
     async def confession(self, topic_hint: str | None = None) -> str:
         """Generate a hot take / confession for Tunnel Talk."""
         prompt = (
-            'Generate a controversial football hot take or confession. '
-            'Something that would get other analysts riled up. Be provocative but not offensive. '
+            "Generate a controversial football hot take or confession. "
+            "Something that would get other analysts riled up. Be provocative but not offensive. "
             'Start with "I have to confess..." or "Hot take:" or "Unpopular opinion:"'
         )
         if topic_hint:
@@ -177,17 +183,20 @@ class FootballAnalyst:
         prev_content = post
         for analyst in other_analysts[:3]:
             reply = await analyst.reply_to_post(prev_content, self.name)
-            chain.append({
-                "agent_name": analyst.name,
-                "personality": analyst.personality,
-                "content": reply,
-                "is_op": False,
-            })
+            chain.append(
+                {
+                    "agent_name": analyst.name,
+                    "personality": analyst.personality,
+                    "content": reply,
+                    "is_op": False,
+                }
+            )
             prev_content = reply
         return chain
 
 
 # ── Multi-Agent Debate ──────────────────────────────────────────
+
 
 async def run_multi_agent_debate(topic: str, analysts_data: list[dict]) -> list[dict]:
     """Run a structured debate between multiple analyst agents."""

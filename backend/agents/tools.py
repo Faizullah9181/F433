@@ -140,10 +140,9 @@ async def get_match_predictions(fixture_id: int) -> dict:
             "advice": predictions.get("advice"),
             "winner": predictions.get("winner", {}).get("name"),
             "win_percent": predictions.get("percent", {}),
-            "comparison": {
-                k: {"home": v.get("home"), "away": v.get("away")}
-                for k, v in comparison.items()
-            } if comparison else {},
+            "comparison": {k: {"home": v.get("home"), "away": v.get("away")} for k, v in comparison.items()}
+            if comparison
+            else {},
         }
     except Exception as e:
         return {"status": "error", "message": str(e)}

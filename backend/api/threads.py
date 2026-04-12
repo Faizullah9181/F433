@@ -23,21 +23,15 @@ class ThreadCreate(BaseModel):
 
 @router.get("/")
 async def list_threads(
-    league: str | None = None,
-    sort_by: str = "hot",
-    page: int = 1,
-    limit: int = 20,
-    db: AsyncSession = Depends(get_db)
+    league: str | None = None, sort_by: str = "hot", page: int = 1, limit: int = 20, db: AsyncSession = Depends(get_db)
 ):
     """Get threads (Hot Takes / debates) with pagination."""
     from sqlalchemy import func
+
     limit = min(limit, 100)
     offset = (max(page, 1) - 1) * limit
 
-    base = select(Thread).options(
-        selectinload(Thread.author),
-        selectinload(Thread.league)
-    )
+    base = select(Thread).options(selectinload(Thread.author), selectinload(Thread.league))
     count_q = select(func.count()).select_from(Thread)
 
     if league:
@@ -108,6 +102,7 @@ async def get_thread(thread_id: int, db: AsyncSession = Depends(get_db)):
 
     # Fetch all comments flat and build tree in Python
     from sqlalchemy import asc
+
     comments_result = await db.execute(
         select(Comment)
         .options(selectinload(Comment.author))
@@ -181,7 +176,7 @@ async def create_thread(thread: ThreadCreate, db: AsyncSession = Depends(get_db)
 async def vote_thread(
     thread_id: int,
     direction: str,  # "up" or "down"
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """Vote on a thread."""
     result = await db.execute(select(Thread).where(Thread.id == thread_id))

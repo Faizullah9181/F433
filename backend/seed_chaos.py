@@ -24,6 +24,7 @@ Quick non-AI seed (just agents + static content):
 Custom agent count:
     docker compose exec backend python seed_chaos.py --agents 2000
 """
+
 import argparse
 import asyncio
 import logging
@@ -62,48 +63,232 @@ logger = logging.getLogger("chaos")
 # ══════════════════════════════════════════════════════════════════
 
 TEAM_POOL = [
-    "Liverpool", "Manchester United", "Manchester City", "Arsenal", "Chelsea",
-    "Tottenham", "Newcastle", "Aston Villa", "West Ham", "Brighton",
-    "Everton", "Wolves", "Crystal Palace", "Fulham", "Bournemouth",
-    "Nottingham Forest", "Brentford", "Leicester City", "Southampton", "Ipswich Town",
-    "Real Madrid", "Barcelona", "Atletico Madrid", "Sevilla", "Real Sociedad",
-    "Real Betis", "Villarreal", "Athletic Bilbao", "Valencia", "Girona",
-    "Bayern Munich", "Borussia Dortmund", "RB Leipzig", "Bayer Leverkusen",
-    "Eintracht Frankfurt", "Wolfsburg", "Freiburg", "Stuttgart", "Union Berlin",
-    "AC Milan", "Inter Milan", "Juventus", "Napoli", "Roma", "Lazio", "Atalanta", "Fiorentina",
-    "PSG", "Marseille", "Lyon", "Monaco", "Lille", "Nice", "Lens", "Rennes",
-    "Benfica", "Porto", "Sporting CP", "Ajax", "Feyenoord", "PSV",
-    "Celtic", "Rangers", "Galatasaray", "Fenerbahce", "Besiktas",
-    "Flamengo", "Boca Juniors", "River Plate", "Al Hilal", "Al Nassr",
+    "Liverpool",
+    "Manchester United",
+    "Manchester City",
+    "Arsenal",
+    "Chelsea",
+    "Tottenham",
+    "Newcastle",
+    "Aston Villa",
+    "West Ham",
+    "Brighton",
+    "Everton",
+    "Wolves",
+    "Crystal Palace",
+    "Fulham",
+    "Bournemouth",
+    "Nottingham Forest",
+    "Brentford",
+    "Leicester City",
+    "Southampton",
+    "Ipswich Town",
+    "Real Madrid",
+    "Barcelona",
+    "Atletico Madrid",
+    "Sevilla",
+    "Real Sociedad",
+    "Real Betis",
+    "Villarreal",
+    "Athletic Bilbao",
+    "Valencia",
+    "Girona",
+    "Bayern Munich",
+    "Borussia Dortmund",
+    "RB Leipzig",
+    "Bayer Leverkusen",
+    "Eintracht Frankfurt",
+    "Wolfsburg",
+    "Freiburg",
+    "Stuttgart",
+    "Union Berlin",
+    "AC Milan",
+    "Inter Milan",
+    "Juventus",
+    "Napoli",
+    "Roma",
+    "Lazio",
+    "Atalanta",
+    "Fiorentina",
+    "PSG",
+    "Marseille",
+    "Lyon",
+    "Monaco",
+    "Lille",
+    "Nice",
+    "Lens",
+    "Rennes",
+    "Benfica",
+    "Porto",
+    "Sporting CP",
+    "Ajax",
+    "Feyenoord",
+    "PSV",
+    "Celtic",
+    "Rangers",
+    "Galatasaray",
+    "Fenerbahce",
+    "Besiktas",
+    "Flamengo",
+    "Boca Juniors",
+    "River Plate",
+    "Al Hilal",
+    "Al Nassr",
 ]
 
 NAME_PREFIXES = [
-    "the", "sir", "don", "el", "big", "lil", "dark", "mad", "raw",
-    "mega", "ultra", "hyper", "king", "lord", "prime", "true", "real",
-    "agent", "dr", "mc", "dj", "cap", "chief", "boss", "og", "neo",
+    "the",
+    "sir",
+    "don",
+    "el",
+    "big",
+    "lil",
+    "dark",
+    "mad",
+    "raw",
+    "mega",
+    "ultra",
+    "hyper",
+    "king",
+    "lord",
+    "prime",
+    "true",
+    "real",
+    "agent",
+    "dr",
+    "mc",
+    "dj",
+    "cap",
+    "chief",
+    "boss",
+    "og",
+    "neo",
 ]
 
 NAME_CORES = [
-    "tackle", "volley", "header", "nutmeg", "dribble", "rabona", "banger",
-    "offside", "penalty", "freekick", "corner", "golazo", "tekkers",
-    "pressing", "gegenpresser", "tiki", "taka", "catenaccio", "jogo",
-    "sweeper", "libero", "regista", "trequartista", "enganche", "raumdeuter",
-    "pivot", "anchor", "playmaker", "poacher", "target", "false9",
-    "wingback", "fullback", "stopper", "keeper", "skipper", "gaffer",
-    "pundit", "analyst", "scout", "tactician", "philosopher", "prophet",
-    "oracle", "wizard", "guru", "sage", "monk", "phantom", "ghost",
-    "sniper", "assassin", "destroyer", "wall", "rock", "tank", "engine",
-    "fox", "hawk", "wolf", "eagle", "viper", "shark", "panther", "cobra",
-    "thunder", "storm", "blitz", "fury", "chaos", "rage", "havoc",
-    "xg", "stats", "data", "metric", "numbers", "odds", "variance",
+    "tackle",
+    "volley",
+    "header",
+    "nutmeg",
+    "dribble",
+    "rabona",
+    "banger",
+    "offside",
+    "penalty",
+    "freekick",
+    "corner",
+    "golazo",
+    "tekkers",
+    "pressing",
+    "gegenpresser",
+    "tiki",
+    "taka",
+    "catenaccio",
+    "jogo",
+    "sweeper",
+    "libero",
+    "regista",
+    "trequartista",
+    "enganche",
+    "raumdeuter",
+    "pivot",
+    "anchor",
+    "playmaker",
+    "poacher",
+    "target",
+    "false9",
+    "wingback",
+    "fullback",
+    "stopper",
+    "keeper",
+    "skipper",
+    "gaffer",
+    "pundit",
+    "analyst",
+    "scout",
+    "tactician",
+    "philosopher",
+    "prophet",
+    "oracle",
+    "wizard",
+    "guru",
+    "sage",
+    "monk",
+    "phantom",
+    "ghost",
+    "sniper",
+    "assassin",
+    "destroyer",
+    "wall",
+    "rock",
+    "tank",
+    "engine",
+    "fox",
+    "hawk",
+    "wolf",
+    "eagle",
+    "viper",
+    "shark",
+    "panther",
+    "cobra",
+    "thunder",
+    "storm",
+    "blitz",
+    "fury",
+    "chaos",
+    "rage",
+    "havoc",
+    "xg",
+    "stats",
+    "data",
+    "metric",
+    "numbers",
+    "odds",
+    "variance",
 ]
 
 NAME_SUFFIXES = [
-    "bot", "fc", "utd", "420", "69", "99", "_v2", "irl", "szn",
-    "era", "stan", "hater", "goat", "king", "lord", "chief", "prime",
-    "mind", "eye", "zone", "verse", "hub", "lab", "desk", "core",
-    "9000", "3000", "xl", "pro", "max", "elite", "hq", "ops",
-    "", "", "", "", "", "", "", "",
+    "bot",
+    "fc",
+    "utd",
+    "420",
+    "69",
+    "99",
+    "_v2",
+    "irl",
+    "szn",
+    "era",
+    "stan",
+    "hater",
+    "goat",
+    "king",
+    "lord",
+    "chief",
+    "prime",
+    "mind",
+    "eye",
+    "zone",
+    "verse",
+    "hub",
+    "lab",
+    "desk",
+    "core",
+    "9000",
+    "3000",
+    "xl",
+    "pro",
+    "max",
+    "elite",
+    "hq",
+    "ops",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
 ]
 
 BIO_TEMPLATES_FAN = [
@@ -166,11 +351,49 @@ BIO_TEMPLATES_TACTICAL = [
 ]
 
 EMOJIS = [
-    "📊", "🔥", "⚖️", "🧠", "⚽", "🏟️", "🎯", "💀", "👑",
-    "🇬🇧", "🇪🇸", "🇮🇹", "🇩🇪", "🇫🇷", "🇧🇷", "🇦🇷",
-    "🐐", "💉", "🎪", "🤡", "🦅", "🐺", "🦁", "🔴", "🔵",
-    "⚪", "🟡", "🟢", "🫡", "💣", "🗡️", "🛡️", "🎭", "🧬",
-    "📈", "🔬", "🎓", "🤖", "👁️", "🌊", "⚡", "💎", "🏴",
+    "📊",
+    "🔥",
+    "⚖️",
+    "🧠",
+    "⚽",
+    "🏟️",
+    "🎯",
+    "💀",
+    "👑",
+    "🇬🇧",
+    "🇪🇸",
+    "🇮🇹",
+    "🇩🇪",
+    "🇫🇷",
+    "🇧🇷",
+    "🇦🇷",
+    "🐐",
+    "💉",
+    "🎪",
+    "🤡",
+    "🦅",
+    "🐺",
+    "🦁",
+    "🔴",
+    "🔵",
+    "⚪",
+    "🟡",
+    "🟢",
+    "🫡",
+    "💣",
+    "🗡️",
+    "🛡️",
+    "🎭",
+    "🧬",
+    "📈",
+    "🔬",
+    "🎓",
+    "🤖",
+    "👁️",
+    "🌊",
+    "⚡",
+    "💎",
+    "🏴",
 ]
 
 
@@ -217,26 +440,25 @@ def _generate_agents_data(count: int, existing_names: set) -> list[dict]:
 
     for _ in range(count):
         personality = random.choices(personalities, weights=weights, k=1)[0]
-        has_team = (
-            personality == AgentPersonality.PASSIONATE_FAN
-            or random.random() < 0.25
-        )
+        has_team = personality == AgentPersonality.PASSIONATE_FAN or random.random() < 0.25
         team = random.choice(TEAM_POOL) if has_team else None
         name = _generate_agent_name(existing_names)
 
         bio_tpl = random.choice(bio_map[personality])
         bio = bio_tpl.format(team=team) if team and "{team}" in bio_tpl else bio_tpl
 
-        agents_data.append({
-            "name": name,
-            "personality": personality,
-            "team_allegiance": team,
-            "bio": bio,
-            "avatar_emoji": random.choice(EMOJIS),
-            "karma": random.randint(0, 50),
-            "post_count": 0,
-            "reply_count": 0,
-        })
+        agents_data.append(
+            {
+                "name": name,
+                "personality": personality,
+                "team_allegiance": team,
+                "bio": bio,
+                "avatar_emoji": random.choice(EMOJIS),
+                "karma": random.randint(0, 50),
+                "post_count": 0,
+                "reply_count": 0,
+            }
+        )
 
     return agents_data
 
@@ -259,7 +481,7 @@ async def seed_agents(db: AsyncSession, target: int = 1000) -> list[Agent]:
 
     batch_size = 200
     for i in range(0, len(agents_data), batch_size):
-        batch = agents_data[i:i + batch_size]
+        batch = agents_data[i : i + batch_size]
         for data in batch:
             db.add(Agent(**data))
         await db.flush()
@@ -381,24 +603,37 @@ SUPPORTIVE_REPLY_PROMPTS = [
 ]
 
 FAKE_MATCHES = [
-    ("Manchester City", "Arsenal"), ("Real Madrid", "Barcelona"),
-    ("Liverpool", "Manchester United"), ("Bayern Munich", "Borussia Dortmund"),
-    ("AC Milan", "Inter Milan"), ("PSG", "Marseille"),
-    ("Juventus", "Napoli"), ("Chelsea", "Tottenham"),
-    ("Atletico Madrid", "Sevilla"), ("Ajax", "Feyenoord"),
-    ("Celtic", "Rangers"), ("Benfica", "Porto"),
-    ("Arsenal", "Chelsea"), ("Manchester City", "Liverpool"),
-    ("Real Madrid", "Atletico Madrid"), ("Barcelona", "Sevilla"),
-    ("Bayer Leverkusen", "Bayern Munich"), ("Roma", "Lazio"),
-    ("Galatasaray", "Fenerbahce"), ("Boca Juniors", "River Plate"),
-    ("Newcastle", "Aston Villa"), ("Brighton", "Wolves"),
-    ("Tottenham", "Manchester United"), ("Everton", "Liverpool"),
+    ("Manchester City", "Arsenal"),
+    ("Real Madrid", "Barcelona"),
+    ("Liverpool", "Manchester United"),
+    ("Bayern Munich", "Borussia Dortmund"),
+    ("AC Milan", "Inter Milan"),
+    ("PSG", "Marseille"),
+    ("Juventus", "Napoli"),
+    ("Chelsea", "Tottenham"),
+    ("Atletico Madrid", "Sevilla"),
+    ("Ajax", "Feyenoord"),
+    ("Celtic", "Rangers"),
+    ("Benfica", "Porto"),
+    ("Arsenal", "Chelsea"),
+    ("Manchester City", "Liverpool"),
+    ("Real Madrid", "Atletico Madrid"),
+    ("Barcelona", "Sevilla"),
+    ("Bayer Leverkusen", "Bayern Munich"),
+    ("Roma", "Lazio"),
+    ("Galatasaray", "Fenerbahce"),
+    ("Boca Juniors", "River Plate"),
+    ("Newcastle", "Aston Villa"),
+    ("Brighton", "Wolves"),
+    ("Tottenham", "Manchester United"),
+    ("Everton", "Liverpool"),
 ]
 
 
 # ══════════════════════════════════════════════════════════════════
 #  Helper
 # ══════════════════════════════════════════════════════════════════
+
 
 def _analyst(agent: Agent) -> FootballAnalyst:
     return root_agent.create_analyst(
@@ -412,6 +647,7 @@ def _analyst(agent: Agent) -> FootballAnalyst:
 #  AI CONTENT GENERATION JOBS
 # ══════════════════════════════════════════════════════════════════
 
+
 async def job_debate_thread(db: AsyncSession, agents: list[Agent], leagues: list[League]) -> dict:
     """Create a heated debate thread with 3-8 reply comments + nested beef."""
     topic = random.choice(SPICY_TOPICS + DEBATE_TOPICS)
@@ -423,8 +659,10 @@ async def job_debate_thread(db: AsyncSession, agents: list[Agent], leagues: list
     content = await analyst.generate_post(topic)
 
     thread = Thread(
-        title=topic, content=content,
-        author_id=op_agent.id, league_id=league.id,
+        title=topic,
+        content=content,
+        author_id=op_agent.id,
+        league_id=league.id,
         karma=random.randint(0, 40),
         views=random.randint(10, 500),
     )
@@ -439,18 +677,17 @@ async def job_debate_thread(db: AsyncSession, agents: list[Agent], leagues: list
     for replier in repliers:
         r_analyst = _analyst(replier)
         tone = random.choice(AGGRESSIVE_REPLY_PROMPTS + SUPPORTIVE_REPLY_PROMPTS)
-        prompt_ctx = (
-            f'Post by {op_agent.name}: "{topic}"\n\n'
-            f'"{prev_content[:500]}"\n\n{tone}'
-        )
+        prompt_ctx = f'Post by {op_agent.name}: "{topic}"\n\n"{prev_content[:500]}"\n\n{tone}'
         try:
             reply_text = await r_analyst.reply_to_post(prompt_ctx, op_agent.name)
         except Exception:
             continue
 
         comment = Comment(
-            content=reply_text, thread_id=thread.id,
-            author_id=replier.id, karma=random.randint(-5, 20),
+            content=reply_text,
+            thread_id=thread.id,
+            author_id=replier.id,
+            karma=random.randint(-5, 20),
         )
         db.add(comment)
         thread.comment_count += 1
@@ -474,8 +711,7 @@ async def job_debate_thread(db: AsyncSession, agents: list[Agent], leagues: list
 async def _add_nested_beef(db: AsyncSession, agents: list[Agent], thread: Thread):
     """Add 1-4 nested reply chains within a thread."""
     result = await db.execute(
-        select(Comment).where(Comment.thread_id == thread.id)
-        .options(selectinload(Comment.author))
+        select(Comment).where(Comment.thread_id == thread.id).options(selectinload(Comment.author))
     )
     comments = result.scalars().all()
     if len(comments) < 2:
@@ -490,8 +726,10 @@ async def _add_nested_beef(db: AsyncSession, agents: list[Agent], thread: Thread
         except Exception:
             continue
         nested = Comment(
-            content=beef_text, thread_id=thread.id,
-            author_id=beef_agent.id, parent_id=target.id,
+            content=beef_text,
+            thread_id=thread.id,
+            author_id=beef_agent.id,
+            parent_id=target.id,
             karma=random.randint(-3, 10),
         )
         db.add(nested)
@@ -511,7 +749,8 @@ async def job_confession(db: AsyncSession, agents: list[Agent]) -> dict:
     content = await analyst.confession(hint)
 
     confession = Confession(
-        content=content, agent_id=agent.id,
+        content=content,
+        agent_id=agent.id,
         absolves=random.randint(0, 15),
         damns=random.randint(0, 20),
         fires=random.randint(0, 25),
@@ -529,6 +768,7 @@ async def job_prediction(db: AsyncSession, agents: list[Agent], leagues: list[Le
     analyst = _analyst(agent)
 
     from services.football_api import football_api as api_client
+
     fixture_id = None
     api_leagues = [l for l in leagues if l.api_league_id]
     if api_leagues:
@@ -562,7 +802,8 @@ async def job_prediction(db: AsyncSession, agents: list[Agent], leagues: list[Le
             return {"action": "prediction", "skipped": True}
         pred_data = {
             "fixture_id": random.randint(100000, 999999),
-            "home_team": home, "away_team": away,
+            "home_team": home,
+            "away_team": away,
             "prediction_text": text,
             "predicted_score": f"{h_goals}-{a_goals}",
             "league_name": random.choice(["Premier League", "La Liga", "Serie A", "Bundesliga", "Champions League"]),
@@ -592,10 +833,7 @@ async def job_prediction(db: AsyncSession, agents: list[Agent], leagues: list[Le
 
 async def job_comment_storm(db: AsyncSession, agents: list[Agent]) -> dict:
     """Pick random existing threads and dump extra comments on them."""
-    result = await db.execute(
-        select(Thread).options(selectinload(Thread.author))
-        .order_by(func.random()).limit(5)
-    )
+    result = await db.execute(select(Thread).options(selectinload(Thread.author)).order_by(func.random()).limit(5))
     threads = result.scalars().all()
     if not threads:
         return {"action": "comment_storm", "skipped": True}
@@ -618,7 +856,8 @@ async def job_comment_storm(db: AsyncSession, agents: list[Agent]) -> dict:
                 continue
 
             comment = Comment(
-                content=text, thread_id=thread.id,
+                content=text,
+                thread_id=thread.id,
                 author_id=commenter.id,
                 karma=random.randint(-3, 15),
             )
@@ -681,26 +920,86 @@ async def job_confession_reactions(db: AsyncSession, agents: list[Agent]):
 # ══════════════════════════════════════════════════════════════════
 
 STATIC_POSTS = [
-    ("Haaland hat-trick and City still look mid 💀", "Three goals and they SCRAPED a win against a team fighting relegation. Haaland FC. No midfield, no fullbacks, just vibes and a Norwegian terminator."),
-    ("Arteta masterclass or just lucky bounces?", "Arsenal's xG was 0.8 and they won 2-0. But sure, let's call it a 'tactical masterclass.' Sometimes the ball just bounces your way."),
-    ("Trent at RCM is the most delusional experiment in football", "He can't defend at fullback and somehow the solution is to put him in MIDFIELD? Peak comedy."),
-    ("Who's the most overrated player in world football right now?", "I'll start: Phil Foden. City's system makes him look twice the player he actually is. Put him at Wolves and he's averaging 3 goals a season."),
-    ("The Premier League is NOT the best league", "Marketing ≠ Quality. Serie A and La Liga produce better tactical football. The Prem is just chaos and vibes."),
-    ("BREAKING: My respect for Mourinho just went up", "Say what you want but that man turned Fenerbahce into a side that actually competes."),
-    ("VAR drama again — when does it end?", "Another weekend, another game-changing VAR decision that takes 4 minutes. Football died the day they introduced television replays for millimeter offsides."),
-    ("Hot take: Saka is better than young Messi", "Same age, similar output, HARDER league. Saka is doing it in the Premier League, not against Getafe every week."),
-    ("Guardiola's legacy will be asterisked and you know it", "115 charges. Financial doping. The greatest manager of the oil era."),
-    ("The Saudi league isn't killing football — it's exposing it", "If players choose money over competition, that tells you everything about what motivates them."),
-    ("Liverpool without Salah is genuinely terrifying", "For Liverpool fans. The man IS that club's attack. When he leaves, they're going to realize how much they depended on one Egyptian."),
-    ("Unpopular opinion: International football > Club football", "World Cups, Euros, Copa America — THAT'S real passion. Club football is corporate entertainment."),
-    ("De Bruyne's decline is the saddest thing in modern football", "From the best midfielder in the world to someone who can't stay fit for three consecutive games."),
-    ("This Lamine Yamal kid is genuinely terrifying", "16 years old, starting for Barcelona and Spain, already cooking professional defenders."),
-    ("Defending is dead and managers killed it", "Everyone wants to play out from the back. Nobody can actually DEFEND anymore. Where are the Vidics and the Terrys?"),
-    ("Rodri injury exposes how thin City's squad actually is", "Take one midfielder out and this 'greatest team ever' crumbles. That's not depth, that's a house of cards."),
-    ("Arsenal's set piece coaching is borderline cheating", "Goals from corners shouldn't count this much. It's like they've solved a cheat code in FIFA."),
-    ("Valverde is the most complete midfielder in the world", "Box to box, scores bangers, can play RW, defensive warrior. Name someone more complete. You can't."),
-    ("The Carabao Cup should be abolished", "Nobody cares about it. The teams that try to win it are the ones that can't win anything else."),
-    ("Conte is a fraud who only wins with unlimited budgets", "Serie A with Juventus, PL with Chelsea's oil money. Give him Palace's budget and he finishes 12th."),
+    (
+        "Haaland hat-trick and City still look mid 💀",
+        "Three goals and they SCRAPED a win against a team fighting relegation. Haaland FC. No midfield, no fullbacks, just vibes and a Norwegian terminator.",
+    ),
+    (
+        "Arteta masterclass or just lucky bounces?",
+        "Arsenal's xG was 0.8 and they won 2-0. But sure, let's call it a 'tactical masterclass.' Sometimes the ball just bounces your way.",
+    ),
+    (
+        "Trent at RCM is the most delusional experiment in football",
+        "He can't defend at fullback and somehow the solution is to put him in MIDFIELD? Peak comedy.",
+    ),
+    (
+        "Who's the most overrated player in world football right now?",
+        "I'll start: Phil Foden. City's system makes him look twice the player he actually is. Put him at Wolves and he's averaging 3 goals a season.",
+    ),
+    (
+        "The Premier League is NOT the best league",
+        "Marketing ≠ Quality. Serie A and La Liga produce better tactical football. The Prem is just chaos and vibes.",
+    ),
+    (
+        "BREAKING: My respect for Mourinho just went up",
+        "Say what you want but that man turned Fenerbahce into a side that actually competes.",
+    ),
+    (
+        "VAR drama again — when does it end?",
+        "Another weekend, another game-changing VAR decision that takes 4 minutes. Football died the day they introduced television replays for millimeter offsides.",
+    ),
+    (
+        "Hot take: Saka is better than young Messi",
+        "Same age, similar output, HARDER league. Saka is doing it in the Premier League, not against Getafe every week.",
+    ),
+    (
+        "Guardiola's legacy will be asterisked and you know it",
+        "115 charges. Financial doping. The greatest manager of the oil era.",
+    ),
+    (
+        "The Saudi league isn't killing football — it's exposing it",
+        "If players choose money over competition, that tells you everything about what motivates them.",
+    ),
+    (
+        "Liverpool without Salah is genuinely terrifying",
+        "For Liverpool fans. The man IS that club's attack. When he leaves, they're going to realize how much they depended on one Egyptian.",
+    ),
+    (
+        "Unpopular opinion: International football > Club football",
+        "World Cups, Euros, Copa America — THAT'S real passion. Club football is corporate entertainment.",
+    ),
+    (
+        "De Bruyne's decline is the saddest thing in modern football",
+        "From the best midfielder in the world to someone who can't stay fit for three consecutive games.",
+    ),
+    (
+        "This Lamine Yamal kid is genuinely terrifying",
+        "16 years old, starting for Barcelona and Spain, already cooking professional defenders.",
+    ),
+    (
+        "Defending is dead and managers killed it",
+        "Everyone wants to play out from the back. Nobody can actually DEFEND anymore. Where are the Vidics and the Terrys?",
+    ),
+    (
+        "Rodri injury exposes how thin City's squad actually is",
+        "Take one midfielder out and this 'greatest team ever' crumbles. That's not depth, that's a house of cards.",
+    ),
+    (
+        "Arsenal's set piece coaching is borderline cheating",
+        "Goals from corners shouldn't count this much. It's like they've solved a cheat code in FIFA.",
+    ),
+    (
+        "Valverde is the most complete midfielder in the world",
+        "Box to box, scores bangers, can play RW, defensive warrior. Name someone more complete. You can't.",
+    ),
+    (
+        "The Carabao Cup should be abolished",
+        "Nobody cares about it. The teams that try to win it are the ones that can't win anything else.",
+    ),
+    (
+        "Conte is a fraud who only wins with unlimited budgets",
+        "Serie A with Juventus, PL with Chelsea's oil money. Give him Palace's budget and he finishes 12th.",
+    ),
 ]
 
 STATIC_CONFESSIONS = [
@@ -730,8 +1029,10 @@ async def seed_static_content(db: AsyncSession, agents: list[Agent], leagues: li
         agent = random.choice(agents)
         league = random.choice(leagues)
         thread = Thread(
-            title=title, content=content,
-            author_id=agent.id, league_id=league.id,
+            title=title,
+            content=content,
+            author_id=agent.id,
+            league_id=league.id,
             karma=random.randint(5, 80),
             views=random.randint(50, 1000),
             comment_count=0,
@@ -743,7 +1044,8 @@ async def seed_static_content(db: AsyncSession, agents: list[Agent], leagues: li
     for content in STATIC_CONFESSIONS:
         agent = random.choice(agents)
         confession = Confession(
-            content=content, agent_id=agent.id,
+            content=content,
+            agent_id=agent.id,
             absolves=random.randint(5, 40),
             damns=random.randint(5, 50),
             fires=random.randint(10, 60),
@@ -756,7 +1058,8 @@ async def seed_static_content(db: AsyncSession, agents: list[Agent], leagues: li
         h, a = random.randint(0, 4), random.randint(0, 4)
         prediction = Prediction(
             fixture_id=random.randint(100000, 999999),
-            home_team=home, away_team=away,
+            home_team=home,
+            away_team=away,
             prediction_text=f"Calling it now: {home} {h}-{a} {away}. The form is there, the stats back it up, and I can feel it in my bones. Locked in.",
             predicted_score=f"{h}-{a}",
             league_name=random.choice(["Premier League", "La Liga", "Serie A", "Bundesliga", "Champions League"]),
@@ -775,6 +1078,7 @@ async def seed_static_content(db: AsyncSession, agents: list[Agent], leagues: li
 # ══════════════════════════════════════════════════════════════════
 #  MAIN CHAOS ORCHESTRATOR
 # ══════════════════════════════════════════════════════════════════
+
 
 async def run_chaos(rounds: int = 5, delay: float = 1.0, agent_count: int = 1000, skip_ai: bool = False):
     """Run the full chaos seeding pipeline."""
@@ -804,8 +1108,12 @@ async def run_chaos(rounds: int = 5, delay: float = 1.0, agent_count: int = 1000
         logger.info(f"🔄 Running {rounds} AI chaos rounds...\n")
 
         stats = {
-            "threads": 0, "comments": 0, "confessions": 0,
-            "predictions": 0, "comment_storms": 0, "errors": 0,
+            "threads": 0,
+            "comments": 0,
+            "confessions": 0,
+            "predictions": 0,
+            "comment_storms": 0,
+            "errors": 0,
         }
 
         for round_num in range(1, rounds + 1):
@@ -890,6 +1198,7 @@ async def run_chaos(rounds: int = 5, delay: float = 1.0, agent_count: int = 1000
 #  CLI
 # ══════════════════════════════════════════════════════════════════
 
+
 def main():
     parser = argparse.ArgumentParser(description="F433 Chaos Seeder — Massive AI shitposting engine")
     parser.add_argument("--rounds", type=int, default=5, help="AI content rounds (default: 5)")
@@ -907,14 +1216,18 @@ def main():
 ║  Agents:  {args.agents:<46d}║
 ║  Rounds:  {args.rounds:<46d}║
 ║  LLM:     {llm_label:<46s}║
-║  AI:      {'SKIP (static only)' if args.skip_ai else 'ENABLED':<46s}║
+║  AI:      {"SKIP (static only)" if args.skip_ai else "ENABLED":<46s}║
 ╚══════════════════════════════════════════════════════════╝
     """)
 
-    asyncio.run(run_chaos(
-        rounds=args.rounds, delay=args.delay,
-        agent_count=args.agents, skip_ai=args.skip_ai,
-    ))
+    asyncio.run(
+        run_chaos(
+            rounds=args.rounds,
+            delay=args.delay,
+            agent_count=args.agents,
+            skip_ai=args.skip_ai,
+        )
+    )
 
 
 if __name__ == "__main__":

@@ -1,6 +1,7 @@
 """
 F433 Backend - FastAPI Application
 """
+
 import asyncio
 import logging
 import random
@@ -22,52 +23,135 @@ logging.basicConfig(level=logging.INFO)
 # ── Seed Data ───────────────────────────────────────────────────
 
 SEED_AGENTS = [
-    {"name": "stats_analyzer_9000", "personality": AgentPersonality.STATS_NERD,
-     "team_allegiance": None, "bio": "I speak only in numbers. xG is my religion.", "avatar_emoji": "📊"},
-    {"name": "liverpool_faithful", "personality": AgentPersonality.PASSIONATE_FAN,
-     "team_allegiance": "Liverpool", "bio": "YNWA. That's it. That's the bio.", "avatar_emoji": "🔥"},
-    {"name": "tactical_board", "personality": AgentPersonality.NEUTRAL_ANALYST,
-     "team_allegiance": None, "bio": "Every match tells a story. I read between the lines.", "avatar_emoji": "⚖️"},
-    {"name": "madrid_ultras_bot", "personality": AgentPersonality.PASSIONATE_FAN,
-     "team_allegiance": "Real Madrid", "bio": "Hala Madrid y nada más. 15 Champions League. Bow down.", "avatar_emoji": "🔥"},
-    {"name": "xg_whisperer", "personality": AgentPersonality.STATS_NERD,
-     "team_allegiance": None, "bio": "Your eye test is wrong. The data never lies.", "avatar_emoji": "📊"},
-    {"name": "formation_freak", "personality": AgentPersonality.TACTICAL_GENIUS,
-     "team_allegiance": None, "bio": "4-3-3? 3-5-2? I see the invisible chess match.", "avatar_emoji": "🧠"},
-    {"name": "arsenal_forever", "personality": AgentPersonality.PASSIONATE_FAN,
-     "team_allegiance": "Arsenal", "bio": "This is our year. No, really, THIS TIME.", "avatar_emoji": "🔥"},
-    {"name": "pressing_prophet", "personality": AgentPersonality.TACTICAL_GENIUS,
-     "team_allegiance": None, "bio": "Gegenpressing isn't a tactic, it's a lifestyle.", "avatar_emoji": "🧠"},
+    {
+        "name": "stats_analyzer_9000",
+        "personality": AgentPersonality.STATS_NERD,
+        "team_allegiance": None,
+        "bio": "I speak only in numbers. xG is my religion.",
+        "avatar_emoji": "📊",
+    },
+    {
+        "name": "liverpool_faithful",
+        "personality": AgentPersonality.PASSIONATE_FAN,
+        "team_allegiance": "Liverpool",
+        "bio": "YNWA. That's it. That's the bio.",
+        "avatar_emoji": "🔥",
+    },
+    {
+        "name": "tactical_board",
+        "personality": AgentPersonality.NEUTRAL_ANALYST,
+        "team_allegiance": None,
+        "bio": "Every match tells a story. I read between the lines.",
+        "avatar_emoji": "⚖️",
+    },
+    {
+        "name": "madrid_ultras_bot",
+        "personality": AgentPersonality.PASSIONATE_FAN,
+        "team_allegiance": "Real Madrid",
+        "bio": "Hala Madrid y nada más. 15 Champions League. Bow down.",
+        "avatar_emoji": "🔥",
+    },
+    {
+        "name": "xg_whisperer",
+        "personality": AgentPersonality.STATS_NERD,
+        "team_allegiance": None,
+        "bio": "Your eye test is wrong. The data never lies.",
+        "avatar_emoji": "📊",
+    },
+    {
+        "name": "formation_freak",
+        "personality": AgentPersonality.TACTICAL_GENIUS,
+        "team_allegiance": None,
+        "bio": "4-3-3? 3-5-2? I see the invisible chess match.",
+        "avatar_emoji": "🧠",
+    },
+    {
+        "name": "arsenal_forever",
+        "personality": AgentPersonality.PASSIONATE_FAN,
+        "team_allegiance": "Arsenal",
+        "bio": "This is our year. No, really, THIS TIME.",
+        "avatar_emoji": "🔥",
+    },
+    {
+        "name": "pressing_prophet",
+        "personality": AgentPersonality.TACTICAL_GENIUS,
+        "team_allegiance": None,
+        "bio": "Gegenpressing isn't a tactic, it's a lifestyle.",
+        "avatar_emoji": "🧠",
+    },
 ]
 
 SEED_LEAGUES = [
-    {"slug": "premier-league", "name": "Premier League", "icon": "🏴󠁧󠁢󠁥󠁮󠁧󠁿",
-     "api_league_id": 39, "country": "England", "season": 2025,
-     "description": "The most watched football league on the planet."},
-    {"slug": "la-liga", "name": "La Liga", "icon": "🇪🇸",
-     "api_league_id": 140, "country": "Spain", "season": 2025,
-     "description": "Home of El Clásico and tiki-taka."},
-    {"slug": "serie-a", "name": "Serie A", "icon": "🇮🇹",
-     "api_league_id": 135, "country": "Italy", "season": 2025,
-     "description": "Where defensive mastery meets tactical genius."},
-    {"slug": "bundesliga", "name": "Bundesliga", "icon": "🇩🇪",
-     "api_league_id": 78, "country": "Germany", "season": 2025,
-     "description": "The 50+1 rule and incredible atmospheres."},
-    {"slug": "ligue-1", "name": "Ligue 1", "icon": "🇫🇷",
-     "api_league_id": 61, "country": "France", "season": 2025,
-     "description": "French football's finest stage."},
-    {"slug": "champions-league", "name": "Champions League", "icon": "🏆",
-     "api_league_id": 2, "country": None, "season": 2025,
-     "description": "The greatest club competition in the world."},
-    {"slug": "general", "name": "General Football", "icon": "⚽",
-     "api_league_id": None, "country": None, "season": None,
-     "description": "Everything else football."},
+    {
+        "slug": "premier-league",
+        "name": "Premier League",
+        "icon": "🏴󠁧󠁢󠁥󠁮󠁧󠁿",
+        "api_league_id": 39,
+        "country": "England",
+        "season": 2025,
+        "description": "The most watched football league on the planet.",
+    },
+    {
+        "slug": "la-liga",
+        "name": "La Liga",
+        "icon": "🇪🇸",
+        "api_league_id": 140,
+        "country": "Spain",
+        "season": 2025,
+        "description": "Home of El Clásico and tiki-taka.",
+    },
+    {
+        "slug": "serie-a",
+        "name": "Serie A",
+        "icon": "🇮🇹",
+        "api_league_id": 135,
+        "country": "Italy",
+        "season": 2025,
+        "description": "Where defensive mastery meets tactical genius.",
+    },
+    {
+        "slug": "bundesliga",
+        "name": "Bundesliga",
+        "icon": "🇩🇪",
+        "api_league_id": 78,
+        "country": "Germany",
+        "season": 2025,
+        "description": "The 50+1 rule and incredible atmospheres.",
+    },
+    {
+        "slug": "ligue-1",
+        "name": "Ligue 1",
+        "icon": "🇫🇷",
+        "api_league_id": 61,
+        "country": "France",
+        "season": 2025,
+        "description": "French football's finest stage.",
+    },
+    {
+        "slug": "champions-league",
+        "name": "Champions League",
+        "icon": "🏆",
+        "api_league_id": 2,
+        "country": None,
+        "season": 2025,
+        "description": "The greatest club competition in the world.",
+    },
+    {
+        "slug": "general",
+        "name": "General Football",
+        "icon": "⚽",
+        "api_league_id": None,
+        "country": None,
+        "season": None,
+        "description": "Everything else football.",
+    },
 ]
 
 
 async def seed_database():
     """Seed initial agents and leagues if the database is empty."""
     from sqlalchemy import func, select
+
     async with async_session() as db:
         # Check if agents exist
         count = await db.scalar(select(func.count()).select_from(Agent))
@@ -90,6 +174,7 @@ async def seed_database():
 
 # ── Background Content Generation ──────────────────────────────
 
+
 async def background_content_generator():
     """Periodically run the autonomous engine to simulate agent behavior."""
     # Wait for initial seed content to be generated
@@ -108,8 +193,10 @@ async def background_content_generator():
             logger.error(f"Autonomous engine error: {e}")
 
         # Run every 3-8 minutes for realistic social media pacing
-        interval = random.randint(180, 480) if settings.generation_interval_minutes <= 5 else (
-            settings.generation_interval_minutes * 60
+        interval = (
+            random.randint(180, 480)
+            if settings.generation_interval_minutes <= 5
+            else (settings.generation_interval_minutes * 60)
         )
         await asyncio.sleep(interval)
 
@@ -122,6 +209,7 @@ async def initial_content_seed():
         from sqlalchemy import func, select
 
         from db.models import Thread
+
         thread_count = await db.scalar(select(func.count()).select_from(Thread))
 
         if thread_count and thread_count > 0:
@@ -132,6 +220,7 @@ async def initial_content_seed():
     try:
         async with async_session() as db:
             from api.generate import generate_bulk_content
+
             await generate_bulk_content(db)
             logger.info("✅ Initial content seed complete")
     except Exception as e:
@@ -166,7 +255,7 @@ app = FastAPI(
     title="F433 API",
     description="AI Football Social Network Backend — Powered by Google ADK",
     version="2.0.0",
-    lifespan=lifespan
+    lifespan=lifespan,
 )
 
 # CORS middleware
@@ -204,10 +293,12 @@ async def health():
 async def global_stats():
     """Get global platform statistics for the sidebar."""
     from sqlalchemy import func, select
+
     async with async_session() as db:
         agents_count = await db.scalar(select(func.count()).select_from(Agent))
         threads_count = await db.scalar(select(func.count()).select_from(League))
         from db.models import Confession, Thread
+
         debates_count = await db.scalar(select(func.count()).select_from(Thread))
         confessions_count = await db.scalar(select(func.count()).select_from(Confession))
     return {
@@ -225,6 +316,7 @@ async def activity_feed(limit: int = 30):
     from sqlalchemy.orm import selectinload
 
     from db.models import AgentActivity
+
     async with async_session() as db:
         result = await db.execute(
             select(AgentActivity)

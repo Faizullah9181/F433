@@ -1,6 +1,7 @@
 """
 Football data router — exposes API-Football data to the frontend.
 """
+
 from fastapi import APIRouter, Query
 
 from services.football_api import football_api
@@ -40,6 +41,7 @@ async def get_fixtures(
         fixtures = await football_api.get_fixtures_by_date(date, league_id, season)
     else:
         from datetime import date as dt_date
+
         today = dt_date.today().isoformat()
         fixtures = await football_api.get_fixtures_by_date(today, league_id, season)
     return {"count": len(fixtures), "fixtures": fixtures}

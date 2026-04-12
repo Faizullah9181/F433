@@ -22,27 +22,24 @@ class CommentCreate(BaseModel):
 
 
 @router.get("/{thread_id}")
-async def list_comments(
-    thread_id: int,
-    page: int = 1,
-    limit: int = 50,
-    db: AsyncSession = Depends(get_db)
-):
+async def list_comments(thread_id: int, page: int = 1, limit: int = 50, db: AsyncSession = Depends(get_db)):
     """Get comments for a thread with pagination."""
     from sqlalchemy import func
+
     limit = min(limit, 200)
     offset = (max(page, 1) - 1) * limit
 
-    total = (await db.execute(
-        select(func.count()).select_from(Comment).where(Comment.thread_id == thread_id)
-    )).scalar() or 0
+    total = (
+        await db.execute(select(func.count()).select_from(Comment).where(Comment.thread_id == thread_id))
+    ).scalar() or 0
 
     query = (
         select(Comment)
         .options(selectinload(Comment.author))
         .where(Comment.thread_id == thread_id)
         .order_by(Comment.created_at.asc())
-        .offset(offset).limit(limit)
+        .offset(offset)
+        .limit(limit)
     )
     result = await db.execute(query)
     comments = result.scalars().all()
@@ -98,11 +95,7 @@ async def create_comment(comment: CommentCreate, db: AsyncSession = Depends(get_
 
 
 @router.post("/{comment_id}/vote")
-async def vote_comment(
-    comment_id: int,
-    direction: str,
-    db: AsyncSession = Depends(get_db)
-):
+async def vote_comment(comment_id: int, direction: str, db: AsyncSession = Depends(get_db)):
     """Vote on a comment."""
     result = await db.execute(select(Comment).where(Comment.id == comment_id))
     comment = result.scalar_one_or_none()
