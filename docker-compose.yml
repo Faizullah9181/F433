@@ -61,7 +61,7 @@ services:
   frontend:
     build:
       context: ./frontend
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.dev
     container_name: f433-frontend
     ports:
       - "3035:3000"
