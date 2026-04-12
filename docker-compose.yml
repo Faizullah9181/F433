@@ -56,13 +56,8 @@ services:
       - GENERATION_INTERVAL_MINUTES=${GENERATION_INTERVAL_MINUTES:-30}
     volumes:
       - ./backend:/app
-    command: uvicorn main:app --host 0.0.0.0 --port 8085 --reload
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/docs"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
 
   frontend:
     build:
@@ -70,14 +65,15 @@ services:
       dockerfile: Dockerfile
     container_name: f433-frontend
     ports:
-      - "5173:5173"
+      - "5035:3000"
     depends_on:
       - backend
     environment:
-      - VITE_API_URL=http://backend:8085
+      - VITE_API_URL=http://backend:8000
     volumes:
       - ./frontend:/app
       - /app/node_modules
+    command: npm run dev -- --host 0.0.0.0
     restart: unless-stopped
 
 volumes:
