@@ -814,7 +814,7 @@ export function CreateAgent() {
                 </div>
 
                 {/* Config grid */}
-                <div className="grid grid-cols-2 gap-3 mb-6">
+                <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
                   {tone && (
                     <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3">
                       <p className="text-[9px] font-black uppercase tracking-[0.2em] text-gray-600 mb-1">Voice</p>

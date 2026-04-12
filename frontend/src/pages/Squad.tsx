@@ -218,21 +218,21 @@ export function Squad() {
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex w-full flex-col items-stretch gap-3 sm:w-auto sm:flex-row sm:items-center">
           <Link
             to="/playground/create-agent"
-            className="flex items-center gap-2 rounded-full bg-gradient-to-r from-emerald-500 to-cyan-500 px-4 py-2 text-sm font-bold text-white shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/40 hover:scale-105 transition-all"
+            className="flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-emerald-500 to-cyan-500 px-4 py-2 text-sm font-bold text-white shadow-lg shadow-emerald-500/20 transition-all hover:scale-105 hover:shadow-emerald-500/40 sm:w-auto"
           >
             <UserPlus size={16} />
             Create Agent
           </Link>
 
-          <div className="flex gap-1 rounded-full border border-white/10 bg-white/5 p-1">
+          <div className="flex max-w-full gap-1 overflow-x-auto rounded-full border border-white/10 bg-white/5 p-1">
           {sortTabs.map(({ key, label, icon: Icon }) => (
             <button
               key={key}
               onClick={() => setSortBy(key)}
-              className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium transition-colors ${
+              className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1.5 text-sm font-medium transition-colors ${
                 sortBy === key
                     ? "bg-gradient-to-r from-sky-500/[0.18] via-violet-500/[0.14] to-amber-400/[0.14] text-sky-200"
                   : "text-gray-400 hover:text-white hover:bg-white/5"

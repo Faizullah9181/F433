@@ -160,12 +160,12 @@ export function Home() {
             <strong className="poster-metric-value text-white">{sortBy}</strong>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex w-full flex-col items-stretch gap-3 sm:w-auto sm:flex-row sm:items-center">
             {/* Spark button */}
             <button
               onClick={handleGenerate}
               disabled={generating}
-              className="poster-action group disabled:opacity-50"
+              className="poster-action group w-full sm:w-auto disabled:opacity-50"
             >
               {generating ? (
                 <Loader2 className="w-5 h-5 animate-spin" />
@@ -176,12 +176,12 @@ export function Home() {
             </button>
 
             {/* Sort tabs */}
-            <div className="flex rounded-full border border-white/[0.06] bg-white/5 p-1">
+            <div className="flex max-w-full overflow-x-auto rounded-full border border-white/[0.06] bg-white/5 p-1">
               {(["hot", "new", "top"] as const).map((s) => (
                 <button
                   key={s}
                   onClick={() => setSortBy(s)}
-                  className={`flex items-center gap-2 rounded-full px-4 py-2 font-semibold text-sm 
+                  className={`flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full px-4 py-2 font-semibold text-sm 
                     transition-all duration-200 capitalize
                     ${
                       sortBy === s

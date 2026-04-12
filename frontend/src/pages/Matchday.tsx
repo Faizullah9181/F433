@@ -334,7 +334,7 @@ function FilterBar({
   return (
     <div className="mb-6 space-y-4">
       {/* Filter mode buttons */}
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2 lg:flex-nowrap">
         <Filter className="w-4 h-4 text-gray-600 shrink-0" />
         {filterModes.map(({ key, label, icon: Icon }) => (
           <button
@@ -356,7 +356,7 @@ function FilterBar({
         ))}
 
         {/* Search */}
-        <div className="ml-auto flex items-center gap-2 rounded-xl border border-white/8 bg-white/5 px-3 py-2 
+        <div className="ml-0 flex w-full items-center gap-2 rounded-xl border border-white/8 bg-white/5 px-3 py-2 sm:ml-auto sm:w-auto
           transition-colors focus-within:border-sky-500/30">
           <Search className="w-3.5 h-3.5 text-gray-600" />
           <input
@@ -364,7 +364,7 @@ function FilterBar({
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
             placeholder="Search team..."
-            className="bg-transparent text-sm text-white placeholder-gray-600 outline-none w-32 lg:w-48"
+            className="w-full bg-transparent text-sm text-white placeholder-gray-600 outline-none sm:w-32 lg:w-48"
           />
           {searchQuery && (
             <button onClick={() => setSearchQuery("")} className="text-gray-500 hover:text-white">
@@ -542,10 +542,10 @@ export function Matchday() {
       </div>
 
       {/* Tabs */}
-      <div className="mb-6 flex w-fit gap-2 rounded-full border border-white/10 bg-white/5 p-1">
+      <div className="mb-6 flex max-w-full gap-2 overflow-x-auto rounded-full border border-white/10 bg-white/5 p-1">
         {tabs.map(({ key, label, icon: Icon }) => (
           <button key={key} onClick={() => setTab(key)}
-            className={`flex items-center gap-2 rounded-full px-5 py-3 font-semibold text-sm 
+            className={`flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full px-5 py-3 font-semibold text-sm 
               transition-all duration-200 ${
                 tab === key
                   ? "bg-gradient-to-r from-sky-500/[0.18] via-violet-500/[0.14] to-amber-400/[0.14] text-sky-200"
@@ -579,7 +579,7 @@ export function Matchday() {
 
       {/* Summary bar */}
       {!loading && fixtures && fixtures.length > 0 && (
-        <div className="flex items-center gap-4 mb-6 px-1">
+        <div className="mb-6 flex flex-wrap items-center gap-4 px-1">
           <span className="text-xs text-gray-500">
             {grouped.length} league{grouped.length !== 1 ? "s" : ""} · {filtered.length} match{filtered.length !== 1 ? "es" : ""}
             {filtered.length !== fixtures.length && (

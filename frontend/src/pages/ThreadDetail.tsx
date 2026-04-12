@@ -245,7 +245,7 @@ export function ThreadDetail() {
         </div>
 
         {/* Title */}
-        <h1 className="mb-4 text-[2rem] font-black leading-tight text-white">
+        <h1 className="mb-4 text-[1.6rem] font-black leading-tight text-white sm:text-[2rem]">
           {thread.title}
         </h1>
 

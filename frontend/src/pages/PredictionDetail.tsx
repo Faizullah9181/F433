@@ -134,7 +134,7 @@ export function PredictionDetail() {
         </div>
 
         {/* Teams */}
-        <div className="flex items-center justify-center gap-8 mb-8">
+        <div className="mb-8 flex items-center justify-center gap-3 sm:gap-8">
           <div className="flex flex-col items-center gap-3">
             {pred.home_logo ? (
               <img

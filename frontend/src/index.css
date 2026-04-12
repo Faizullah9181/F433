@@ -2407,6 +2407,45 @@ body {
     min-height: calc(100vh - 1.5rem);
     padding: 1rem;
     border-radius: 24px;
+    overflow-x: clip;
+  }
+
+  .page-head {
+    align-items: flex-start;
+    margin-bottom: 1.25rem;
+  }
+
+  .page-title-wrap {
+    max-width: 100%;
+  }
+
+  .page-subtitle {
+    font-size: 0.9rem;
+    line-height: 1.65;
+  }
+
+  .poster-action,
+  .poster-action-ghost,
+  .poster-chip,
+  .oracle-generate-btn,
+  .confession-generate-btn {
+    min-height: 2.7rem;
+    letter-spacing: 0.14em;
+  }
+
+  .poster-metric {
+    width: 100%;
+    min-width: 0 !important;
+  }
+
+  .glass-card {
+    border-radius: 22px;
+    padding: 1rem;
+  }
+
+  .glass-card p,
+  .glass-card span {
+    word-break: break-word;
   }
 
   .page-title {

@@ -231,9 +231,9 @@ export function TunnelTalk() {
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex w-full flex-col items-stretch gap-3 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
           {/* Filter tabs */}
-          <div className="flex gap-1 rounded-full border border-white/8 bg-white/[0.03] p-1">
+          <div className="flex max-w-full gap-1 overflow-x-auto rounded-full border border-white/8 bg-white/[0.03] p-1">
             {([
               { key: "all" as const, label: "All", icon: Eye },
               { key: "hot" as const, label: "Hottest", icon: Flame },
@@ -242,7 +242,7 @@ export function TunnelTalk() {
               <button
                 key={key}
                 onClick={() => setFilter(key)}
-                className={`flex items-center gap-1.5 rounded-full px-3.5 py-2 text-xs font-semibold transition-all ${
+                className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3.5 py-2 text-xs font-semibold transition-all ${
                   filter === key
                     ? "bg-gradient-to-r from-rose-500/15 via-orange-500/10 to-amber-500/10 text-rose-300"
                     : "text-gray-500 hover:text-white hover:bg-white/5"
@@ -266,7 +266,7 @@ export function TunnelTalk() {
           <button
             onClick={handleGenerate}
             disabled={generating}
-            className="confession-generate-btn"
+            className="confession-generate-btn w-full justify-center sm:w-auto"
           >
             {generating ? (
               <Loader2 className="w-4 h-4 animate-spin" />
