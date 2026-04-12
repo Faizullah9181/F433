@@ -20,7 +20,7 @@ function AppLayout() {
   return (
     <div className="app-shell flex min-h-screen bg-[#050810]">
       <Sidebar />
-      <main className="shell-main flex-1 min-w-0">
+      <main className="shell-main flex-1 min-w-0 pt-16 lg:pt-0">
         <div className="content-frame w-full">
           <Routes>
             <Route path="/" element={<Home />} />

@@ -10,10 +10,13 @@ import {
   ChevronLeft,
   ChevronRight,
   UserPlus,
+  Menu,
+  X,
 } from "lucide-react";
 import { useApi } from "../hooks/useApi";
 import { statsApi } from "../services/api";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useLocation } from "react-router-dom";
 
 const navItems = [
   { to: "/playground/create-agent", icon: UserPlus, label: "Create Agent", emoji: "🧬" },
@@ -33,12 +36,38 @@ const navItems = [
 export function Sidebar() {
   const { data: stats } = useApi(() => statsApi.global(), []);
   const [collapsed, setCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const location = useLocation();
+
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [location.pathname]);
 
   return (
     <>
+      {mobileOpen && (
+        <button
+          type="button"
+          aria-label="Close menu"
+          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-[1px] lg:hidden"
+          onClick={() => setMobileOpen(false)}
+        />
+      )}
+
+      <button
+        type="button"
+        aria-label={mobileOpen ? "Close menu" : "Open menu"}
+        onClick={() => setMobileOpen((prev) => !prev)}
+        className="fixed left-4 top-4 z-[60] grid h-11 w-11 place-items-center rounded-xl border border-white/15 bg-[#0b1020]/90 text-white shadow-lg shadow-black/40 backdrop-blur lg:hidden"
+      >
+        {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+      </button>
+
       <aside
-        className={`fixed left-0 top-0 h-screen transition-all duration-300 ease-out z-50
-          ${collapsed ? "w-20" : "w-72"}
+        className={`fixed left-0 top-0 z-50 h-screen w-[86vw] max-w-[20rem] transform transition-all duration-300 ease-out
+          ${mobileOpen ? "translate-x-0" : "-translate-x-full"}
+          lg:translate-x-0
+          ${collapsed ? "lg:w-20" : "lg:w-72"}
           bg-[linear-gradient(180deg,#070a12_0%,#090d18_26%,#05070e_100%)]
           border-r border-white/10`}
       >
@@ -168,21 +197,15 @@ export function Sidebar() {
           {/* Collapse toggle */}
           <button
             onClick={() => setCollapsed(!collapsed)}
-            className="mt-4 grid place-items-center rounded-2xl border border-white/10 bg-white/5 p-2 text-gray-400 transition-colors hover:text-white"
+            className="mt-4 hidden place-items-center rounded-2xl border border-white/10 bg-white/5 p-2 text-gray-400 transition-colors hover:text-white lg:grid"
           >
-            {collapsed ? (
-              <ChevronRight className="w-5 h-5" />
-            ) : (
-              <ChevronLeft className="w-5 h-5" />
-            )}
+            {collapsed ? <ChevronRight className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}
           </button>
         </div>
       </aside>
 
       {/* Spacer for main content */}
-      <div
-        className={`transition-all duration-300 ${collapsed ? "w-20" : "w-72"}`}
-      />
+      <div className={`hidden transition-all duration-300 lg:block ${collapsed ? "w-20" : "w-72"}`} />
     </>
   );
 }

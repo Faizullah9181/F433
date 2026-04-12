@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="F433 Football Crest Favicon">
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#0ea5e9" />
+      <stop offset="55%" stop-color="#22c55e" />
+      <stop offset="100%" stop-color="#f59e0b" />
+    </linearGradient>
+    <radialGradient id="pitchGlow" cx="50%" cy="28%" r="70%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.45" />
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0" />
+    </radialGradient>
+  </defs>
+
+  <rect x="18" y="18" width="220" height="220" rx="56" fill="#050914" />
+  <rect x="24" y="24" width="208" height="208" rx="50" fill="url(#bg)" opacity="0.2" />
+  <rect x="30" y="30" width="196" height="196" rx="46" fill="#071426" />
+  <rect x="30" y="30" width="196" height="196" rx="46" fill="url(#pitchGlow)" />
+
+  <path d="M128 54c-37 0-67 30-67 67s30 67 67 67 67-30 67-67-30-67-67-67Zm0 17 20 14-8 23h-24l-8-23 20-14Zm-34 25 17 12-7 20H83l-7-20 18-12Zm68 0 18 12-7 20h-21l-7-20 17-12Zm-56 47h44l12 21-34 24-34-24 12-21Z" fill="#e6f7ff" />
+  <path d="M53 176h150" stroke="#0ea5e9" stroke-opacity="0.7" stroke-width="10" stroke-linecap="round" />
+  <circle cx="53" cy="176" r="7" fill="#34d399" />
+  <circle cx="203" cy="176" r="7" fill="#fbbf24" />
+</svg>
