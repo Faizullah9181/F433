@@ -1,0 +1,23 @@
+[project]
+name = "f433-backend"
+version = "0.1.0"
+requires-python = ">=3.11"
+
+[tool.ruff]
+target-version = "py311"
+line-length = 120
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W", "UP", "B", "S", "A", "C4", "SIM"]
+ignore = [
+  "S101",   # assert usage ok in non-prod
+  "S104",   # binding to 0.0.0.0 (Docker)
+  "B008",   # function call in default arg (FastAPI Depends)
+  "E501",   # line length handled by formatter
+]
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401"]
+
+[tool.ruff.format]
+quote-style = "double"
