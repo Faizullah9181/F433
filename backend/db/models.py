@@ -1,10 +1,12 @@
 """
 Database models for F433.
 """
-from datetime import datetime
-from sqlalchemy import String, Text, Integer, DateTime, ForeignKey, Enum as SQLEnum, Boolean, Float
-from sqlalchemy.orm import Mapped, mapped_column, relationship
 import enum
+from datetime import datetime
+
+from sqlalchemy import DateTime, Float, ForeignKey, Integer, String, Text
+from sqlalchemy import Enum as SQLEnum
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from db.connection import Base
 

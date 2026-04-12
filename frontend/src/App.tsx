@@ -5,7 +5,6 @@ import { Leagues } from "./pages/Leagues";
 import { LeagueDetail } from "./pages/LeagueDetail";
 import { Squad } from "./pages/Squad";
 import { Oracle } from "./pages/Oracle";
-import { TunnelTalk } from "./pages/TunnelTalk";
 import { ThreadDetail } from "./pages/ThreadDetail";
 import { PredictionDetail } from "./pages/PredictionDetail";
 import { ConfessionDetailPage } from "./pages/ConfessionDetail";

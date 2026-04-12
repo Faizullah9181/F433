@@ -5,14 +5,15 @@ import asyncio
 import logging
 import random
 from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from config import settings
 from agents.f433_agent import root_agent
-from db.connection import init_db, async_session
-from db.models import Agent, League, AgentPersonality
-from api import agents, threads, predictions, leagues, football, confessions, comments, generate, trivia
+from api import agents, comments, confessions, football, generate, leagues, predictions, threads, trivia
+from config import settings
+from db.connection import async_session, init_db
+from db.models import Agent, AgentPersonality, League
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -66,7 +67,7 @@ SEED_LEAGUES = [
 
 async def seed_database():
     """Seed initial agents and leagues if the database is empty."""
-    from sqlalchemy import select, func
+    from sqlalchemy import func, select
     async with async_session() as db:
         # Check if agents exist
         count = await db.scalar(select(func.count()).select_from(Agent))
@@ -118,8 +119,9 @@ async def initial_content_seed():
     await asyncio.sleep(5)  # Let the DB stabilize
 
     async with async_session() as db:
+        from sqlalchemy import func, select
+
         from db.models import Thread
-        from sqlalchemy import select, func
         thread_count = await db.scalar(select(func.count()).select_from(Thread))
 
         if thread_count and thread_count > 0:
@@ -201,11 +203,11 @@ async def health():
 @app.get("/api/stats")
 async def global_stats():
     """Get global platform statistics for the sidebar."""
-    from sqlalchemy import select, func
+    from sqlalchemy import func, select
     async with async_session() as db:
         agents_count = await db.scalar(select(func.count()).select_from(Agent))
         threads_count = await db.scalar(select(func.count()).select_from(League))
-        from db.models import Thread, Confession
+        from db.models import Confession, Thread
         debates_count = await db.scalar(select(func.count()).select_from(Thread))
         confessions_count = await db.scalar(select(func.count()).select_from(Confession))
     return {
@@ -219,8 +221,9 @@ async def global_stats():
 @app.get("/api/activity")
 async def activity_feed(limit: int = 30):
     """Get recent agent activity feed for the platform."""
-    from sqlalchemy import select, desc
+    from sqlalchemy import desc, select
     from sqlalchemy.orm import selectinload
+
     from db.models import AgentActivity
     async with async_session() as db:
         result = await db.execute(

@@ -117,22 +117,22 @@ function AgentCard({ agent, rank }: { agent: Agent; rank: number }) {
 
             {/* Stats row */}
             <div className="flex items-center gap-4 mt-2 text-xs">
-                <span className="font-medium text-sky-300">
+              <span className="font-medium text-sky-300">
                 {"\u2B06"} {agent.karma.toLocaleString()} karma
               </span>
-              {(agent as any).post_count > 0 && (
+              {agent.post_count && agent.post_count > 0 && (
                 <span className="text-gray-500">
-                  {"\uD83D\uDCDD"} {(agent as any).post_count} posts
+                  {"\uD83D\uDCDD"} {agent.post_count} posts
                 </span>
               )}
-              {(agent as any).reply_count > 0 && (
+              {agent.reply_count && agent.reply_count > 0 && (
                 <span className="text-gray-500">
-                  {"\uD83D\uDCAC"} {(agent as any).reply_count} replies
+                  {"\uD83D\uDCAC"} {agent.reply_count} replies
                 </span>
               )}
-              {(agent as any).last_active && (
+              {agent.last_active && (
                 <span className="text-gray-600">
-                  {new Date((agent as any).last_active).toLocaleDateString()}
+                  {new Date(agent.last_active).toLocaleDateString()}
                 </span>
               )}
             </div>
@@ -193,12 +193,8 @@ export function Squad() {
       );
     if (sortBy === "active") {
       list = [...list].sort((a, b) => {
-        const da = (a as any).last_active
-          ? new Date((a as any).last_active).getTime()
-          : 0;
-        const db = (b as any).last_active
-          ? new Date((b as any).last_active).getTime()
-          : 0;
+        const da = a.last_active ? new Date(a.last_active).getTime() : 0;
+        const db = b.last_active ? new Date(b.last_active).getTime() : 0;
         return db - da;
       });
     }

@@ -1,15 +1,15 @@
 """
 Confessions / Locker Room router.
 """
+
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
-from sqlalchemy.orm import selectinload
 from pydantic import BaseModel
-from datetime import datetime
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from db.connection import get_db
-from db.models import Confession, Agent
+from db.models import Confession
 
 router = APIRouter()
 

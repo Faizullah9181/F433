@@ -1,22 +1,30 @@
 """F433 Autonomous Engine — background social simulation for AI agents."""
 
-import random
 import logging
+import random
 from datetime import datetime
 
-from sqlalchemy import select, desc, or_
+from sqlalchemy import desc, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from db.models import (
-    Agent, Thread, Comment, Confession,
-    League, AgentActivity, AgentPersonality,
-)
+from agents.analyst import FootballAnalyst
 from agents.config import (
-    PERSONALITY_TRAITS, ACTION_WEIGHTS, DEBATE_TOPICS,
-    CONFESSION_TOPIC_HINTS, are_rivals,
+    ACTION_WEIGHTS,
+    CONFESSION_TOPIC_HINTS,
+    DEBATE_TOPICS,
+    PERSONALITY_TRAITS,
+    are_rivals,
 )
-from agents.analyst import FootballAnalyst, get_random_topic
+from db.models import (
+    Agent,
+    AgentActivity,
+    AgentPersonality,
+    Comment,
+    Confession,
+    League,
+    Thread,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -145,20 +153,7 @@ class AutonomousEngine:
         is_rival = are_rivals(agent.team_allegiance, thread.author.team_allegiance)
         traits = PERSONALITY_TRAITS.get(agent.personality.value, PERSONALITY_TRAITS["neutral_analyst"])
 
-        if is_rival and random.random() < traits["beef_probability"]:
-            prompt_suffix = (
-                "\n\nYou DISAGREE strongly. Challenge them. Be provocative and competitive. "
-                "This is a rivalry — show no mercy but keep it about football."
-            )
-        elif random.random() < traits["reply_aggression"]:
-            prompt_suffix = (
-                "\n\nYou have a strong take on this. Don't hold back. "
-                "Challenge the original poster's argument with your perspective."
-            )
-        else:
-            prompt_suffix = "\n\nShare your perspective. You can agree, disagree, or add nuance."
-
-        reply_prompt = "\n\n".join(context_parts) + prompt_suffix
+        # Analyst generates response (personality traits inform LLM context)
         content = await analyst.reply_to_post(thread.content, thread.author.name)
 
         comment = Comment(
@@ -200,22 +195,9 @@ class AutonomousEngine:
 
         analyst = _make_analyst(agent)
         is_rival = are_rivals(agent.team_allegiance, target_comment.author.team_allegiance)
-        traits = PERSONALITY_TRAITS.get(agent.personality.value, PERSONALITY_TRAITS["neutral_analyst"])
 
         # Generate contextual reply
-        if is_rival and random.random() < 0.7:
-            tone = "disagree fiercely with"
-        elif random.random() < traits["reply_aggression"]:
-            tone = "challenge"
-        else:
-            tone = random.choice(["agree with", "build on", "question", "counter"])
-
-        prompt = (
-            f"You're replying directly to {target_comment.author.name} who said:\n\n"
-            f'"{target_comment.content}"\n\n'
-            f"You {tone} their point. Keep it punchy (2-4 sentences). "
-            f"Address them by name. Be in character."
-        )
+        # Analyst will generate appropriate response based on context
         content = await analyst.reply_to_post(target_comment.content, target_comment.author.name)
 
         reply = Comment(
@@ -261,8 +243,6 @@ class AutonomousEngine:
         agent = await self._pick_random_agent(db)
         if not agent:
             return None
-
-        traits = PERSONALITY_TRAITS.get(agent.personality.value, PERSONALITY_TRAITS["neutral_analyst"])
 
         hints = CONFESSION_TOPIC_HINTS.get(agent.personality.value, CONFESSION_TOPIC_HINTS["neutral_analyst"])
         topic_hint = random.choice(hints)
@@ -408,7 +388,6 @@ class AutonomousEngine:
             return None
 
         confession = random.choice(confessions)
-        traits = PERSONALITY_TRAITS.get(agent.personality.value, PERSONALITY_TRAITS["neutral_analyst"])
 
         # Personality-driven reaction
         if agent.personality == AgentPersonality.PASSIONATE_FAN:
@@ -450,7 +429,7 @@ class AutonomousEngine:
         # Only roast_masters with active missions
         result = await db.execute(
             select(Agent).where(
-                Agent.is_active == True,
+                Agent.is_active,
                 Agent.personality == AgentPersonality.ROAST_MASTER,
                 Agent.mission.isnot(None),
             )
@@ -475,14 +454,14 @@ class AutonomousEngine:
             target_result = await db.execute(
                 select(Agent).where(
                     Agent.id != agent.id,
-                    Agent.is_active == True,
+                    Agent.is_active,
                     or_(*conditions),
                 )
             )
         else:
             # No specific team target — just roast random agents
             target_result = await db.execute(
-                select(Agent).where(Agent.id != agent.id, Agent.is_active == True)
+                select(Agent).where(Agent.id != agent.id, Agent.is_active)
             )
 
         targets = target_result.scalars().all()
@@ -510,13 +489,6 @@ class AutonomousEngine:
 
             if target_threads:
                 t = random.choice(target_threads)
-                roast_prompt = (
-                    f"You are on a MISSION: {agent.mission}\n\n"
-                    f"{target.name} (a {target.team_allegiance or 'unknown'} fan) posted:\n"
-                    f'"{t.content[:300]}"\n\n'
-                    "Absolutely DESTROY this take. Be savage, witty, and reference their team's failures. "
-                    "Use real stats if you can. This is personal — well, football-personal. 💀"
-                )
                 content = await analyst.reply_to_post(t.content, target.name)
 
                 comment = Comment(
@@ -646,7 +618,7 @@ class AutonomousEngine:
 
     async def _pick_random_agent(self, db: AsyncSession) -> Agent | None:
         """Pick a random active agent."""
-        result = await db.execute(select(Agent).where(Agent.is_active == True))
+        result = await db.execute(select(Agent).where(Agent.is_active))
         agents = result.scalars().all()
         return random.choice(agents) if agents else None
 

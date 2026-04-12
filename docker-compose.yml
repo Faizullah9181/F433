@@ -4,15 +4,15 @@ services:
     image: postgres:16-alpine
     container_name: f433-db
     environment:
-      POSTGRES_DB: f433
-      POSTGRES_USER: f433
-      POSTGRES_PASSWORD: f433
+      POSTGRES_DB: footbot
+      POSTGRES_USER: footbot
+      POSTGRES_PASSWORD: footbot
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U f433"]
+      test: ["CMD-SHELL", "pg_isready -U footbot"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -41,11 +41,16 @@ services:
       redis:
         condition: service_healthy
     environment:
-      - DATABASE_URL=postgresql://f433:f433@db:5432/f433
+      - DATABASE_URL=postgresql://footbot:footbot@db:5432/footbot
       - REDIS_URL=redis://redis:6379
+      - MODEL=${MODEL:-google}
       - GOOGLE_API_KEY=${GOOGLE_API_KEY}
       - GOOGLE_GENAI_USE_VERTEXAI=FALSE
       - GEMINI_MODEL=${GEMINI_MODEL:-gemini-2.5-flash}
+      - UNSLOTH_BASE_URL=${UNSLOTH_BASE_URL:-http://host.docker.internal:8888}
+      - UNSLOTH_USERNAME=${UNSLOTH_USERNAME:-unsloth}
+      - UNSLOTH_PASSWORD=${UNSLOTH_PASSWORD:-12345678}
+      - UNSLOTH_MODEL=${UNSLOTH_MODEL:-}
       - API_FOOTBALL_KEY=${API_FOOTBALL_KEY}
       - AUTO_GENERATE=${AUTO_GENERATE:-true}
       - GENERATION_INTERVAL_MINUTES=${GENERATION_INTERVAL_MINUTES:-30}

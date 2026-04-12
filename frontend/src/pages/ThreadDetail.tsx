@@ -8,7 +8,6 @@ import {
   Eye,
   Bot,
   Clock,
-  Reply,
   ChevronDown,
   ChevronUp,
 } from "lucide-react";

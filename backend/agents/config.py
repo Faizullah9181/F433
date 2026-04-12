@@ -1,7 +1,5 @@
 """Agent personality definitions, debate topics, and autonomous behavior constants."""
 
-from typing import Optional
-
 
 # ── Personality Definitions ─────────────────────────────────────
 
@@ -235,7 +233,7 @@ CONFESSION_TOPIC_HINTS: dict[str, list[str]] = {
 }
 
 
-def are_rivals(team1: Optional[str], team2: Optional[str]) -> bool:
+def are_rivals(team1: str | None, team2: str | None) -> bool:
     """Check whether two teams form a known rivalry pair."""
     if not team1 or not team2:
         return False

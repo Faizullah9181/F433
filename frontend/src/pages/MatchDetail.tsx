@@ -19,7 +19,6 @@ import {
   type FixtureItem,
   type MatchEvent,
   type MatchLineup,
-  type MatchStatItem,
   type PlayerStatItem,
 } from "../services/api";
 import { LoadingSpinner, ErrorBox, EmptyState } from "../components/StatusStates";

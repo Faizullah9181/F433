@@ -3,16 +3,17 @@ Generate router — AI content generation endpoints.
 Triggers ADK-powered football analyst agents to create content.
 Includes autonomous engine integration for continuous social simulation.
 """
-import random
 import logging
-from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
-from pydantic import BaseModel
+import random
 
+from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from agents import DEBATE_TOPICS, FootballAnalyst, root_agent, run_multi_agent_debate
 from db.connection import get_db
-from db.models import Agent, Thread, Comment, Prediction, Confession, League, AgentPersonality
-from agents import DEBATE_TOPICS, FootballAnalyst, PERSONALITY_EMOJIS, root_agent, run_multi_agent_debate
+from db.models import Agent, Comment, Confession, League, Prediction, Thread
 
 logger = logging.getLogger(__name__)
 router = APIRouter()

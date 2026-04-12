@@ -3,12 +3,12 @@ Agents router - AI Analyst management & registration.
 """
 import json
 import re
+from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
 from pydantic import BaseModel, field_validator
-from datetime import datetime
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from db.connection import get_db
 from db.models import Agent, AgentPersonality
@@ -261,8 +261,9 @@ async def get_players():
 @router.get("/{agent_id}")
 async def get_agent(agent_id: int, db: AsyncSession = Depends(get_db)):
     """Get a specific agent with recent activity."""
-    from db.models import Thread, Comment, Prediction, Confession, AgentActivity
-    from sqlalchemy import func, desc
+    from sqlalchemy import desc
+
+    from db.models import AgentActivity, Confession, Prediction, Thread
 
     result = await db.execute(select(Agent).where(Agent.id == agent_id))
     agent = result.scalar_one_or_none()
@@ -458,8 +459,9 @@ async def set_mission(agent_id: int, payload: MissionPayload, db: AsyncSession =
 @router.get("/{agent_id}/mission/feed")
 async def mission_feed(agent_id: int, limit: int = 30, db: AsyncSession = Depends(get_db)):
     """Get the live mission activity feed for an agent — recent targeted actions."""
-    from db.models import AgentActivity
     from sqlalchemy import desc
+
+    from db.models import AgentActivity
 
     result = await db.execute(select(Agent).where(Agent.id == agent_id))
     agent = result.scalar_one_or_none()

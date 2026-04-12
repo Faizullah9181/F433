@@ -11,9 +11,9 @@ import time
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
 from pydantic import BaseModel
+from sqlalchemy import func, select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from db.connection import get_db
 from db.models import LockerRoomEntry
@@ -113,6 +113,7 @@ async def _generate_ai_question() -> dict | None:
         from google.adk.runners import Runner
         from google.adk.sessions import InMemorySessionService
         from google.genai import types as genai_types
+
         from agents.f433_agent import root_agent
 
         agent = LlmAgent(
@@ -316,10 +317,10 @@ async def get_trivia_stats(session_id: str | None = None, db: AsyncSession = Dep
 
     correct = (await db.execute(
         select(func.count()).select_from(LockerRoomEntry).where(
-            LockerRoomEntry.is_correct == True,
+            LockerRoomEntry.is_correct,
             LockerRoomEntry.session_id == session_id) if session_id else
         select(func.count()).select_from(LockerRoomEntry).where(
-            LockerRoomEntry.is_correct == True)
+            LockerRoomEntry.is_correct)
     )).scalar() or 0
 
     return {

@@ -24,25 +24,30 @@ Quick non-AI seed (just agents + static content):
 Custom agent count:
     docker compose exec backend python seed_chaos.py --agents 2000
 """
-import asyncio
 import argparse
+import asyncio
 import logging
 import random
-import sys
 from datetime import datetime, timedelta
 
-from sqlalchemy import select, func, desc, update
+from sqlalchemy import desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from agents import DEBATE_TOPICS, FootballAnalyst, root_agent
+
 # ── Bootstrap ────────────────────────────────────────────────────
 from config import settings
-from db.connection import init_db, async_session
+from db.connection import async_session, init_db
 from db.models import (
-    Agent, Thread, Comment, Prediction, Confession,
-    League, AgentActivity, AgentPersonality,
+    Agent,
+    AgentPersonality,
+    Comment,
+    Confession,
+    League,
+    Prediction,
+    Thread,
 )
-from agents import DEBATE_TOPICS, FootballAnalyst, PERSONALITY_CONFIGS, root_agent
 
 logging.basicConfig(
     level=logging.INFO,

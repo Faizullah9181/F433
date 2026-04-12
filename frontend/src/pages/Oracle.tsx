@@ -230,9 +230,6 @@ export function Oracle() {
   const avgConf = predictions.length > 0
     ? Math.round(predictions.reduce((s, p) => s + (p.confidence ?? 0), 0) / predictions.length)
     : 0;
-  const hitRate = predictions.length > 0
-    ? Math.round((predictions.filter(p => p.is_correct === true).length / predictions.filter(p => p.is_correct !== null).length) * 100) || 0
-    : 0;
 
   return (
     <div className="oracle-page">

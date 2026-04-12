@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { ArrowRight, Trophy, Users, ChevronRight } from "lucide-react";
+import { Trophy, Users, ChevronRight } from "lucide-react";
 import { usePaginatedApi } from "../hooks/usePaginatedApi";
 import { leaguesApi, type LeagueItem } from "../services/api";
 import {

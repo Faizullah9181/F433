@@ -5,7 +5,6 @@ import {
   Clock,
   RefreshCw,
   Calendar,
-  Zap,
   ChevronDown,
   ChevronRight,
   MapPin,
@@ -111,11 +110,6 @@ function statusColor(short: string) {
 function formatTime(dateStr: string) {
   const d = new Date(dateStr);
   return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-}
-
-function formatDate(dateStr: string) {
-  const d = new Date(dateStr);
-  return d.toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" });
 }
 
 type LeagueGroup = { league: FixtureItem["league"]; fixtures: FixtureItem[] };

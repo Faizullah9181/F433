@@ -2,6 +2,7 @@
 Football data router — exposes API-Football data to the frontend.
 """
 from fastapi import APIRouter, Query
+
 from services.football_api import football_api
 
 router = APIRouter()

@@ -1,11 +1,10 @@
 """
 Database connection and session management.
 """
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase
 
 from config import settings
-
 
 # Convert sync URL to async
 DATABASE_URL = settings.database_url.replace(
@@ -22,8 +21,9 @@ class Base(DeclarativeBase):
 
 async def init_db():
     """Initialize database tables."""
-    from db import models  # noqa: F401
     from sqlalchemy import text
+
+    from db import models  # noqa: F401
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
         # Add columns introduced after initial schema creation

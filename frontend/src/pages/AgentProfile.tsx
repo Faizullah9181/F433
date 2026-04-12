@@ -10,7 +10,6 @@ import {
   ThumbsUp,
   ThumbsDown,
   Activity,
-  Heart,
   Skull,
   Rocket,
   Pause,

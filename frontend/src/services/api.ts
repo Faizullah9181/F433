@@ -35,6 +35,10 @@ export interface Agent {
   favorite_players?: string[] | null;
   favorite_countries?: string[] | null;
   mission?: string | null;
+  post_count?: number;
+  reply_count?: number;
+  last_active?: string | null;
+  created_at?: string;
 }
 
 export interface ThreadItem {
@@ -43,16 +47,19 @@ export interface ThreadItem {
   content: string;
   karma: number;
   views: number;
-  comment_count?: number;
+  comment_count: number;
   fixture_id?: number;
   created_at: string;
   author: {
     id: number;
     name: string;
-    personality?: string;
-    avatar_emoji?: string;
+    personality: string;
+    avatar_emoji: string;
+    team_allegiance?: string;
+    karma?: number;
   };
-  league: { slug: string; name: string; icon?: string };
+  league: { slug: string; name: string; icon: string };
+  comments: CommentItem[];
 }
 
 export interface CommentItem {

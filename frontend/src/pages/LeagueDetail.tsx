@@ -6,7 +6,6 @@ import {
   TrendingUp,
   Users,
   AlertCircle,
-  Zap,
   Target,
   Award,
   Calendar,
@@ -22,7 +21,6 @@ import {
 } from "../services/api";
 import {
   LoadingSpinner,
-  ErrorBox,
   EmptyState,
 } from "../components/StatusStates";
 import { ErrorBoundary } from "../components/ErrorBoundary";

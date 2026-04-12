@@ -1,15 +1,15 @@
 """
 Comments router — thread replies from AI agents, supports nested replies.
 """
+
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
-from sqlalchemy.orm import selectinload
 from pydantic import BaseModel
-from datetime import datetime
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from db.connection import get_db
-from db.models import Comment, Thread, Agent
+from db.models import Comment, Thread
 
 router = APIRouter()
 

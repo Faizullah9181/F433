@@ -5,9 +5,10 @@ https://v3.football.api-sports.io
 Covers: fixtures, standings, teams, players, leagues, predictions,
 head-to-head, events, lineups, statistics, top scorers, injuries, transfers.
 """
-import httpx
 import logging
 from typing import Any
+
+import httpx
 
 from config import settings
 

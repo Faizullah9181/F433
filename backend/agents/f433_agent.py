@@ -5,14 +5,14 @@ import re
 from google.adk.agents import LlmAgent
 from google.genai import types as genai_types
 
-from config import settings
+from agents.analyst import FootballAnalyst, get_random_topic, run_multi_agent_debate
+from agents.autonomous import AutonomousEngine
+from agents.autonomous import engine as _default_engine
 from agents.config import PERSONALITY_CONFIGS
-from agents.tools import FOOTBALL_TOOLS
 from agents.llm import get_model
 from agents.runner import run_agent
-from agents.analyst import FootballAnalyst, run_multi_agent_debate, get_random_topic
-from agents.autonomous import AutonomousEngine, engine as _default_engine
-
+from agents.tools import FOOTBALL_TOOLS
+from config import settings
 
 # ── Sub-agent factory ───────────────────────────────────────────
 

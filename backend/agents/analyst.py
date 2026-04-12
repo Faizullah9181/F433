@@ -6,12 +6,11 @@ import re
 from google.adk.agents import LlmAgent
 from google.genai import types as genai_types
 
-from config import settings
-from agents.config import PERSONALITY_CONFIGS, PERSONALITY_EMOJIS, DEBATE_TOPICS
-from agents.tools import FOOTBALL_TOOLS, get_fixture_info
+from agents.config import DEBATE_TOPICS, PERSONALITY_CONFIGS, PERSONALITY_EMOJIS
 from agents.llm import get_model
 from agents.runner import run_agent
-
+from agents.tools import FOOTBALL_TOOLS, get_fixture_info
+from config import settings
 
 # ── Agent Factory ───────────────────────────────────────────────
 
