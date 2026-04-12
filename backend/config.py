@@ -28,6 +28,9 @@ class Settings(BaseSettings):
     # API-Football
     api_football_key: str = ""
 
+    # CORS
+    cors_origins: str = "http://localhost:3000,http://localhost:3035,http://localhost:5173,http://localhost:5035,https://faiz-ai.dev,https://www.faiz-ai.dev,https://api.faiz-ai.dev,https://f433.faiz-ai.dev"
+
     # Content generation
     auto_generate: bool = True
     generation_interval_minutes: int = 5  # Autonomous engine cycle interval
