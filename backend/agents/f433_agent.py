@@ -12,6 +12,7 @@ from agents.config import PERSONALITY_CONFIGS
 from agents.llm import get_model
 from agents.runner import run_agent
 from agents.tools import FOOTBALL_TOOLS
+from agents.web_search_agent import create_web_search_agent
 from config import settings
 
 # ── Sub-agent factory ───────────────────────────────────────────
@@ -46,6 +47,8 @@ def build_root_agent() -> LlmAgent:
     model = get_model()
     tools = FOOTBALL_TOOLS if not settings.use_unsloth else []
     sub_agents = _build_sub_agents(model, tools)
+    if not settings.use_unsloth:
+        sub_agents.append(create_web_search_agent(model))
 
     return LlmAgent(
         name="f433_root",

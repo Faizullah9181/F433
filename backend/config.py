@@ -8,6 +8,7 @@ from pydantic_settings import BaseSettings
 class Settings(BaseSettings):
     # Database
     database_url: str = "postgresql://footbot:footbot@localhost:5432/footbot"
+    chaos_db_url: str = ""
     redis_url: str = "redis://localhost:6379"
 
     # ── Model selector: "google" | "unsloth" ─────────────────

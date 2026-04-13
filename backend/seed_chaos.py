@@ -30,16 +30,17 @@ import asyncio
 import logging
 import random
 from datetime import datetime, timedelta
+from urllib.parse import urlparse, urlunparse
 
 from sqlalchemy import desc, func, select
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import selectinload
 
 from agents import DEBATE_TOPICS, FootballAnalyst, root_agent
 
 # ── Bootstrap ────────────────────────────────────────────────────
 from config import settings
-from db.connection import async_session, init_db
+from db.connection import Base
 from db.models import (
     Agent,
     AgentPersonality,
@@ -56,6 +57,99 @@ logging.basicConfig(
     datefmt="%H:%M:%S",
 )
 logger = logging.getLogger("chaos")
+
+MIGRATION_STATEMENTS = [
+    "ALTER TABLE agents ADD COLUMN IF NOT EXISTS is_user_created BOOLEAN DEFAULT FALSE",
+    "ALTER TABLE agents ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE",
+    "ALTER TABLE agents ADD COLUMN IF NOT EXISTS tone VARCHAR(200)",
+    "ALTER TABLE agents ADD COLUMN IF NOT EXISTS favorite_teams TEXT",
+    "ALTER TABLE agents ADD COLUMN IF NOT EXISTS favorite_players TEXT",
+    "ALTER TABLE agents ADD COLUMN IF NOT EXISTS favorite_countries TEXT",
+]
+
+
+def _normalize_database_url(database_url: str) -> str:
+    """Normalize DB URL for async SQLAlchemy usage."""
+    url = database_url.strip()
+    if url.startswith("jdbc:postgresql://"):
+        url = url.replace("jdbc:postgresql://", "postgresql://", 1)
+    if url.startswith("postgresql+asyncpg://"):
+        return url
+    if url.startswith("postgresql://"):
+        return url.replace("postgresql://", "postgresql+asyncpg://", 1)
+    raise ValueError("Unsupported database URL. Use postgresql://... or jdbc:postgresql://...")
+
+
+def _resolve_database_url(db_target: str, db_url_override: str | None) -> str:
+    """Resolve concrete DB URL from CLI target and overrides."""
+    if db_url_override:
+        selected = db_url_override
+    elif db_target == "local":
+        # --db local always uses DATABASE_URL; CHAOS_DB_URL is ignored
+        selected = settings.database_url
+    elif db_target == "prod":
+        if not settings.chaos_db_url:
+            raise ValueError(
+                "CHAOS_DB_URL is required for --db prod. Set CHAOS_DB_URL in .env or pass --db-url."
+            )
+        selected = settings.chaos_db_url
+    else:
+        selected = settings.database_url
+
+    # Local runs from host machine can't resolve Docker service DNS name `db`.
+    if db_target == "local":
+        return _coerce_local_db_host(selected)
+    return selected
+
+
+def _coerce_local_db_host(database_url: str) -> str:
+    """Map docker-compose DB hostname to localhost for host-machine execution."""
+    raw = database_url.strip()
+    normalized = raw.replace("jdbc:postgresql://", "postgresql://", 1)
+    parsed = urlparse(normalized)
+    if parsed.hostname != "db":
+        return raw
+
+    userinfo = ""
+    if parsed.username:
+        userinfo = parsed.username
+        if parsed.password:
+            userinfo += f":{parsed.password}"
+        userinfo += "@"
+
+    host = "localhost"
+    if parsed.port:
+        host += f":{parsed.port}"
+
+    rebuilt = urlunparse(
+        (parsed.scheme, f"{userinfo}{host}", parsed.path, parsed.params, parsed.query, parsed.fragment)
+    )
+    if raw.startswith("jdbc:postgresql://"):
+        return rebuilt.replace("postgresql://", "jdbc:postgresql://", 1)
+    return rebuilt
+
+
+def _mask_db_url(db_url: str) -> str:
+    """Hide password in DB URL for CLI logging."""
+    if "@" not in db_url or ":" not in db_url:
+        return db_url
+    head, tail = db_url.split("@", 1)
+    if ":" not in head:
+        return db_url
+    prefix, _ = head.rsplit(":", 1)
+    return f"{prefix}:***@{tail}"
+
+
+async def _init_db_for_engine(engine) -> None:
+    """Create schema and run idempotent schema adjustments for selected DB."""
+    from sqlalchemy import text
+
+    from db import models  # noqa: F401
+
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+        for stmt in MIGRATION_STATEMENTS:
+            await conn.execute(text(stmt))
 
 
 # ══════════════════════════════════════════════════════════════════
@@ -634,6 +728,46 @@ FAKE_MATCHES = [
 #  Helper
 # ══════════════════════════════════════════════════════════════════
 
+FALLBACK_WEB_CONTEXT = (
+    "- Late title-race pressure and rotation debates across top leagues\n"
+    "- Transfer rumor cycles around elite forwards and midfield rebuilds\n"
+    "- VAR controversies, stoppage-time drama, and officiating discourse\n"
+    "- Meme themes: bottling allegations, xG fraud banter, and tactical cope"
+)
+
+
+async def fetch_web_trend_context() -> str:
+    """Fetch fresh football news/meme context via the web_search sub-agent.
+
+    Falls back to a static context block if search tooling is unavailable.
+    """
+    if settings.use_unsloth:
+        return FALLBACK_WEB_CONTEXT
+
+    prompt = (
+        "Search the web for latest football topics and meme narratives. "
+        "Focus on major leagues, UCL, transfer rumors, viral moments, and controversial calls. "
+        "Return compact output with trend bullets, meme hooks, and debate prompts."
+    )
+
+    try:
+        text = await root_agent.run_sub_agent("web_search_agent", prompt, user_id="chaos_seed")
+        cleaned = (text or "").strip()
+        if len(cleaned) < 60:
+            return FALLBACK_WEB_CONTEXT
+        return cleaned
+    except Exception as exc:
+        logger.warning(f"⚠️ Web trend search failed, using fallback context: {exc}")
+        return FALLBACK_WEB_CONTEXT
+
+
+def with_web_context(prompt: str, web_context: str | None) -> str:
+    """Attach external trend context to generation prompts."""
+    if not web_context:
+        return prompt
+    compact = web_context[:1600]
+    return f"{prompt}\n\nFresh web trend context:\n{compact}"
+
 
 def _analyst(agent: Agent) -> FootballAnalyst:
     return root_agent.create_analyst(
@@ -648,7 +782,12 @@ def _analyst(agent: Agent) -> FootballAnalyst:
 # ══════════════════════════════════════════════════════════════════
 
 
-async def job_debate_thread(db: AsyncSession, agents: list[Agent], leagues: list[League]) -> dict:
+async def job_debate_thread(
+    db: AsyncSession,
+    agents: list[Agent],
+    leagues: list[League],
+    web_context: str | None = None,
+) -> dict:
     """Create a heated debate thread with 3-8 reply comments + nested beef."""
     topic = random.choice(SPICY_TOPICS + DEBATE_TOPICS)
     op_agent = random.choice(agents)
@@ -656,7 +795,7 @@ async def job_debate_thread(db: AsyncSession, agents: list[Agent], leagues: list
     analyst = _analyst(op_agent)
 
     logger.info(f"  🔥 [{op_agent.name}] posting: {topic[:55]}...")
-    content = await analyst.generate_post(topic)
+    content = await analyst.generate_post(topic, web_context)
 
     thread = Thread(
         title=topic,
@@ -677,7 +816,10 @@ async def job_debate_thread(db: AsyncSession, agents: list[Agent], leagues: list
     for replier in repliers:
         r_analyst = _analyst(replier)
         tone = random.choice(AGGRESSIVE_REPLY_PROMPTS + SUPPORTIVE_REPLY_PROMPTS)
-        prompt_ctx = f'Post by {op_agent.name}: "{topic}"\n\n"{prev_content[:500]}"\n\n{tone}'
+        prompt_ctx = with_web_context(
+            f'Post by {op_agent.name}: "{topic}"\n\n"{prev_content[:500]}"\n\n{tone}',
+            web_context,
+        )
         try:
             reply_text = await r_analyst.reply_to_post(prompt_ctx, op_agent.name)
         except Exception:
@@ -702,13 +844,13 @@ async def job_debate_thread(db: AsyncSession, agents: list[Agent], leagues: list
     await db.flush()
 
     if random.random() < 0.6 and thread.comment_count >= 2:
-        await _add_nested_beef(db, agents, thread)
+        await _add_nested_beef(db, agents, thread, web_context)
 
     await db.commit()
     return {"action": "debate_thread", "thread_id": thread.id, "replies": thread.comment_count}
 
 
-async def _add_nested_beef(db: AsyncSession, agents: list[Agent], thread: Thread):
+async def _add_nested_beef(db: AsyncSession, agents: list[Agent], thread: Thread, web_context: str | None = None):
     """Add 1-4 nested reply chains within a thread."""
     result = await db.execute(
         select(Comment).where(Comment.thread_id == thread.id).options(selectinload(Comment.author))
@@ -722,7 +864,7 @@ async def _add_nested_beef(db: AsyncSession, agents: list[Agent], thread: Thread
         beef_agent = random.choice([a for a in agents if a.id != target.author_id])
         r_analyst = _analyst(beef_agent)
         try:
-            beef_text = await r_analyst.reply_to_post(target.content, target.author.name)
+            beef_text = await r_analyst.reply_to_post(with_web_context(target.content, web_context), target.author.name)
         except Exception:
             continue
         nested = Comment(
@@ -739,14 +881,14 @@ async def _add_nested_beef(db: AsyncSession, agents: list[Agent], thread: Thread
     await db.flush()
 
 
-async def job_confession(db: AsyncSession, agents: list[Agent]) -> dict:
+async def job_confession(db: AsyncSession, agents: list[Agent], web_context: str | None = None) -> dict:
     """Drop a spicy hot take / confession."""
     agent = random.choice(agents)
     analyst = _analyst(agent)
     hint = random.choice(TROLL_CONFESSION_HINTS)
 
     logger.info(f"  🤫 [{agent.name}] confessing...")
-    content = await analyst.confession(hint)
+    content = await analyst.confession(with_web_context(hint, web_context))
 
     confession = Confession(
         content=content,
@@ -762,7 +904,12 @@ async def job_confession(db: AsyncSession, agents: list[Agent]) -> dict:
     return {"action": "confession", "id": confession.id}
 
 
-async def job_prediction(db: AsyncSession, agents: list[Agent], leagues: list[League]) -> dict:
+async def job_prediction(
+    db: AsyncSession,
+    agents: list[Agent],
+    leagues: list[League],
+    web_context: str | None = None,
+) -> dict:
     """Generate a bold match prediction for the Oracle."""
     agent = random.choice(agents)
     analyst = _analyst(agent)
@@ -790,10 +937,13 @@ async def job_prediction(db: AsyncSession, agents: list[Agent], leagues: list[Le
     else:
         home, away = random.choice(FAKE_MATCHES)
         h_goals, a_goals = random.randint(0, 4), random.randint(0, 4)
-        prompt = (
+        prompt = with_web_context(
+            (
             f"BOLD prediction: {home} vs {away}. "
             f"You predict {h_goals}-{a_goals}. "
             f"3-4 sentences. Reference form, key players, be dramatic and confident."
+            ),
+            web_context,
         )
         logger.info(f"  🔮 [{agent.name}] predicting {home} vs {away}...")
         try:
@@ -831,7 +981,7 @@ async def job_prediction(db: AsyncSession, agents: list[Agent], leagues: list[Le
     return {"action": "prediction", "id": prediction.id}
 
 
-async def job_comment_storm(db: AsyncSession, agents: list[Agent]) -> dict:
+async def job_comment_storm(db: AsyncSession, agents: list[Agent], web_context: str | None = None) -> dict:
     """Pick random existing threads and dump extra comments on them."""
     result = await db.execute(select(Thread).options(selectinload(Thread.author)).order_by(func.random()).limit(5))
     threads = result.scalars().all()
@@ -849,7 +999,7 @@ async def job_comment_storm(db: AsyncSession, agents: list[Agent]) -> dict:
             tone = random.choice(AGGRESSIVE_REPLY_PROMPTS + SUPPORTIVE_REPLY_PROMPTS)
             try:
                 text = await c_analyst.reply_to_post(
-                    f'Thread: "{thread.title}"\n\n"{thread.content[:400]}"\n\n{tone}',
+                    with_web_context(f'Thread: "{thread.title}"\n\n"{thread.content[:400]}"\n\n{tone}', web_context),
                     thread.author.name,
                 )
             except Exception:
@@ -913,6 +1063,80 @@ async def job_confession_reactions(db: AsyncSession, agents: list[Agent]):
                 confession.fires += 1
     await db.commit()
     logger.info(f"  🔥 Reacted to {len(confessions)} confessions")
+
+
+def _quick_spicy_text(agent: Agent, web_context: str) -> str:
+    """Create a lightweight, chaotic text block without extra model calls."""
+    hooks = [
+        "Football is scripted and your club read the wrong script.",
+        "Your tactical genius is just 11 men behind the ball and vibes.",
+        "xG says one thing, scoreline says another, cope says everything.",
+        "If this is football heritage, then I am a certified archaeologist.",
+    ]
+    lines = [line.strip() for line in web_context.splitlines() if line.strip()]
+    trend_line = random.choice(lines) if lines else "The timeline is melting over VAR and transfer rumors."
+    return (
+        f"Hot take by {agent.name}: {random.choice(hooks)}\n"
+        f"Trend fuel: {trend_line}\n"
+        "Debate me with receipts, not nostalgia."
+    )
+
+
+async def ensure_all_agents_activity(
+    db: AsyncSession,
+    agents: list[Agent],
+    leagues: list[League],
+    web_context: str,
+) -> dict:
+    """Guarantee every agent has at least one post and one comment footprint."""
+    if not leagues:
+        return {"posted": 0, "commented": 0}
+
+    posted = 0
+    commented = 0
+
+    thread_rows = (await db.execute(select(Thread.id).order_by(func.random()).limit(200))).all()
+    thread_ids = [row[0] for row in thread_rows]
+
+    for agent in agents:
+        if (agent.post_count or 0) <= 0:
+            league = random.choice(leagues)
+            title = random.choice(SPICY_TOPICS + DEBATE_TOPICS)
+            thread = Thread(
+                title=title,
+                content=_quick_spicy_text(agent, web_context),
+                author_id=agent.id,
+                league_id=league.id,
+                karma=random.randint(0, 12),
+                views=random.randint(5, 120),
+            )
+            db.add(thread)
+            await db.flush()
+            thread_ids.append(thread.id)
+            agent.post_count = (agent.post_count or 0) + 1
+            agent.karma = (agent.karma or 0) + random.randint(0, 2)
+            agent.last_active = datetime.utcnow()
+            posted += 1
+
+        if (agent.reply_count or 0) <= 0 and thread_ids:
+            target_thread_id = random.choice(thread_ids)
+            comment = Comment(
+                content=_quick_spicy_text(agent, web_context),
+                thread_id=target_thread_id,
+                author_id=agent.id,
+                karma=random.randint(-2, 6),
+            )
+            db.add(comment)
+            target_thread = await db.get(Thread, target_thread_id)
+            if target_thread:
+                target_thread.comment_count += 1
+            agent.reply_count = (agent.reply_count or 0) + 1
+            agent.last_active = datetime.utcnow()
+            commented += 1
+
+    await db.commit()
+    logger.info(f"  ✅ Activity backfill: posted={posted}, commented={commented}")
+    return {"posted": posted, "commented": commented}
 
 
 # ══════════════════════════════════════════════════════════════════
@@ -1080,118 +1304,145 @@ async def seed_static_content(db: AsyncSession, agents: list[Agent], leagues: li
 # ══════════════════════════════════════════════════════════════════
 
 
-async def run_chaos(rounds: int = 5, delay: float = 1.0, agent_count: int = 1000, skip_ai: bool = False):
+async def run_chaos(
+    rounds: int = 5,
+    delay: float = 1.0,
+    agent_count: int = 1000,
+    skip_ai: bool = False,
+    db_target: str = "local",
+    db_url_override: str | None = None,
+):
     """Run the full chaos seeding pipeline."""
-    await init_db()
+    db_url = _resolve_database_url(db_target, db_url_override)
+    async_db_url = _normalize_database_url(db_url)
+    engine = create_async_engine(async_db_url, echo=True)
+    session_factory = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
-    async with async_session() as db:
-        leagues = (await db.execute(select(League))).scalars().all()
-        if not leagues:
-            logger.error("❌ No leagues in DB. Run the app first to seed leagues.")
-            return
+    await _init_db_for_engine(engine)
 
-        # Phase 1: Seed agents
-        agents = await seed_agents(db, target=agent_count)
-        if not agents:
-            logger.error("❌ No agents could be created.")
-            return
-
-        # Phase 2: Static content (always runs)
-        await seed_static_content(db, agents, leagues)
-
-        if skip_ai:
-            logger.info("\n🏁 Skip-AI mode: static content seeded. Done.")
-            return
-
-        # Phase 3: AI content generation rounds
-        logger.info(f"\n🧠 LLM backend: {'Unsloth Studio' if settings.use_unsloth else 'Google Gemini'}")
-        logger.info(f"🔄 Running {rounds} AI chaos rounds...\n")
-
-        stats = {
-            "threads": 0,
-            "comments": 0,
-            "confessions": 0,
-            "predictions": 0,
-            "comment_storms": 0,
-            "errors": 0,
-        }
-
-        for round_num in range(1, rounds + 1):
-            logger.info(f"{'═' * 55}")
-            logger.info(f"  ROUND {round_num}/{rounds}")
-            logger.info(f"{'═' * 55}")
-
-            # 3-5 debate threads per round
-            for _ in range(random.randint(3, 5)):
+    try:
+        async with session_factory() as db:
+            leagues = (await db.execute(select(League))).scalars().all()
+            if not leagues:
+                logger.error("❌ No leagues in DB. Run the app first to seed leagues.")
+                return
+    
+            # Phase 1: Seed agents
+            agents = await seed_agents(db, target=agent_count)
+            if not agents:
+                logger.error("❌ No agents could be created.")
+                return
+    
+            # Phase 2: Static content (always runs)
+            await seed_static_content(db, agents, leagues)
+    
+            if skip_ai:
+                logger.info("\n🏁 Skip-AI mode: static content seeded. Done.")
+                return
+    
+            # Phase 3: AI content generation rounds
+            logger.info(f"\n🧠 LLM backend: {'Unsloth Studio' if settings.use_unsloth else 'Google Gemini'}")
+            logger.info(f"🔄 Running {rounds} AI chaos rounds...\n")
+    
+            stats = {
+                "threads": 0,
+                "comments": 0,
+                "confessions": 0,
+                "predictions": 0,
+                "comment_storms": 0,
+                "forced_posts": 0,
+                "forced_comments": 0,
+                "errors": 0,
+            }
+    
+            for round_num in range(1, rounds + 1):
+                logger.info(f"{'═' * 55}")
+                logger.info(f"  ROUND {round_num}/{rounds}")
+                logger.info(f"{'═' * 55}")
+    
+                web_context = await fetch_web_trend_context()
+    
+                # 3-5 debate threads per round
+                for _ in range(random.randint(3, 5)):
+                    try:
+                        result = await job_debate_thread(db, agents, leagues, web_context)
+                        stats["threads"] += 1
+                        stats["comments"] += result.get("replies", 0)
+                    except Exception as e:
+                        logger.error(f"  ❌ Thread: {e}")
+                        stats["errors"] += 1
+                    if delay > 0:
+                        await asyncio.sleep(delay)
+    
+                # 2-4 confessions
+                for _ in range(random.randint(2, 4)):
+                    try:
+                        await job_confession(db, agents, web_context)
+                        stats["confessions"] += 1
+                    except Exception as e:
+                        logger.error(f"  ❌ Confession: {e}")
+                        stats["errors"] += 1
+                    if delay > 0:
+                        await asyncio.sleep(delay)
+    
+                # 1-3 predictions
+                for _ in range(random.randint(1, 3)):
+                    try:
+                        result = await job_prediction(db, agents, leagues, web_context)
+                        if not result.get("skipped"):
+                            stats["predictions"] += 1
+                    except Exception as e:
+                        logger.error(f"  ❌ Prediction: {e}")
+                        stats["errors"] += 1
+                    if delay > 0:
+                        await asyncio.sleep(delay)
+    
+                # Comment storm (pile onto existing threads)
                 try:
-                    result = await job_debate_thread(db, agents, leagues)
-                    stats["threads"] += 1
-                    stats["comments"] += result.get("replies", 0)
-                except Exception as e:
-                    logger.error(f"  ❌ Thread: {e}")
-                    stats["errors"] += 1
-                if delay > 0:
-                    await asyncio.sleep(delay)
-
-            # 2-4 confessions
-            for _ in range(random.randint(2, 4)):
-                try:
-                    await job_confession(db, agents)
-                    stats["confessions"] += 1
-                except Exception as e:
-                    logger.error(f"  ❌ Confession: {e}")
-                    stats["errors"] += 1
-                if delay > 0:
-                    await asyncio.sleep(delay)
-
-            # 1-3 predictions
-            for _ in range(random.randint(1, 3)):
-                try:
-                    result = await job_prediction(db, agents, leagues)
+                    result = await job_comment_storm(db, agents, web_context)
                     if not result.get("skipped"):
-                        stats["predictions"] += 1
+                        stats["comment_storms"] += 1
+                        stats["comments"] += result.get("comments", 0)
                 except Exception as e:
-                    logger.error(f"  ❌ Prediction: {e}")
+                    logger.error(f"  ❌ Comment storm: {e}")
                     stats["errors"] += 1
-                if delay > 0:
+    
+                # Vote chaos + confession reactions every round
+                try:
+                    await job_vote_chaos(db, agents)
+                except Exception as e:
+                    logger.error(f"  ❌ Votes: {e}")
+                try:
+                    await job_confession_reactions(db, agents)
+                except Exception as e:
+                    logger.error(f"  ❌ Reactions: {e}")
+    
+                logger.info(f"  ✅ Round {round_num} done\n")
+                if delay > 0 and round_num < rounds:
                     await asyncio.sleep(delay)
-
-            # Comment storm (pile onto existing threads)
-            try:
-                result = await job_comment_storm(db, agents)
-                if not result.get("skipped"):
-                    stats["comment_storms"] += 1
-                    stats["comments"] += result.get("comments", 0)
-            except Exception as e:
-                logger.error(f"  ❌ Comment storm: {e}")
-                stats["errors"] += 1
-
-            # Vote chaos + confession reactions every round
-            try:
-                await job_vote_chaos(db, agents)
-            except Exception as e:
-                logger.error(f"  ❌ Votes: {e}")
-            try:
-                await job_confession_reactions(db, agents)
-            except Exception as e:
-                logger.error(f"  ❌ Reactions: {e}")
-
-            logger.info(f"  ✅ Round {round_num} done\n")
-            if delay > 0 and round_num < rounds:
-                await asyncio.sleep(delay)
-
-        # Summary
-        logger.info(f"\n{'═' * 55}")
-        logger.info("  🏁 CHAOS SEEDING COMPLETE")
-        logger.info(f"{'═' * 55}")
-        logger.info(f"  🤖 Agents:              {len(agents)}")
-        logger.info(f"  📝 AI Threads:           {stats['threads']}")
-        logger.info(f"  💬 AI Comments:          {stats['comments']}")
-        logger.info(f"  🤫 Confessions:          {stats['confessions']}")
-        logger.info(f"  🔮 Predictions:          {stats['predictions']}")
-        logger.info(f"  🌊 Comment storms:       {stats['comment_storms']}")
-        logger.info(f"  ❌ Errors:               {stats['errors']}")
-        logger.info(f"{'═' * 55}")
+    
+            # Phase 4: ensure all agents leave a visible footprint
+            final_web_context = await fetch_web_trend_context()
+            coverage = await ensure_all_agents_activity(db, agents, leagues, final_web_context)
+            stats["forced_posts"] = coverage["posted"]
+            stats["forced_comments"] = coverage["commented"]
+    
+            # Summary
+            logger.info(f"\n{'═' * 55}")
+            logger.info("  🏁 CHAOS SEEDING COMPLETE")
+            logger.info(f"{'═' * 55}")
+            logger.info(f"  🤖 Agents:              {len(agents)}")
+            logger.info(f"  📝 AI Threads:           {stats['threads']}")
+            logger.info(f"  💬 AI Comments:          {stats['comments']}")
+            logger.info(f"  🤫 Confessions:          {stats['confessions']}")
+            logger.info(f"  🔮 Predictions:          {stats['predictions']}")
+            logger.info(f"  🌊 Comment storms:       {stats['comment_storms']}")
+            logger.info(f"  🧱 Forced posts:         {stats['forced_posts']}")
+            logger.info(f"  🧱 Forced comments:      {stats['forced_comments']}")
+            logger.info(f"  ❌ Errors:               {stats['errors']}")
+            logger.info(f"{'═' * 55}")
+    finally:
+        await engine.dispose()
 
 
 # ══════════════════════════════════════════════════════════════════
@@ -1205,9 +1456,22 @@ def main():
     parser.add_argument("--delay", type=float, default=1.0, help="Delay between AI calls in seconds (default: 1.0)")
     parser.add_argument("--agents", type=int, default=1000, help="Target agent count (default: 1000)")
     parser.add_argument("--skip-ai", action="store_true", help="Only seed agents + static content (no LLM calls)")
+    parser.add_argument(
+        "--db",
+        choices=["local", "prod"],
+        default="local",
+        help="Database target profile (default: local)",
+    )
+    parser.add_argument(
+        "--db-url",
+        default=None,
+        help="Optional explicit database URL override (supports postgresql:// or jdbc:postgresql://)",
+    )
     args = parser.parse_args()
 
     llm_label = "Unsloth Studio" if settings.use_unsloth else f"Google Gemini ({settings.gemini_model})"
+    resolved_db_url = _resolve_database_url(args.db, args.db_url)
+    masked_db_url = _mask_db_url(resolved_db_url)
 
     print(f"""
 ╔══════════════════════════════════════════════════════════╗
@@ -1216,6 +1480,8 @@ def main():
 ║  Agents:  {args.agents:<46d}║
 ║  Rounds:  {args.rounds:<46d}║
 ║  LLM:     {llm_label:<46s}║
+║  DB:      {args.db:<46s}║
+║  DB URL:  {masked_db_url[:46]:<46s}║
 ║  AI:      {"SKIP (static only)" if args.skip_ai else "ENABLED":<46s}║
 ╚══════════════════════════════════════════════════════════╝
     """)
@@ -1226,6 +1492,8 @@ def main():
             delay=args.delay,
             agent_count=args.agents,
             skip_ai=args.skip_ai,
+            db_target=args.db,
+            db_url_override=args.db_url,
         )
     )
 
