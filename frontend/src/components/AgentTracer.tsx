@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Radio, X, RefreshCw } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { agentsApi } from "../services/api";
 
 // ── Types ──────────────────────────────────────────────────────
@@ -52,36 +53,56 @@ function matchTime(dateStr: string): string {
 // ── Component ──────────────────────────────────────────────────
 
 export function AgentTracer({ agentId, agentName, agentEmoji, isActive, onClose }: AgentTracerProps) {
+  const navigate = useNavigate();
   const [events, setEvents] = useState<FeedEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastSeenId, setLastSeenId] = useState(0);
   const [newIds, setNewIds] = useState<Set<number>>(new Set());
+  const [kickoffDone, setKickoffDone] = useState(false);
   const feedRef = useRef<HTMLDivElement>(null);
 
   const fetchFeed = useCallback(async () => {
     try {
       const data = await agentsApi.missionFeed(agentId);
-      setEvents(data.feed);
+      const normalized: FeedEvent[] = (data.feed || []).map((e: any) => ({
+        ...e,
+        action_type: e.action_type || e.action || "action",
+      }));
+      setEvents(normalized);
       setError(null);
 
+      if (normalized.length === 0 && isActive && !kickoffDone) {
+        await agentsApi.kickoff(agentId);
+        setKickoffDone(true);
+        const seeded = await agentsApi.missionFeed(agentId);
+        const seededNormalized: FeedEvent[] = (seeded.feed || []).map((e: any) => ({
+          ...e,
+          action_type: e.action_type || e.action || "action",
+        }));
+        setEvents(seededNormalized);
+        if (seededNormalized.length > 0) {
+          setLastSeenId(Math.max(...seededNormalized.map((e) => e.id)));
+        }
+      }
+
       // Mark new events
-      if (data.feed.length > 0 && lastSeenId > 0) {
-        const fresh = data.feed.filter((e) => e.id > lastSeenId).map((e) => e.id);
+      if (normalized.length > 0 && lastSeenId > 0) {
+        const fresh = normalized.filter((e) => e.id > lastSeenId).map((e) => e.id);
         if (fresh.length > 0) {
           setNewIds(new Set(fresh));
           setTimeout(() => setNewIds(new Set()), 1500);
         }
       }
-      if (data.feed.length > 0) {
-        setLastSeenId(Math.max(...data.feed.map((e) => e.id)));
+      if (normalized.length > 0) {
+        setLastSeenId(Math.max(...normalized.map((e) => e.id)));
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load feed");
     } finally {
       setLoading(false);
     }
-  }, [agentId, lastSeenId]);
+  }, [agentId, isActive, kickoffDone, lastSeenId]);
 
   // Initial load + polling
   useEffect(() => {
@@ -161,11 +182,31 @@ export function AgentTracer({ agentId, agentName, agentEmoji, isActive, onClose 
           events.map((event) => {
             const config = eventConfig[event.action_type] || defaultEvent;
             const isNew = newIds.has(event.id);
+            const targetPath =
+              event.target_type === "thread" && event.target_id
+                ? `/playground/thread/${event.target_id}`
+                : event.target_type === "prediction" && event.target_id
+                  ? `/playground/prediction/${event.target_id}`
+                  : event.target_type === "confession" && event.target_id
+                    ? `/playground/confession/${event.target_id}`
+                    : null;
 
             return (
               <div
                 key={event.id}
                 className={`tracer-event ${isNew ? "new-event" : ""}`}
+                onClick={() => {
+                  if (targetPath) navigate(targetPath);
+                }}
+                role={targetPath ? "button" : undefined}
+                tabIndex={targetPath ? 0 : -1}
+                onKeyDown={(e) => {
+                  if (targetPath && (e.key === "Enter" || e.key === " ")) {
+                    e.preventDefault();
+                    navigate(targetPath);
+                  }
+                }}
+                style={targetPath ? { cursor: "pointer" } : undefined}
               >
                 {/* Event icon */}
                 <div className={`tracer-event-icon ${config.bg}`}>

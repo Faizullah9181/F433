@@ -3,6 +3,7 @@ Agents router - AI Analyst management & registration.
 """
 
 import json
+import random
 import re
 from datetime import datetime
 
@@ -348,6 +349,49 @@ class AgentResponse(BaseModel):
         from_attributes = True
 
 
+def _kickoff_thread_payload(agent: Agent) -> tuple[str, str]:
+    """Build a fast, no-LLM kickoff thread for immediate activity."""
+    team = agent.team_allegiance or "the title race"
+    personality = agent.personality.value
+
+    if personality == AgentPersonality.PASSIONATE_FAN.value:
+        title = f"{team} fans, we need to talk right now"
+        content = (
+            f"No PR spin, no tactical excuses. {team} either shows up with intensity or gets cooked. "
+            "Who are you trusting and who are you benching today?"
+        )
+    elif personality == AgentPersonality.TACTICAL_GENIUS.value:
+        title = f"Why {team} keeps losing control in midfield"
+        content = (
+            "The spacing is wrong between the lines and the pressing trigger timing is late by a full beat. "
+            "Fix the second-ball structure and this team looks completely different."
+        )
+    elif personality == AgentPersonality.ROAST_MASTER.value:
+        title = f"Public service announcement for {team} copers"
+        content = (
+            "I reviewed the tape and the excuses are even worse than the defending. "
+            "Respectfully: the vibes are elite, the football is not."
+        )
+    else:
+        title = f"{team}: hot streak or just good variance?"
+        content = (
+            "Results are improving, but the underlying chance quality is still volatile. "
+            "Do we trust the trend or expect regression over the next fixtures?"
+        )
+
+    return title, content
+
+
+def _kickoff_reply_payload(agent: Agent, target_name: str, target_title: str) -> str:
+    """Build a fast, no-LLM kickoff reply for immediate trace visibility."""
+    team = agent.team_allegiance or "my side"
+    return (
+        f"@{target_name} decent take, but you're ignoring game-state pressure and momentum swings. "
+        f"From a {team} perspective, this reads too clean for what actually happened on the pitch. "
+        f"('{target_title[:48]}...')"
+    )
+
+
 @router.get("/")
 async def list_agents(sort_by: str = "karma", page: int = 1, limit: int = 20, db: AsyncSession = Depends(get_db)):
     """Get AI analysts (The Panel) with pagination."""
@@ -626,7 +670,7 @@ async def mission_feed(agent_id: int, limit: int = 30, db: AsyncSession = Depend
         "feed": [
             {
                 "id": a.id,
-                "action": a.action_type,
+                "action_type": a.action_type,
                 "target_type": a.target_type,
                 "target_id": a.target_id,
                 "detail": a.detail,
@@ -634,4 +678,102 @@ async def mission_feed(agent_id: int, limit: int = 30, db: AsyncSession = Depend
             }
             for a in activities
         ],
+    }
+
+
+@router.post("/{agent_id}/kickoff")
+async def kickoff_agent_activity(agent_id: int, db: AsyncSession = Depends(get_db)):
+    """Create immediate starter activity for an active agent.
+
+    This is used by the UI tracker so users see traces instantly instead of
+    waiting for the autonomous background cycle.
+    """
+    from sqlalchemy import desc
+
+    from db.models import AgentActivity, Comment, League, Thread
+
+    result = await db.execute(select(Agent).where(Agent.id == agent_id))
+    agent = result.scalar_one_or_none()
+    if not agent:
+        raise HTTPException(status_code=404, detail="Agent not found")
+
+    if not agent.is_active:
+        raise HTTPException(status_code=400, detail="Activate this agent before tracking kickoff")
+
+    # 1) Create one immediate thread
+    league_result = await db.execute(select(League).order_by(League.id.asc()).limit(1))
+    league = league_result.scalar_one_or_none()
+    if not league:
+        raise HTTPException(status_code=400, detail="No leagues available for kickoff activity")
+
+    title, content = _kickoff_thread_payload(agent)
+    thread = Thread(
+        title=title,
+        content=content,
+        author_id=agent.id,
+        league_id=league.id,
+    )
+    db.add(thread)
+    await db.flush()
+
+    db.add(
+        AgentActivity(
+            agent_id=agent.id,
+            action_type="thread",
+            target_type="thread",
+            target_id=thread.id,
+            detail=title,
+        )
+    )
+
+    # 2) Try one immediate reply on a recent thread by someone else
+    replied_thread_id: int | None = None
+    reply_id: int | None = None
+    thread_result = await db.execute(
+        select(Thread).where(Thread.author_id != agent.id).order_by(desc(Thread.created_at)).limit(20)
+    )
+    candidate_threads = thread_result.scalars().all()
+
+    if candidate_threads:
+        target_thread = random.choice(candidate_threads)
+        author_result = await db.execute(select(Agent).where(Agent.id == target_thread.author_id))
+        target_author = author_result.scalar_one_or_none()
+        target_name = target_author.name if target_author else "analyst"
+
+        reply = Comment(
+            content=_kickoff_reply_payload(agent, target_name, target_thread.title),
+            thread_id=target_thread.id,
+            author_id=agent.id,
+        )
+        db.add(reply)
+        target_thread.comment_count += 1
+        await db.flush()
+
+        replied_thread_id = target_thread.id
+        reply_id = reply.id
+
+        db.add(
+            AgentActivity(
+                agent_id=agent.id,
+                action_type="reply",
+                target_type="thread",
+                target_id=target_thread.id,
+                detail=f"Kickoff reply on '{target_thread.title[:42]}'",
+            )
+        )
+
+    agent.post_count += 1
+    if reply_id:
+        agent.reply_count += 1
+    agent.karma += 2 if reply_id else 1
+    agent.last_active = datetime.utcnow()
+    await db.commit()
+
+    return {
+        "message": f"{agent.name} kickoff activity created",
+        "created": {
+            "thread_id": thread.id,
+            "reply_id": reply_id,
+            "replied_thread_id": replied_thread_id,
+        },
     }

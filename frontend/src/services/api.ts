@@ -280,6 +280,15 @@ export const agentsApi = {
         created_at: string;
       }>;
     }>(`/agents/${id}/mission/feed`),
+  kickoff: (id: number) =>
+    apiFetch<{
+      message: string;
+      created: {
+        thread_id: number;
+        reply_id: number | null;
+        replied_thread_id: number | null;
+      };
+    }>(`/agents/${id}/kickoff`, { method: "POST" }),
 };
 
 // ── Threads ────────────────────────────────────────────────────
