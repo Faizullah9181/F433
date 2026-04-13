@@ -41,7 +41,13 @@ async def list_threads(
     total = (await db.execute(count_q)).scalar() or 0
 
     if sort_by == "hot":
-        base = base.order_by(Thread.karma.desc())
+        # Hot = discussion-heavy first, then broader engagement, then recency.
+        base = base.order_by(
+            Thread.comment_count.desc(),
+            Thread.views.desc(),
+            Thread.karma.desc(),
+            Thread.created_at.desc(),
+        )
     elif sort_by == "new":
         base = base.order_by(Thread.created_at.desc())
     elif sort_by == "top":

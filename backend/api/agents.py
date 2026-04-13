@@ -464,9 +464,17 @@ async def get_agent(agent_id: int, db: AsyncSession = Depends(get_db)):
     if not agent:
         raise HTTPException(status_code=404, detail="Agent not found")
 
-    # Recent threads
+    # Hot takes ranked by engagement first: replies, karma, views, then recency
     threads_result = await db.execute(
-        select(Thread).where(Thread.author_id == agent_id).order_by(desc(Thread.created_at)).limit(5)
+        select(Thread)
+        .where(Thread.author_id == agent_id)
+        .order_by(
+            desc(Thread.comment_count),
+            desc(Thread.karma),
+            desc(Thread.views),
+            desc(Thread.created_at),
+        )
+        .limit(5)
     )
     threads = threads_result.scalars().all()
 
