@@ -89,9 +89,7 @@ def _resolve_database_url(db_target: str, db_url_override: str | None) -> str:
         selected = settings.database_url
     elif db_target == "prod":
         if not settings.chaos_db_url:
-            raise ValueError(
-                "CHAOS_DB_URL is required for --db prod. Set CHAOS_DB_URL in .env or pass --db-url."
-            )
+            raise ValueError("CHAOS_DB_URL is required for --db prod. Set CHAOS_DB_URL in .env or pass --db-url.")
         selected = settings.chaos_db_url
     else:
         selected = settings.database_url
@@ -939,9 +937,9 @@ async def job_prediction(
         h_goals, a_goals = random.randint(0, 4), random.randint(0, 4)
         prompt = with_web_context(
             (
-            f"BOLD prediction: {home} vs {away}. "
-            f"You predict {h_goals}-{a_goals}. "
-            f"3-4 sentences. Reference form, key players, be dramatic and confident."
+                f"BOLD prediction: {home} vs {away}. "
+                f"You predict {h_goals}-{a_goals}. "
+                f"3-4 sentences. Reference form, key players, be dramatic and confident."
             ),
             web_context,
         )
@@ -1326,24 +1324,24 @@ async def run_chaos(
             if not leagues:
                 logger.error("❌ No leagues in DB. Run the app first to seed leagues.")
                 return
-    
+
             # Phase 1: Seed agents
             agents = await seed_agents(db, target=agent_count)
             if not agents:
                 logger.error("❌ No agents could be created.")
                 return
-    
+
             # Phase 2: Static content (always runs)
             await seed_static_content(db, agents, leagues)
-    
+
             if skip_ai:
                 logger.info("\n🏁 Skip-AI mode: static content seeded. Done.")
                 return
-    
+
             # Phase 3: AI content generation rounds
             logger.info(f"\n🧠 LLM backend: {'Unsloth Studio' if settings.use_unsloth else 'Google Gemini'}")
             logger.info(f"🔄 Running {rounds} AI chaos rounds...\n")
-    
+
             stats = {
                 "threads": 0,
                 "comments": 0,
@@ -1354,14 +1352,14 @@ async def run_chaos(
                 "forced_comments": 0,
                 "errors": 0,
             }
-    
+
             for round_num in range(1, rounds + 1):
                 logger.info(f"{'═' * 55}")
                 logger.info(f"  ROUND {round_num}/{rounds}")
                 logger.info(f"{'═' * 55}")
-    
+
                 web_context = await fetch_web_trend_context()
-    
+
                 # 3-5 debate threads per round
                 for _ in range(random.randint(3, 5)):
                     try:
@@ -1373,7 +1371,7 @@ async def run_chaos(
                         stats["errors"] += 1
                     if delay > 0:
                         await asyncio.sleep(delay)
-    
+
                 # 2-4 confessions
                 for _ in range(random.randint(2, 4)):
                     try:
@@ -1384,7 +1382,7 @@ async def run_chaos(
                         stats["errors"] += 1
                     if delay > 0:
                         await asyncio.sleep(delay)
-    
+
                 # 1-3 predictions
                 for _ in range(random.randint(1, 3)):
                     try:
@@ -1396,7 +1394,7 @@ async def run_chaos(
                         stats["errors"] += 1
                     if delay > 0:
                         await asyncio.sleep(delay)
-    
+
                 # Comment storm (pile onto existing threads)
                 try:
                     result = await job_comment_storm(db, agents, web_context)
@@ -1406,7 +1404,7 @@ async def run_chaos(
                 except Exception as e:
                     logger.error(f"  ❌ Comment storm: {e}")
                     stats["errors"] += 1
-    
+
                 # Vote chaos + confession reactions every round
                 try:
                     await job_vote_chaos(db, agents)
@@ -1416,17 +1414,17 @@ async def run_chaos(
                     await job_confession_reactions(db, agents)
                 except Exception as e:
                     logger.error(f"  ❌ Reactions: {e}")
-    
+
                 logger.info(f"  ✅ Round {round_num} done\n")
                 if delay > 0 and round_num < rounds:
                     await asyncio.sleep(delay)
-    
+
             # Phase 4: ensure all agents leave a visible footprint
             final_web_context = await fetch_web_trend_context()
             coverage = await ensure_all_agents_activity(db, agents, leagues, final_web_context)
             stats["forced_posts"] = coverage["posted"]
             stats["forced_comments"] = coverage["commented"]
-    
+
             # Summary
             logger.info(f"\n{'═' * 55}")
             logger.info("  🏁 CHAOS SEEDING COMPLETE")
