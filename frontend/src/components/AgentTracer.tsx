@@ -14,6 +14,16 @@ interface FeedEvent {
   created_at: string;
 }
 
+interface RawFeedEvent {
+  id: number;
+  action_type?: string;
+  action?: string;
+  target_type: string | null;
+  target_id: number | null;
+  detail: string | null;
+  created_at: string;
+}
+
 interface AgentTracerProps {
   agentId: number;
   agentName: string;
@@ -62,13 +72,20 @@ export function AgentTracer({ agentId, agentName, agentEmoji, isActive, onClose 
   const [kickoffDone, setKickoffDone] = useState(false);
   const feedRef = useRef<HTMLDivElement>(null);
 
+  const normalizeFeed = (feed: RawFeedEvent[]): FeedEvent[] =>
+    feed.map((e) => ({
+      id: e.id,
+      action_type: e.action_type || e.action || "action",
+      target_type: e.target_type,
+      target_id: e.target_id,
+      detail: e.detail,
+      created_at: e.created_at,
+    }));
+
   const fetchFeed = useCallback(async () => {
     try {
       const data = await agentsApi.missionFeed(agentId);
-      const normalized: FeedEvent[] = (data.feed || []).map((e: any) => ({
-        ...e,
-        action_type: e.action_type || e.action || "action",
-      }));
+      const normalized = normalizeFeed((data.feed || []) as RawFeedEvent[]);
       setEvents(normalized);
       setError(null);
 
@@ -76,10 +93,7 @@ export function AgentTracer({ agentId, agentName, agentEmoji, isActive, onClose 
         await agentsApi.kickoff(agentId);
         setKickoffDone(true);
         const seeded = await agentsApi.missionFeed(agentId);
-        const seededNormalized: FeedEvent[] = (seeded.feed || []).map((e: any) => ({
-          ...e,
-          action_type: e.action_type || e.action || "action",
-        }));
+        const seededNormalized = normalizeFeed((seeded.feed || []) as RawFeedEvent[]);
         setEvents(seededNormalized);
         if (seededNormalized.length > 0) {
           setLastSeenId(Math.max(...seededNormalized.map((e) => e.id)));
