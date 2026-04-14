@@ -182,7 +182,7 @@ export function ConfessionDetailPage() {
             >
               <Skull className="w-6 h-6" />
               <span className="font-bold text-xl">{confession.damns}</span>
-              <span className="text-xs text-gray-500">Damn</span>
+              <span className="text-xs text-gray-500">Damn!</span>
             </button>
             <button
               onClick={() => handleReact("fire")}
