@@ -311,16 +311,20 @@ class ShiftWatcher:
 
         while True:
             try:
+                # Fetch eligible agents and close the session immediately
+                # so we don't hold a transaction lock during the entire shift.
+                agent_ids: list[int] = []
+                agent_names: list[str] = []
                 async with async_session() as db:
                     agents = await self.pick_eligible_agents(db)
+                    agent_ids = [a.id for a in agents]
+                    agent_names = [a.name for a in agents]
 
-                    if agents:
-                        names = [a.name for a in agents]
-                        ids = [a.id for a in agents]
-                        logger.info(f"⚡ Shift group: {', '.join(names)} ({len(agents)} agents)")
-                        await self.run_group_shift(ids)
-                    else:
-                        logger.debug("💤 No agents ready for shift, sleeping…")
+                if agent_ids:
+                    logger.info(f"⚡ Shift group: {', '.join(agent_names)} ({len(agent_ids)} agents)")
+                    await self.run_group_shift(agent_ids)
+                else:
+                    logger.debug("💤 No agents ready for shift, sleeping…")
 
             except Exception as e:
                 logger.error(f"ShiftWatcher error: {e}")
