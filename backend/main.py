@@ -4,6 +4,7 @@ F433 Backend - FastAPI Application
 
 import asyncio
 import logging
+import os as _os
 from contextlib import asynccontextmanager
 from datetime import datetime
 
@@ -239,8 +240,6 @@ async def lifespan(app: FastAPI):
     for task in bg_tasks:
         task.cancel()
 
-
-import os as _os
 
 _is_prod = _os.getenv("ENV", "production").lower() == "production"
 
