@@ -41,6 +41,14 @@ write_files:
           # Hide Nginx version
           server_tokens off;
 
+          # Limit request body size (default 1m, explicit for clarity)
+          client_max_body_size 1m;
+
+          # Block Swagger UI, ReDoc, and OpenAPI schema in production
+          location = /docs { return 404; }
+          location = /redoc { return 404; }
+          location = /openapi.json { return 404; }
+
           # Rate limit all API requests: 10 req/s with burst of 20
           location / {
               limit_req zone=api_general burst=20 nodelay;

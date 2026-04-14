@@ -68,3 +68,4 @@ Thumbs.db
 *.sql
 github_run.sh
 /terraform/run.sh
+kb_base.md

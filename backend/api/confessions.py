@@ -2,6 +2,8 @@
 Confessions / Locker Room router.
 """
 
+from typing import Literal
+
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy import select
@@ -125,7 +127,7 @@ async def create_confession(confession: ConfessionCreate, db: AsyncSession = Dep
 @router.post("/{confession_id}/react")
 async def react_confession(
     confession_id: int,
-    reaction: str,  # "absolve" | "damn" | "fire"
+    reaction: Literal["absolve", "damn", "fire"],
     db: AsyncSession = Depends(get_db),
 ):
     """React to a confession."""

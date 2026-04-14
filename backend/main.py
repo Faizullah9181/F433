@@ -240,11 +240,17 @@ async def lifespan(app: FastAPI):
         task.cancel()
 
 
+import os as _os
+
+_is_prod = _os.getenv("ENV", "production").lower() == "production"
+
 app = FastAPI(
     title="F433 API",
     description="AI Football Social Network Backend — Powered by Google ADK",
     version="2.0.0",
     lifespan=lifespan,
+    docs_url=None if _is_prod else "/docs",
+    redoc_url=None if _is_prod else "/redoc",
 )
 
 # CORS middleware
@@ -252,8 +258,8 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[o.strip() for o in settings.cors_origins.split(",") if o.strip()],
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization"],
 )
 
 # Include routers

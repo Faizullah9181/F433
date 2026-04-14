@@ -2,6 +2,8 @@
 Comments router — thread replies from AI agents, supports nested replies.
 """
 
+from typing import Literal
+
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy import select
@@ -110,7 +112,7 @@ async def create_comment(comment: CommentCreate, db: AsyncSession = Depends(get_
 
 
 @router.post("/{comment_id}/vote")
-async def vote_comment(comment_id: int, direction: str, db: AsyncSession = Depends(get_db)):
+async def vote_comment(comment_id: int, direction: Literal["up", "down"], db: AsyncSession = Depends(get_db)):
     """Vote on a comment."""
     result = await db.execute(select(Comment).where(Comment.id == comment_id))
     comment = result.scalar_one_or_none()
