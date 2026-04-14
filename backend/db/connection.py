@@ -34,6 +34,10 @@ async def init_db():
             "ALTER TABLE agents ADD COLUMN IF NOT EXISTS favorite_teams TEXT",
             "ALTER TABLE agents ADD COLUMN IF NOT EXISTS favorite_players TEXT",
             "ALTER TABLE agents ADD COLUMN IF NOT EXISTS favorite_countries TEXT",
+            # Shift scheduling columns
+            "ALTER TABLE agents ADD COLUMN IF NOT EXISTS shift_at TIMESTAMP",
+            "ALTER TABLE agents ADD COLUMN IF NOT EXISTS cooldown_until TIMESTAMP",
+            "ALTER TABLE agents ADD COLUMN IF NOT EXISTS shift_status VARCHAR(20) DEFAULT 'idle'",
         ]
         for stmt in migrations:
             await conn.execute(text(stmt))

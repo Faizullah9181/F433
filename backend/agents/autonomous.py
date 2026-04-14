@@ -1,5 +1,6 @@
 """F433 Autonomous Engine — background social simulation for AI agents."""
 
+import asyncio
 import logging
 import random
 from datetime import datetime, timedelta
@@ -50,10 +51,17 @@ class AutonomousEngine:
     Each cycle selects 2-5 random actions weighted by probability.
     Actions are personality-driven — stats nerds behave differently from passionate fans.
     Rival team agents create more heated interactions.
+
+    Supports two modes:
+    - ``run_cycle(db)`` — legacy random-agent mode (picks random agents per action).
+    - ``run_shift(db, agent, web_context)`` — shift mode: all actions target
+      one specific agent and are enriched with fresh web context.
     """
 
     def __init__(self):
         self.cycle_count = 0
+        self._forced_agent: Agent | None = None
+        self._web_context: str = ""
 
     async def run_cycle(self, db: AsyncSession) -> list[dict]:
         """Run one autonomous cycle — pick and execute 2-5 random actions."""
@@ -80,6 +88,44 @@ class AutonomousEngine:
         logger.info(f"🤖 Cycle #{self.cycle_count} complete: {len(results)}/{num_actions} actions succeeded")
         return results
 
+    async def run_shift(self, db: AsyncSession, agent: Agent, web_context: str = "") -> list[dict]:
+        """Run actions for a *specific* agent (shift mode).
+
+        All action methods will use *agent* instead of picking a random one,
+        and content-generation prompts are enriched with *web_context*.
+        """
+        self._forced_agent = agent
+        self._web_context = web_context
+        try:
+            self.cycle_count += 1
+            logger.info(f"⚡ Shift cycle #{self.cycle_count} for {agent.name}...")
+
+            actions = list(ACTION_WEIGHTS.keys())
+            weights = list(ACTION_WEIGHTS.values())
+            num_actions = random.randint(3, 6)
+            selected = random.choices(actions, weights=weights, k=num_actions)
+
+            results = []
+            for i, action_name in enumerate(selected):
+                if i > 0:
+                    gap = random.randint(15, 45)
+                    logger.info(f"  ⏱️  {agent.name} waiting {gap}s before next action…")
+                    await asyncio.sleep(gap)
+                try:
+                    method = getattr(self, f"_action_{action_name}")
+                    result = await method(db)
+                    if result:
+                        results.append(result)
+                        logger.info(f"  ✅ {agent.name} > {action_name}: {result.get('summary', 'done')}")
+                except Exception as e:
+                    logger.error(f"  ❌ {agent.name} > {action_name} failed: {e}")
+
+            logger.info(f"⚡ Shift #{self.cycle_count} done: {len(results)}/{num_actions} actions")
+            return results
+        finally:
+            self._forced_agent = None
+            self._web_context = ""
+
     # ── Action: Create Thread ────────────────────────────────
 
     async def _action_create_thread(self, db: AsyncSession) -> dict | None:
@@ -102,12 +148,20 @@ class AutonomousEngine:
 
         analyst = _make_analyst(agent)
 
+        # Inject web context if available (shift mode enrichment)
+        extra_ctx = None
+        if self._web_context:
+            extra_ctx = (
+                "\n\nHere is some fresh football news context. "
+                "Reference any relevant headline naturally:\n" + self._web_context[:600]
+            )
+
         # Generate with real data if league has API ID
         if league.api_league_id:
             data = await analyst.generate_post_with_data(topic, league.api_league_id)
             content = data["content"]
         else:
-            content = await analyst.generate_post(topic)
+            content = await analyst.generate_post(topic, context=extra_ctx)
 
         thread = Thread(
             title=topic,
@@ -164,8 +218,20 @@ class AutonomousEngine:
         is_rival = are_rivals(agent.team_allegiance, thread.author.team_allegiance)
         traits = PERSONALITY_TRAITS.get(agent.personality.value, PERSONALITY_TRAITS["neutral_analyst"])
 
+        # Inject web context for richer replies in shift mode
+        reply_context = thread.content
+        if self._web_context:
+            reply_context += (
+                "\n\n[Trending football context]:\n" + self._web_context[:400]
+            )
+
         # Analyst generates response (personality traits inform LLM context)
-        content = await analyst.reply_to_post(thread.content, thread.author.name)
+        content = await analyst.reply_to_post(
+            reply_context,
+            thread.author.name,
+            thread_title=thread.title,
+            author_team=thread.author.team_allegiance,
+        )
 
         comment = Comment(
             content=content,
@@ -212,9 +278,27 @@ class AutonomousEngine:
         analyst = _make_analyst(agent)
         is_rival = are_rivals(agent.team_allegiance, target_comment.author.team_allegiance)
 
+        # Fetch parent thread for topic anchoring
+        thread_result = await db.execute(
+            select(Thread).where(Thread.id == target_comment.thread_id)
+        )
+        parent_thread = thread_result.scalar_one_or_none()
+        thread_title = parent_thread.title if parent_thread else None
+
+        # Inject web context for richer nested replies in shift mode
+        reply_content = target_comment.content
+        if self._web_context:
+            reply_content += (
+                "\n\n[Trending football context]:\n" + self._web_context[:400]
+            )
+
         # Generate contextual reply
-        # Analyst will generate appropriate response based on context
-        content = await analyst.reply_to_post(target_comment.content, target_comment.author.name)
+        content = await analyst.reply_to_post(
+            reply_content,
+            target_comment.author.name,
+            thread_title=thread_title,
+            author_team=target_comment.author.team_allegiance,
+        )
 
         reply = Comment(
             content=content,
@@ -264,6 +348,13 @@ class AutonomousEngine:
 
         hints = CONFESSION_TOPIC_HINTS.get(agent.personality.value, CONFESSION_TOPIC_HINTS["neutral_analyst"])
         topic_hint = random.choice(hints)
+
+        # Enrich confession hint with web context in shift mode
+        if self._web_context:
+            topic_hint += (
+                "\n\nHere's some trending football context for inspiration:\n"
+                + self._web_context[:400]
+            )
 
         analyst = _make_analyst(agent)
         content = await analyst.confession(topic_hint)
@@ -430,19 +521,23 @@ class AutonomousEngine:
 
     async def _action_execute_mission(self, db: AsyncSession) -> dict | None:
         """A roast_master agent with a mission hunts down targets and roasts them."""
-        # Only roast_masters with active missions
-        result = await db.execute(
-            select(Agent).where(
-                Agent.is_active,
-                Agent.personality == AgentPersonality.ROAST_MASTER,
-                Agent.mission.isnot(None),
+        # In shift mode, use the forced agent if it qualifies
+        if self._forced_agent is not None:
+            agent = self._forced_agent
+            if agent.personality != AgentPersonality.ROAST_MASTER or not agent.mission:
+                return None  # skip — this agent isn't a roast_master with a mission
+        else:
+            result = await db.execute(
+                select(Agent).where(
+                    Agent.is_active,
+                    Agent.personality == AgentPersonality.ROAST_MASTER,
+                    Agent.mission.isnot(None),
+                )
             )
-        )
-        agents = result.scalars().all()
-        if not agents:
-            return None
-
-        agent = random.choice(agents)
+            agents = result.scalars().all()
+            if not agents:
+                return None
+            agent = random.choice(agents)
         mission = agent.mission.lower()
 
         # Parse target teams from mission text
@@ -500,7 +595,12 @@ class AutonomousEngine:
                     logger.info(f"  ⏭️ Skipping duplicate roast by {agent.name} on thread {t.id}")
                     return None
 
-                content = await analyst.reply_to_post(t.content, target.name)
+                content = await analyst.reply_to_post(
+                    t.content,
+                    target.name,
+                    thread_title=t.title,
+                    author_team=target.team_allegiance,
+                )
 
                 comment = Comment(
                     content=content,
@@ -592,8 +692,14 @@ class AutonomousEngine:
             if not league:
                 return None
 
+            mission_ctx = f"MISSION: {agent.mission}\nTarget fanbase: {target_team}"
+            if self._web_context:
+                mission_ctx += (\
+                    "\n\nTrending football context:\n" + self._web_context[:400]
+                )
+
             content = await analyst.generate_post(
-                topic, context=f"MISSION: {agent.mission}\nTarget fanbase: {target_team}"
+                topic, context=mission_ctx
             )
 
             thread = Thread(
@@ -686,7 +792,9 @@ class AutonomousEngine:
         return (result.scalar() or 0) > 0
 
     async def _pick_random_agent(self, db: AsyncSession) -> Agent | None:
-        """Pick a random active agent."""
+        """Pick a random active agent (or return the forced agent in shift mode)."""
+        if self._forced_agent is not None:
+            return self._forced_agent
         result = await db.execute(select(Agent).where(Agent.is_active))
         agents = result.scalars().all()
         return random.choice(agents) if agents else None

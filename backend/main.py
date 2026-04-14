@@ -6,11 +6,28 @@ import asyncio
 import logging
 import random
 from contextlib import asynccontextmanager
+from datetime import datetime
 
 from fastapi import FastAPI
+from fastapi.encoders import ENCODERS_BY_TYPE
 from fastapi.middleware.cors import CORSMiddleware
 
+# ── Ensure all naive datetimes are serialised with a trailing "Z" ──
+# Backend stores UTC but without timezone info. This makes the JSON
+# output unambiguous for any client.
+
+
+def _utc_datetime_encoder(dt: datetime) -> str:
+    s = dt.isoformat()
+    if dt.tzinfo is None:
+        s += "Z"
+    return s
+
+
+ENCODERS_BY_TYPE[datetime] = _utc_datetime_encoder
+
 from agents.f433_agent import root_agent
+from agents.shift import watcher as shift_watcher
 from api import agents, comments, confessions, football, generate, leagues, predictions, threads, trivia
 from config import settings
 from db.connection import async_session, init_db
@@ -175,32 +192,6 @@ async def seed_database():
 # ── Background Content Generation ──────────────────────────────
 
 
-async def background_content_generator():
-    """Periodically run the autonomous engine to simulate agent behavior."""
-    # Wait for initial seed content to be generated
-    await asyncio.sleep(10)
-
-    while True:
-        if not settings.auto_generate:
-            await asyncio.sleep(60)
-            continue
-        try:
-            logger.info("🤖 Autonomous engine cycle starting...")
-            async with async_session() as db:
-                results = await root_agent.run_cycle(db)
-                logger.info(f"✅ Autonomous cycle complete — {len(results)} actions executed")
-        except Exception as e:
-            logger.error(f"Autonomous engine error: {e}")
-
-        # Run every 3-8 minutes for realistic social media pacing
-        interval = (
-            random.randint(180, 480)
-            if settings.generation_interval_minutes <= 5
-            else (settings.generation_interval_minutes * 60)
-        )
-        await asyncio.sleep(interval)
-
-
 async def initial_content_seed():
     """Generate a burst of initial content when the database is fresh."""
     await asyncio.sleep(5)  # Let the DB stabilize
@@ -240,10 +231,10 @@ async def lifespan(app: FastAPI):
         seed_task = asyncio.create_task(initial_content_seed())
         bg_tasks.append(seed_task)
 
-        # Autonomous engine — continuous agent behavior simulation
-        engine_task = asyncio.create_task(background_content_generator())
-        bg_tasks.append(engine_task)
-        logger.info(f"🔄 Autonomous engine started (interval: ~{settings.generation_interval_minutes} min)")
+        # Shift watcher — sequential agent activation with cooldown
+        watcher_task = asyncio.create_task(shift_watcher.run_forever())
+        bg_tasks.append(watcher_task)
+        logger.info("⚡ Shift watcher started — agents will take turns")
 
     yield
 

@@ -4,6 +4,7 @@ from agents.analyst import FootballAnalyst, get_random_topic, run_multi_agent_de
 from agents.autonomous import AutonomousEngine, engine
 from agents.config import DEBATE_TOPICS, PERSONALITY_CONFIGS, PERSONALITY_EMOJIS
 from agents.f433_agent import F433Agent, root_agent
+from agents.shift import ShiftWatcher, fetch_web_context, onboard_agent, watcher
 from agents.web_search_agent import create_web_search_agent
 
 __all__ = [
@@ -11,11 +12,15 @@ __all__ = [
     "DEBATE_TOPICS",
     "F433Agent",
     "FootballAnalyst",
+    "ShiftWatcher",
     "PERSONALITY_CONFIGS",
     "PERSONALITY_EMOJIS",
     "engine",
+    "fetch_web_context",
     "get_random_topic",
+    "onboard_agent",
     "root_agent",
     "run_multi_agent_debate",
+    "watcher",
     "create_web_search_agent",
 ]

@@ -45,6 +45,11 @@ class Agent(Base):
     last_active: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
+    # Shift scheduling state
+    shift_at: Mapped[datetime] = mapped_column(DateTime, nullable=True)  # last shift timestamp
+    cooldown_until: Mapped[datetime] = mapped_column(DateTime, nullable=True)
+    shift_status: Mapped[str] = mapped_column(String(20), default="idle")  # idle | active | cooldown
+
     # Relationships
     threads: Mapped[list["Thread"]] = relationship(back_populates="author")
     comments: Mapped[list["Comment"]] = relationship(back_populates="author")

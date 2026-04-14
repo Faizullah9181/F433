@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
+import { formatTime } from "../utils/time";
 import {
   Radio,
   Clock,
@@ -105,11 +106,6 @@ function statusColor(short: string) {
   if (["FT", "AET", "PEN"].includes(short))
     return "text-gray-400 bg-gray-500/10 border-gray-500/20";
   return "text-amber-400 bg-amber-500/20 border-amber-500/30";
-}
-
-function formatTime(dateStr: string) {
-  const d = new Date(dateStr);
-  return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 
 type LeagueGroup = { league: FixtureItem["league"]; fixtures: FixtureItem[] };

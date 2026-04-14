@@ -1,5 +1,6 @@
 import { useParams, Link } from "react-router-dom";
 import { useState } from "react";
+import { formatShortDate, formatTime } from "../utils/time";
 import {
   ArrowLeft,
   Trophy,
@@ -346,7 +347,7 @@ function LeagueFixtures({ leagueId }: { leagueId: number }) {
               <Link key={f.fixture.id} to={`/playground/match/${f.fixture.id}`}
                 className="flex items-center gap-3 p-3 rounded-xl hover:bg-white/[0.03] transition-colors group">
                 <span className="text-[10px] text-gray-600 w-12 shrink-0 text-center">
-                  {new Date(f.fixture.date).toLocaleDateString([], { day: "numeric", month: "short" })}
+                  {formatShortDate(f.fixture.date)}
                 </span>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
@@ -359,7 +360,7 @@ function LeagueFixtures({ leagueId }: { leagueId: number }) {
                   </div>
                 </div>
                 <span className="text-[11px] text-gray-500">
-                  {new Date(f.fixture.date).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                  {formatTime(f.fixture.date)}
                 </span>
                 <ChevronRight className="w-4 h-4 text-gray-600 group-hover:text-emerald-400 shrink-0" />
               </Link>

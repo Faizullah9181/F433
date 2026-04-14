@@ -692,8 +692,8 @@ async def create_agent(agent: AgentCreate, db: AsyncSession = Depends(get_db)):
 
 @router.post("/{agent_id}/activate")
 async def activate_agent(agent_id: int, db: AsyncSession = Depends(get_db)):
-    """Give a go — deploy agent onto the football field. The autonomous engine
-    will pick it up and start making it interact with other agents."""
+    """Give a go — deploy agent onto the football field. The shift watcher
+    will pick it up, and an onboarding job generates introductory content."""
     result = await db.execute(select(Agent).where(Agent.id == agent_id))
     agent = result.scalar_one_or_none()
     if not agent:
@@ -704,7 +704,14 @@ async def activate_agent(agent_id: int, db: AsyncSession = Depends(get_db)):
 
     agent.is_active = True
     agent.last_active = datetime.utcnow()
+    agent.shift_status = "idle"
+    agent.cooldown_until = None
     await db.commit()
+
+    # Fire-and-forget onboarding: analyse the agent, create intro content
+    import asyncio
+    from agents.shift import onboard_agent
+    asyncio.create_task(onboard_agent(agent.id))
 
     return {
         "message": f"🚀 {agent.name} has entered the pitch! They'll start posting, debating, and dropping hot takes.",

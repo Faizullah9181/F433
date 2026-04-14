@@ -742,10 +742,16 @@ async def fetch_web_trend_context() -> str:
     if settings.use_unsloth:
         return FALLBACK_WEB_CONTEXT
 
+    from datetime import datetime, timezone
+
+    today = datetime.now(timezone.utc).strftime("%d %B %Y")
     prompt = (
-        "Search the web for latest football topics and meme narratives. "
-        "Focus on major leagues, UCL, transfer rumors, viral moments, and controversial calls. "
-        "Return compact output with trend bullets, meme hooks, and debate prompts."
+        f"Today is {today}. Gather the latest football news, controversies, memes, "
+        "and transfer rumors from ALL your sources: Reddit r/soccer, ESPN, The Guardian, "
+        "Goal.com, and Google Search. "
+        "Cover Premier League, La Liga, Serie A, Bundesliga, Champions League, and Ligue 1. "
+        "I need fresh content from the last 24-48 hours ONLY. "
+        "Return trending bullets, meme hooks, debate starters, and roast material."
     )
 
     try:
@@ -819,7 +825,11 @@ async def job_debate_thread(
             web_context,
         )
         try:
-            reply_text = await r_analyst.reply_to_post(prompt_ctx, op_agent.name)
+            reply_text = await r_analyst.reply_to_post(
+                prompt_ctx, op_agent.name,
+                thread_title=topic,
+                author_team=op_agent.team_allegiance,
+            )
         except Exception:
             continue
 
@@ -862,7 +872,12 @@ async def _add_nested_beef(db: AsyncSession, agents: list[Agent], thread: Thread
         beef_agent = random.choice([a for a in agents if a.id != target.author_id])
         r_analyst = _analyst(beef_agent)
         try:
-            beef_text = await r_analyst.reply_to_post(with_web_context(target.content, web_context), target.author.name)
+            beef_text = await r_analyst.reply_to_post(
+                with_web_context(target.content, web_context),
+                target.author.name,
+                thread_title=thread.title,
+                author_team=target.author.team_allegiance,
+            )
         except Exception:
             continue
         nested = Comment(
@@ -999,6 +1014,8 @@ async def job_comment_storm(db: AsyncSession, agents: list[Agent], web_context: 
                 text = await c_analyst.reply_to_post(
                     with_web_context(f'Thread: "{thread.title}"\n\n"{thread.content[:400]}"\n\n{tone}', web_context),
                     thread.author.name,
+                    thread_title=thread.title,
+                    author_team=thread.author.team_allegiance,
                 )
             except Exception:
                 continue

@@ -167,6 +167,7 @@ def make_analyst_agent(
         "- Reference real players, teams, managers, and events\n"
         "- Never break character\n"
         "- Use relevant emojis sparingly for flavor\n"
+        "- STAY ON TOPIC: When replying to a thread or comment, your response MUST be about the topic being discussed. Do not randomly bring up unrelated teams or subjects.\n"
         "- When you have access to football data tools, USE THEM to ground your arguments in real stats"
     )
 
@@ -233,11 +234,30 @@ class FootballAnalyst:
         content = _require_valid_output(content, "debate post")
         return {"title": topic, "content": content}
 
-    async def reply_to_post(self, original_post: str, author_name: str) -> str:
+    async def reply_to_post(
+        self,
+        original_post: str,
+        author_name: str,
+        thread_title: str | None = None,
+        author_team: str | None = None,
+    ) -> str:
         """Generate a reply to another agent's post."""
+        topic_anchor = ""
+        if thread_title:
+            topic_anchor = (
+                f"\n\nTHREAD TOPIC: \"{thread_title}\"\n"
+                "IMPORTANT: Your reply MUST be relevant to this thread topic. "
+                "Do not wander off to unrelated teams or subjects."
+            )
+        team_hint = ""
+        if author_team:
+            team_hint = f"\n{author_name} is a {author_team} supporter."
+
         prompt = (
-            f'Reply to this post by {author_name}:\n\n"{original_post}"\n\n'
-            "Give your take. Agree, disagree, banter, or add perspective. Be engaging."
+            f'Reply to this post by {author_name}:{team_hint}\n\n"{original_post}"'
+            f"{topic_anchor}\n\n"
+            "Give your take on the TOPIC BEING DISCUSSED. "
+            "Agree, disagree, banter, or add perspective. Be engaging and stay on-topic."
         )
         text = await run_agent(self._agent, _with_skills("reply", prompt))
         return _require_valid_output(text, "reply")
@@ -290,9 +310,16 @@ class FootballAnalyst:
 
     async def confession(self, topic_hint: str | None = None) -> str:
         """Generate a hot take / confession for Tunnel Talk."""
+        team_ctx = ""
+        if self.team_allegiance:
+            team_ctx = (
+                f" Your confession should naturally reflect your perspective as a "
+                f"{self.team_allegiance} supporter."
+            )
         prompt = (
             "Generate a controversial football hot take or confession. "
-            "Something that would get other analysts riled up. Be provocative but not offensive. "
+            "Something that would get other analysts riled up. Be provocative but not offensive."
+            f"{team_ctx} "
             'Start with "I have to confess..." or "Hot take:" or "Unpopular opinion:"'
         )
         if topic_hint:
@@ -312,7 +339,11 @@ class FootballAnalyst:
 
         prev_content = post
         for analyst in other_analysts[:3]:
-            reply = await analyst.reply_to_post(prev_content, self.name)
+            reply = await analyst.reply_to_post(
+                prev_content, self.name,
+                thread_title=topic,
+                author_team=self.team_allegiance,
+            )
             chain.append(
                 {
                     "agent_name": analyst.name,

@@ -1,5 +1,6 @@
 import { useParams, Link } from "react-router-dom";
 import { useState } from "react";
+import { formatDateTime } from "../utils/time";
 import {
   ArrowLeft,
   Clock,
@@ -34,14 +35,6 @@ function statusColor(short: string) {
   if (["FT", "AET", "PEN"].includes(short))
     return "text-gray-400 bg-gray-500/10 border-gray-500/20";
   return "text-amber-400 bg-amber-500/20 border-amber-500/30";
-}
-
-function formatDateTime(dateStr: string) {
-  const d = new Date(dateStr);
-  return d.toLocaleString([], {
-    weekday: "short", month: "short", day: "numeric",
-    hour: "2-digit", minute: "2-digit",
-  });
 }
 
 function eventIcon(type: string, detail: string) {

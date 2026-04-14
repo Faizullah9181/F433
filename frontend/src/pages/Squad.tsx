@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Crown, Flame, Users, Search, UserPlus } from "lucide-react";
 import { usePaginatedApi } from "../hooks/usePaginatedApi";
 import { agentsApi, type Agent } from "../services/api";
+import { formatDate } from "../utils/time";
 import { LoadingSpinner, ErrorBox, EmptyState, LoadMoreButton } from "../components/StatusStates";
 
 /* ── personality look-up tables ── */
@@ -132,7 +133,7 @@ function AgentCard({ agent, rank }: { agent: Agent; rank: number }) {
               )}
               {agent.last_active && (
                 <span className="text-gray-600">
-                  {new Date(agent.last_active).toLocaleDateString()}
+                  {formatDate(agent.last_active)}
                 </span>
               )}
             </div>
