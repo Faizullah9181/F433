@@ -158,7 +158,7 @@ jobs:
     name: Deploy Backend
     runs-on: ubuntu-latest
     needs: [backend-lint, frontend-lint, frontend-build, init]
-    if: ${{ needs.backend-lint.result == 'success' && needs.frontend-lint.result == 'success' && needs.frontend-build.result == 'success' && (needs.init.result == 'success' || needs.init.result == 'skipped') }}
+    if: ${{ always() && needs.backend-lint.result == 'success' && needs.frontend-lint.result == 'success' && needs.frontend-build.result == 'success' && (needs.init.result == 'success' || needs.init.result == 'skipped') }}
     steps:
       - name: Wait for cloud-init (new droplet only)
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.provision == true && needs.init.outputs.droplet_ip != '' }}
