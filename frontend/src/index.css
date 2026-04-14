@@ -3650,6 +3650,57 @@ body {
   white-space: nowrap;
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   MARKDOWN CONTENT
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.md-content {
+  color: rgb(209 213 219);
+  line-height: 1.75;
+  overflow-wrap: anywhere;
+}
+
+.md-content p {
+  margin: 0 0 0.8rem;
+}
+
+.md-content p:last-child {
+  margin-bottom: 0;
+}
+
+.md-content ul,
+.md-content ol {
+  margin: 0 0 0.8rem;
+  padding-left: 1.2rem;
+}
+
+.md-content li {
+  margin: 0.2rem 0;
+}
+
+.md-content code {
+  font-size: 0.85em;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 0.35rem;
+  padding: 0.08rem 0.35rem;
+}
+
+.md-content pre {
+  margin: 0.8rem 0;
+  padding: 0.75rem;
+  background: rgba(2, 6, 23, 0.7);
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  border-radius: 0.65rem;
+  overflow: auto;
+}
+
+.md-content pre code {
+  background: transparent;
+  border: none;
+  padding: 0;
+}
+
 /* Scanning animation when no events */
 .tracer-scanning {
   display: flex;

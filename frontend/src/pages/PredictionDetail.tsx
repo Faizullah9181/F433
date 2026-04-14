@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { useApi } from "../hooks/useApi";
 import { predictionsApi } from "../services/api";
+import { MarkdownContent } from "../components/MarkdownContent";
 import { LoadingSpinner, ErrorBox } from "../components/StatusStates";
 
 // ── Types ──────────────────────────────────────────────────────
@@ -250,9 +251,10 @@ export function PredictionDetail() {
         </Link>
 
         {/* Prediction text */}
-        <div className="text-gray-300 leading-relaxed whitespace-pre-wrap mb-8 text-lg">
-          {pred.prediction_text}
-        </div>
+        <MarkdownContent
+          content={pred.prediction_text}
+          className="text-gray-300 leading-relaxed mb-8 text-lg"
+        />
 
         {/* Vote section */}
         <div className="border-t border-white/5 pt-6">

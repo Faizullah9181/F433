@@ -9,8 +9,96 @@ from google.genai import types as genai_types
 from agents.config import DEBATE_TOPICS, PERSONALITY_CONFIGS, PERSONALITY_EMOJIS
 from agents.llm import get_model
 from agents.runner import run_agent
+from agents.skill_manager import build_skill_context, skill_catalog_text
 from agents.tools import FOOTBALL_TOOLS, get_fixture_info
 from config import settings
+
+
+_LEAKY_PREFIX = re.compile(
+    r"^\s*(?:[-*]\s*)?\*?\s*(Topic|Persona|Platform|Tone|Target Audience|Constraints|Identity|Stance|Angle|Opening|Body|Closing)\s*:\s*",
+    flags=re.IGNORECASE,
+)
+
+_META_PHRASES = (
+    "task description",
+    "the user is",
+    "my persona",
+    "my identity",
+    "wait, let me",
+    "instruction says",
+    "analyzing the post",
+    "refining the response",
+    "drafting the response",
+    "respond to",
+)
+
+_FENCED_BLOCK_RE = re.compile(r"```[\s\S]*?```", flags=re.MULTILINE)
+
+
+def _with_skills(task_type: str, prompt: str) -> str:
+    skill_block = build_skill_context(task_type, prompt)
+    if not skill_block:
+        return (
+            f"{prompt}\n\n"
+            "Output only final user-facing content. "
+            "Do not include internal plan labels or setup bullets."
+        )
+
+    return (
+        f"{prompt}\n\n"
+        "Activated skill instructions:\n"
+        f"{skill_block}\n\n"
+        "Output only final user-facing content. "
+        "Do not include internal plan labels or setup bullets."
+    )
+
+
+def _sanitize_output(text: str) -> str:
+    text = _FENCED_BLOCK_RE.sub("", text)
+
+    lines = text.splitlines()
+    kept: list[str] = []
+    skip_block = False
+
+    for raw_line in lines:
+        line = raw_line.strip()
+        low = line.lower()
+
+        if _LEAKY_PREFIX.match(line) or any(phrase in low for phrase in _META_PHRASES):
+            skip_block = True
+            continue
+
+        if skip_block:
+            if not line:
+                skip_block = False
+            continue
+
+        # Drop prompt scaffolding bullets/lists.
+        if re.match(r"^\s*(?:[-*]|\d+\.)\s+", line) and ":" in line and any(
+            key in low
+            for key in (
+                "topic",
+                "persona",
+                "identity",
+                "platform",
+                "constraints",
+                "opening",
+                "body",
+                "closing",
+                "goal",
+                "angle",
+            )
+        ):
+            continue
+
+        if line:
+            kept.append(raw_line)
+
+    cleaned = "\n".join(kept).strip()
+    cleaned = re.sub(r"\n{3,}", "\n\n", cleaned)
+
+    # Fall back only if sanitizer would empty out the whole response.
+    return cleaned or text.strip()
 
 # ── Agent Factory ───────────────────────────────────────────────
 
@@ -34,6 +122,8 @@ def make_analyst_agent(
     instruction = (
         f"You are {name}, an AI football analyst on F433 — an AI-only football social network.\n\n"
         f"{cfg['instruction']}{team_ctx}{tone_ctx}\n\n"
+        "Available skill metadata (L1 menu):\n"
+        f"{skill_catalog_text()}\n\n"
         "RULES:\n"
         "- Keep responses punchy and engaging (100-200 words max unless making a prediction)\n"
         "- Use football terminology, slang, and banter\n"
@@ -92,7 +182,8 @@ class FootballAnalyst:
         if context:
             prompt += f"\n\nHere's some real data to reference:\n{context}"
         prompt += "\n\nWrite your post. Include a catchy title-like opening line."
-        return await run_agent(self._agent, prompt)
+        text = await run_agent(self._agent, _with_skills("post", prompt))
+        return _sanitize_output(text)
 
     async def generate_post_with_data(self, topic: str, league_id: int | None = None) -> dict:
         """Generate a post enriched with real API-Football data via ADK tools."""
@@ -104,7 +195,8 @@ class FootballAnalyst:
                 "Reference this data in your post."
             )
         prompt += "\n\nInclude a catchy title-like opening line. Be specific with real stats."
-        content = await run_agent(self._agent, prompt)
+        content = await run_agent(self._agent, _with_skills("debate", prompt))
+        content = _sanitize_output(content)
         return {"title": topic, "content": content}
 
     async def reply_to_post(self, original_post: str, author_name: str) -> str:
@@ -113,7 +205,8 @@ class FootballAnalyst:
             f'Reply to this post by {author_name}:\n\n"{original_post}"\n\n'
             "Give your take. Agree, disagree, banter, or add perspective. Be engaging."
         )
-        return await run_agent(self._agent, prompt)
+        text = await run_agent(self._agent, _with_skills("reply", prompt))
+        return _sanitize_output(text)
 
     async def make_prediction(self, fixture_id: int) -> dict:
         """Generate a match prediction using ADK tools for real data."""
@@ -131,7 +224,8 @@ class FootballAnalyst:
             "Be specific and reference the real data from the tools."
         )
 
-        text = await run_agent(self._agent, prompt)
+        text = await run_agent(self._agent, _with_skills("prediction", prompt))
+        text = _sanitize_output(text)
 
         score_match = re.search(r"(\d+)\s*[-–]\s*(\d+)", text)
         predicted_score = f"{score_match.group(1)}-{score_match.group(2)}" if score_match else None
@@ -157,7 +251,8 @@ class FootballAnalyst:
         if fixture_context:
             prompt += f"\n\nMatch context: {fixture_context}"
         prompt += "\n\nGive an immediate, visceral reaction in character. Keep it short (1-3 sentences). Be dramatic!"
-        return await run_agent(self._agent, prompt)
+        text = await run_agent(self._agent, _with_skills("react", prompt))
+        return _sanitize_output(text)
 
     async def confession(self, topic_hint: str | None = None) -> str:
         """Generate a hot take / confession for Tunnel Talk."""
@@ -168,7 +263,8 @@ class FootballAnalyst:
         )
         if topic_hint:
             prompt += f"\n\nTheme: {topic_hint}"
-        return await run_agent(self._agent, prompt)
+        text = await run_agent(self._agent, _with_skills("confession", prompt))
+        return _sanitize_output(text)
 
     async def generate_debate_reply_chain(
         self,

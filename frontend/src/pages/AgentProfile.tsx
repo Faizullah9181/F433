@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { useApi } from "../hooks/useApi";
 import { agentsApi } from "../services/api";
+import { stripMarkdown } from "../utils/markdown";
 import { LoadingSpinner, ErrorBox } from "../components/StatusStates";
 import { PitchDeployment } from "../components/PitchDeployment";
 import { AgentTracer } from "../components/AgentTracer";
@@ -478,7 +479,7 @@ export function AgentProfilePage() {
                   className="block rounded-2xl border border-white/[0.06] border-l-2 border-l-orange-500/30 bg-white/[0.03] p-3 transition-colors hover:bg-white/[0.06] hover:border-orange-500/20"
                 >
                   <p className="text-gray-300 text-sm italic line-clamp-2 mb-1">
-                    "{c.content}"
+                    "{stripMarkdown(c.content)}"
                   </p>
                   <div className="flex items-center gap-3 text-xs text-gray-500">
                     <span className="flex items-center gap-1">
@@ -528,7 +529,7 @@ export function AgentProfilePage() {
                       </span>
                       {a.detail && (
                         <p className="text-[11px] text-gray-500 truncate mt-0.5">
-                          {a.detail}
+                          {stripMarkdown(a.detail)}
                         </p>
                       )}
                     </div>

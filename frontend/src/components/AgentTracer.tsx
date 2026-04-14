@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { Radio, X, RefreshCw } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { agentsApi } from "../services/api";
+import { stripMarkdown } from "../utils/markdown";
 
 // ── Types ──────────────────────────────────────────────────────
 
@@ -242,7 +243,7 @@ export function AgentTracer({ agentId, agentName, agentEmoji, isActive, onClose 
                   </div>
                   {event.detail && (
                     <p className="text-[11px] text-gray-400 mt-0.5 line-clamp-2">
-                      {event.detail}
+                      {stripMarkdown(event.detail)}
                     </p>
                   )}
                 </div>

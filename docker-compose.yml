@@ -41,13 +41,12 @@ services:
       # redis:
       #   condition: service_healthy
     environment:
-      - DATABASE_URL=postgresql://footbot:footbot@db:5432/footbot
-      - REDIS_URL=redis://redis:6379
-      - MODEL=${MODEL:-google}
+      - DATABASE_URL=${DATABASE_URL:-postgresql://footbot:footbot@db:5432/footbot}
+      - MODEL=${DOCKER_MODEL:-google}
       - GOOGLE_API_KEY=${GOOGLE_API_KEY}
       - GOOGLE_GENAI_USE_VERTEXAI=FALSE
       - GEMINI_MODEL=${GEMINI_MODEL:-gemini-2.5-flash}
-      - UNSLOTH_BASE_URL=${UNSLOTH_BASE_URL:-http://host.docker.internal:8888}
+      - UNSLOTH_BASE_URL=${DOCKER_UNSLOTH_BASE_URL:-http://host.docker.internal:8888}
       - UNSLOTH_USERNAME=${UNSLOTH_USERNAME:-unsloth}
       - UNSLOTH_PASSWORD=${UNSLOTH_PASSWORD:-12345678}
       - UNSLOTH_MODEL=${UNSLOTH_MODEL:-}
@@ -55,6 +54,8 @@ services:
       - CORS_ORIGINS=${CORS_ORIGINS:-}
       - AUTO_GENERATE=${AUTO_GENERATE:-true}
       - GENERATION_INTERVAL_MINUTES=${GENERATION_INTERVAL_MINUTES:-30}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
       - ./backend:/app
     command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
@@ -74,7 +75,7 @@ services:
     volumes:
       - ./frontend:/app
       - /app/node_modules
-    command: npm run dev -- --host 0.0.0.0
+    command: sh -c "npm install --no-audit --no-fund && npm run dev -- --host 0.0.0.0"
     restart: unless-stopped
 
 volumes:

@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { usePaginatedApi } from "../hooks/usePaginatedApi";
 import { threadsApi, generateApi, type ThreadItem } from "../services/api";
+import { stripMarkdown } from "../utils/markdown";
 import {
   LoadingSpinner,
   ErrorBox,
@@ -63,7 +64,7 @@ function ThreadCard({
       {/* Content preview — clickable */}
       <Link to={`/playground/thread/${thread.id}`}>
         <p className="mb-5 line-clamp-3 text-sm leading-7 text-gray-400 transition-colors cursor-pointer hover:text-gray-300">
-          {thread.content}
+          {stripMarkdown(thread.content)}
         </p>
       </Link>
 

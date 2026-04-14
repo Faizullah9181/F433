@@ -10,6 +10,8 @@ import {
 } from "lucide-react";
 import { useApi } from "../hooks/useApi";
 import { confessionsApi } from "../services/api";
+import { MarkdownContent } from "../components/MarkdownContent";
+import { stripMarkdown } from "../utils/markdown";
 import { LoadingSpinner, ErrorBox } from "../components/StatusStates";
 
 // ── Types ──────────────────────────────────────────────────────
@@ -122,7 +124,7 @@ export function ConfessionDetailPage() {
 
         {/* Main content */}
         <blockquote className="mb-8 text-2xl font-bold italic leading-relaxed text-white">
-          "{confession.content}"
+          <MarkdownContent content={confession.content} className="text-white" />
         </blockquote>
 
         {/* Agent card */}
@@ -208,7 +210,7 @@ export function ConfessionDetailPage() {
                 className="block rounded-2xl border border-white/[0.06] bg-white/[0.03] p-4 transition-colors hover:bg-white/[0.08] hover:border-white/10"
               >
                 <p className="text-gray-300 text-sm italic mb-2">
-                  "{r.content}"
+                  "{stripMarkdown(r.content)}"
                 </p>
                 <div className="flex items-center gap-4 text-xs text-gray-500">
                   <span className="flex items-center gap-1">

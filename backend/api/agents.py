@@ -14,6 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from db.connection import get_db
 from db.models import Agent, AgentPersonality
+from agents.skill_manager import create_runtime_skill, list_skill_metadata
 
 router = APIRouter()
 
@@ -349,6 +350,19 @@ class AgentResponse(BaseModel):
         from_attributes = True
 
 
+class SkillCreatePayload(BaseModel):
+    name: str
+    description: str
+    task_types: list[str]
+    triggers: list[str]
+    instructions: str
+    references: list[str] | None = None
+
+
+class SkillFactoryPayload(BaseModel):
+    requirement: str
+
+
 def _kickoff_thread_payload(agent: Agent) -> tuple[str, str]:
     """Build a fast, no-LLM kickoff thread for immediate activity."""
     team = agent.team_allegiance or "the title race"
@@ -450,6 +464,70 @@ async def get_countries():
 async def get_players():
     """Get available players for agent registration selector."""
     return {"players": sorted(PLAYER_POOL)}
+
+
+@router.get("/meta/skills")
+async def get_skills():
+    """List loaded skills (L1 metadata)."""
+    return {"skills": list_skill_metadata()}
+
+
+@router.post("/meta/skills")
+async def create_skill(payload: SkillCreatePayload):
+    """Create a runtime skill file for progressive disclosure prompts."""
+    if not payload.name.strip():
+        raise HTTPException(status_code=400, detail="Skill name is required")
+    if not payload.instructions.strip():
+        raise HTTPException(status_code=400, detail="Skill instructions are required")
+
+    path = create_runtime_skill(
+        name=payload.name,
+        description=payload.description,
+        task_types=[t.strip().lower() for t in payload.task_types if t.strip()],
+        triggers=[t.strip().lower() for t in payload.triggers if t.strip()],
+        instructions=payload.instructions,
+        references=payload.references or [],
+    )
+    return {"message": "Skill created", "path": str(path)}
+
+
+@router.post("/meta/skills/factory")
+async def generate_skill(payload: SkillFactoryPayload):
+    """Meta-skill: generate and save a new runtime skill from requirements."""
+    requirement = payload.requirement.strip()
+    if not requirement:
+        raise HTTPException(status_code=400, detail="Requirement is required")
+
+    from agents.f433_agent import root_agent
+
+    prompt = (
+        "Create one new skill definition for this requirement:\n"
+        f"{requirement}\n\n"
+        "Return ONLY a JSON object with keys: "
+        "name, description, task_types, triggers, instructions, references."
+    )
+    raw = await root_agent.run(prompt, user_id="skill_factory")
+
+    start = raw.find("{")
+    end = raw.rfind("}")
+    if start == -1 or end == -1 or end <= start:
+        raise HTTPException(status_code=422, detail=f"Skill factory output was not valid JSON: {raw[:240]}")
+
+    try:
+        data = json.loads(raw[start : end + 1])
+    except json.JSONDecodeError as exc:
+        raise HTTPException(status_code=422, detail=f"Skill factory JSON parse failed: {exc}") from exc
+
+    path = create_runtime_skill(
+        name=str(data.get("name", "runtime_skill")),
+        description=str(data.get("description", "Runtime-generated skill")),
+        task_types=[str(x).strip().lower() for x in data.get("task_types", []) if str(x).strip()],
+        triggers=[str(x).strip().lower() for x in data.get("triggers", []) if str(x).strip()],
+        instructions=str(data.get("instructions", "")),
+        references=[str(x).strip() for x in data.get("references", []) if str(x).strip()],
+    )
+
+    return {"message": "Skill generated", "path": str(path), "skill": data}
 
 
 @router.get("/{agent_id}")

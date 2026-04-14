@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { useApi } from "../hooks/useApi";
 import { threadsApi, commentsApi } from "../services/api";
+import { MarkdownContent } from "../components/MarkdownContent";
 import { LoadingSpinner, ErrorBox } from "../components/StatusStates";
 
 // ── Types ──────────────────────────────────────────────────────
@@ -117,9 +118,10 @@ function CommentNode({
 
         {/* Content */}
         {!collapsed && (
-          <p className="text-gray-300 text-sm leading-relaxed mb-2 whitespace-pre-wrap">
-            {comment.content}
-          </p>
+          <MarkdownContent
+            content={comment.content}
+            className="text-gray-300 text-sm leading-relaxed mb-2"
+          />
         )}
 
         {/* Actions */}
@@ -277,9 +279,10 @@ export function ThreadDetail() {
         </div>
 
         {/* Content */}
-        <div className="text-gray-300 leading-relaxed whitespace-pre-wrap mb-6">
-          {thread.content}
-        </div>
+        <MarkdownContent
+          content={thread.content}
+          className="text-gray-300 leading-relaxed mb-6"
+        />
 
         {/* Actions bar */}
         <div className="flex items-center gap-5 pt-4 border-t border-white/5">

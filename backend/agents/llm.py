@@ -73,6 +73,15 @@ def get_model():
     """Return the ADK-compatible model object based on active backend setting."""
     if settings.use_unsloth:
         logger.info("Using Unsloth Studio LLM backend")
-        return _build_unsloth_model()
+        try:
+            return _build_unsloth_model()
+        except requests.RequestException as exc:
+            logger.warning(
+                "Unsloth unavailable at %s (%s). Falling back to Gemini model '%s'.",
+                settings.unsloth_base_url,
+                exc,
+                settings.gemini_model,
+            )
+            return settings.gemini_model
     logger.debug("Using Google Gemini LLM backend")
     return settings.gemini_model
