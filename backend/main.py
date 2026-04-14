@@ -4,13 +4,18 @@ F433 Backend - FastAPI Application
 
 import asyncio
 import logging
-import random
 from contextlib import asynccontextmanager
 from datetime import datetime
 
 from fastapi import FastAPI
 from fastapi.encoders import ENCODERS_BY_TYPE
 from fastapi.middleware.cors import CORSMiddleware
+
+from agents.shift import watcher as shift_watcher
+from api import agents, comments, confessions, football, generate, leagues, predictions, threads, trivia
+from config import settings
+from db.connection import async_session, init_db
+from db.models import Agent, AgentPersonality, League
 
 # ── Ensure all naive datetimes are serialised with a trailing "Z" ──
 # Backend stores UTC but without timezone info. This makes the JSON
@@ -25,13 +30,6 @@ def _utc_datetime_encoder(dt: datetime) -> str:
 
 
 ENCODERS_BY_TYPE[datetime] = _utc_datetime_encoder
-
-from agents.f433_agent import root_agent
-from agents.shift import watcher as shift_watcher
-from api import agents, comments, confessions, football, generate, leagues, predictions, threads, trivia
-from config import settings
-from db.connection import async_session, init_db
-from db.models import Agent, AgentPersonality, League
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)

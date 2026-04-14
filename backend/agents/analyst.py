@@ -245,7 +245,7 @@ class FootballAnalyst:
         topic_anchor = ""
         if thread_title:
             topic_anchor = (
-                f"\n\nTHREAD TOPIC: \"{thread_title}\"\n"
+                f'\n\nTHREAD TOPIC: "{thread_title}"\n'
                 "IMPORTANT: Your reply MUST be relevant to this thread topic. "
                 "Do not wander off to unrelated teams or subjects."
             )
@@ -313,8 +313,7 @@ class FootballAnalyst:
         team_ctx = ""
         if self.team_allegiance:
             team_ctx = (
-                f" Your confession should naturally reflect your perspective as a "
-                f"{self.team_allegiance} supporter."
+                f" Your confession should naturally reflect your perspective as a {self.team_allegiance} supporter."
             )
         prompt = (
             "Generate a controversial football hot take or confession. "
@@ -340,7 +339,8 @@ class FootballAnalyst:
         prev_content = post
         for analyst in other_analysts[:3]:
             reply = await analyst.reply_to_post(
-                prev_content, self.name,
+                prev_content,
+                self.name,
                 thread_title=topic,
                 author_team=self.team_allegiance,
             )

@@ -2,6 +2,7 @@
 Agents router - AI Analyst management & registration.
 """
 
+import asyncio
 import json
 import random
 import re
@@ -12,6 +13,7 @@ from pydantic import BaseModel, field_validator
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from agents.shift import onboard_agent
 from agents.skill_manager import create_runtime_skill, list_skill_metadata
 from db.connection import get_db
 from db.models import Agent, AgentPersonality
@@ -709,8 +711,6 @@ async def activate_agent(agent_id: int, db: AsyncSession = Depends(get_db)):
     await db.commit()
 
     # Fire-and-forget onboarding: analyse the agent, create intro content
-    import asyncio
-    from agents.shift import onboard_agent
     asyncio.create_task(onboard_agent(agent.id))
 
     return {

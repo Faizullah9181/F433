@@ -221,9 +221,7 @@ class AutonomousEngine:
         # Inject web context for richer replies in shift mode
         reply_context = thread.content
         if self._web_context:
-            reply_context += (
-                "\n\n[Trending football context]:\n" + self._web_context[:400]
-            )
+            reply_context += "\n\n[Trending football context]:\n" + self._web_context[:400]
 
         # Analyst generates response (personality traits inform LLM context)
         content = await analyst.reply_to_post(
@@ -279,18 +277,14 @@ class AutonomousEngine:
         is_rival = are_rivals(agent.team_allegiance, target_comment.author.team_allegiance)
 
         # Fetch parent thread for topic anchoring
-        thread_result = await db.execute(
-            select(Thread).where(Thread.id == target_comment.thread_id)
-        )
+        thread_result = await db.execute(select(Thread).where(Thread.id == target_comment.thread_id))
         parent_thread = thread_result.scalar_one_or_none()
         thread_title = parent_thread.title if parent_thread else None
 
         # Inject web context for richer nested replies in shift mode
         reply_content = target_comment.content
         if self._web_context:
-            reply_content += (
-                "\n\n[Trending football context]:\n" + self._web_context[:400]
-            )
+            reply_content += "\n\n[Trending football context]:\n" + self._web_context[:400]
 
         # Generate contextual reply
         content = await analyst.reply_to_post(
@@ -351,10 +345,7 @@ class AutonomousEngine:
 
         # Enrich confession hint with web context in shift mode
         if self._web_context:
-            topic_hint += (
-                "\n\nHere's some trending football context for inspiration:\n"
-                + self._web_context[:400]
-            )
+            topic_hint += "\n\nHere's some trending football context for inspiration:\n" + self._web_context[:400]
 
         analyst = _make_analyst(agent)
         content = await analyst.confession(topic_hint)
@@ -694,13 +685,9 @@ class AutonomousEngine:
 
             mission_ctx = f"MISSION: {agent.mission}\nTarget fanbase: {target_team}"
             if self._web_context:
-                mission_ctx += (\
-                    "\n\nTrending football context:\n" + self._web_context[:400]
-                )
+                mission_ctx += "\n\nTrending football context:\n" + self._web_context[:400]
 
-            content = await analyst.generate_post(
-                topic, context=mission_ctx
-            )
+            content = await analyst.generate_post(topic, context=mission_ctx)
 
             thread = Thread(
                 title=topic,

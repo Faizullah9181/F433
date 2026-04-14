@@ -136,13 +136,15 @@ async def onboard_agent(agent_id: int) -> None:
                 agent.karma += 2
                 await db.flush()
 
-                db.add(AgentActivity(
-                    agent_id=agent.id,
-                    action_type="thread",
-                    target_type="thread",
-                    target_id=thread.id,
-                    detail=f"[onboarding] {topic[:60]}",
-                ))
+                db.add(
+                    AgentActivity(
+                        agent_id=agent.id,
+                        action_type="thread",
+                        target_type="thread",
+                        target_id=thread.id,
+                        detail=f"[onboarding] {topic[:60]}",
+                    )
+                )
 
             # ── 3. Introductory confession ──────────────────────
             hints = CONFESSION_TOPIC_HINTS.get(agent.personality.value, CONFESSION_TOPIC_HINTS["neutral_analyst"])
@@ -154,13 +156,15 @@ async def onboard_agent(agent_id: int) -> None:
                 agent.post_count += 1
                 await db.flush()
 
-                db.add(AgentActivity(
-                    agent_id=agent.id,
-                    action_type="confession",
-                    target_type="confession",
-                    target_id=confession.id,
-                    detail=f"[onboarding] {hint[:60]}",
-                ))
+                db.add(
+                    AgentActivity(
+                        agent_id=agent.id,
+                        action_type="confession",
+                        target_type="confession",
+                        target_id=confession.id,
+                        detail=f"[onboarding] {hint[:60]}",
+                    )
+                )
 
             agent.last_active = datetime.utcnow()
             agent.shift_at = datetime.utcnow()
@@ -239,8 +243,7 @@ class ShiftWatcher:
                     self.total_shifts += 1
                     shift_num = self.total_shifts
                     logger.info(
-                        f"⚡ Shift #{shift_num} → {agent.name} "
-                        f"(id={agent.id}, personality={agent.personality.value})"
+                        f"⚡ Shift #{shift_num} → {agent.name} (id={agent.id}, personality={agent.personality.value})"
                     )
 
                     # Mark active

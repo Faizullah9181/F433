@@ -742,9 +742,9 @@ async def fetch_web_trend_context() -> str:
     if settings.use_unsloth:
         return FALLBACK_WEB_CONTEXT
 
-    from datetime import datetime, timezone
+    from datetime import UTC, datetime
 
-    today = datetime.now(timezone.utc).strftime("%d %B %Y")
+    today = datetime.now(UTC).strftime("%d %B %Y")
     prompt = (
         f"Today is {today}. Gather the latest football news, controversies, memes, "
         "and transfer rumors from ALL your sources: Reddit r/soccer, ESPN, The Guardian, "
@@ -826,7 +826,8 @@ async def job_debate_thread(
         )
         try:
             reply_text = await r_analyst.reply_to_post(
-                prompt_ctx, op_agent.name,
+                prompt_ctx,
+                op_agent.name,
                 thread_title=topic,
                 author_team=op_agent.team_allegiance,
             )

@@ -5,7 +5,7 @@ Reddit r/soccer JSON feed, The Guardian football section, and more.
 """
 
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import httpx
 from google.adk.agents import LlmAgent
@@ -47,13 +47,15 @@ async def fetch_reddit_soccer(subreddit: str = "soccer", sort: str = "hot", limi
             p = child.get("data", {})
             if p.get("stickied"):
                 continue
-            posts.append({
-                "title": p.get("title", ""),
-                "score": p.get("score", 0),
-                "comments": p.get("num_comments", 0),
-                "url": p.get("url", ""),
-                "flair": p.get("link_flair_text", ""),
-            })
+            posts.append(
+                {
+                    "title": p.get("title", ""),
+                    "score": p.get("score", 0),
+                    "comments": p.get("num_comments", 0),
+                    "url": p.get("url", ""),
+                    "flair": p.get("link_flair_text", ""),
+                }
+            )
         return {"source": f"r/{subreddit}", "sort": sort, "posts": posts}
     except Exception as e:
         logger.warning(f"Reddit fetch failed for r/{subreddit}: {e}")
@@ -77,12 +79,14 @@ async def fetch_espn_football(section: str = "soccer") -> dict:
 
         articles = []
         for a in data.get("articles", []):
-            articles.append({
-                "headline": a.get("headline", ""),
-                "description": (a.get("description") or "")[:200],
-                "published": (a.get("published") or "")[:10],
-                "link": a.get("links", {}).get("web", {}).get("href", ""),
-            })
+            articles.append(
+                {
+                    "headline": a.get("headline", ""),
+                    "description": (a.get("description") or "")[:200],
+                    "published": (a.get("published") or "")[:10],
+                    "link": a.get("links", {}).get("web", {}).get("href", ""),
+                }
+            )
         return {"source": "ESPN", "section": section, "articles": articles}
     except Exception as e:
         logger.warning(f"ESPN fetch failed: {e}")
@@ -101,13 +105,15 @@ async def fetch_guardian_football() -> dict:
         results = data.get("response", {}).get("results", [])
         articles = []
         for r in results:
-            articles.append({
-                "headline": r.get("webTitle", ""),
-                "trail": (r.get("fields", {}).get("trailText") or "")[:200],
-                "date": (r.get("webPublicationDate") or "")[:10],
-                "section": r.get("sectionName", ""),
-                "url": r.get("webUrl", ""),
-            })
+            articles.append(
+                {
+                    "headline": r.get("webTitle", ""),
+                    "trail": (r.get("fields", {}).get("trailText") or "")[:200],
+                    "date": (r.get("webPublicationDate") or "")[:10],
+                    "section": r.get("sectionName", ""),
+                    "url": r.get("webUrl", ""),
+                }
+            )
         return {"source": "The Guardian", "articles": articles}
     except Exception as e:
         logger.warning(f"Guardian fetch failed: {e}")
@@ -132,7 +138,7 @@ async def fetch_goal_com_headlines() -> dict:
             headlines.append(match.group(1))
 
         # Article link texts — <a> tags with common article patterns
-        for match in re.finditer(r'<h[23][^>]*>\s*<a[^>]*>([^<]{15,120})</a>', html):
+        for match in re.finditer(r"<h[23][^>]*>\s*<a[^>]*>([^<]{15,120})</a>", html):
             text = match.group(1).strip()
             if text and text not in headlines:
                 headlines.append(text)
@@ -164,8 +170,7 @@ async def fetch_football_trends_google(query: str = "football news today") -> di
     # The actual search is done by the ADK google_search tool.
     return {
         "instruction": (
-            f"Use your google_search tool to search for: {query}\n"
-            "Return the top results as compact news bullets."
+            f"Use your google_search tool to search for: {query}\nReturn the top results as compact news bullets."
         )
     }
 
@@ -186,7 +191,7 @@ WEB_SCRAPER_TOOLS = [
 
 def _build_instruction() -> str:
     """Build the web search agent instruction with the current date."""
-    today = datetime.now(timezone.utc).strftime("%A, %d %B %Y")
+    today = datetime.now(UTC).strftime("%A, %d %B %Y")
     return (
         f"You are the F433 Web Intelligence Agent — a football news and trend discovery specialist.\n"
         f"TODAY'S DATE: {today}\n\n"
