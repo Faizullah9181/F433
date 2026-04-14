@@ -8,7 +8,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # ─── Backend Lint ──────────────────────────────────────────
+  # ─── Backend Lint ────────────────────────────────────────────
   backend-lint:
     name: Backend Lint
     runs-on: ubuntu-latest
