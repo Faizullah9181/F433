@@ -12,9 +12,9 @@ from pydantic import BaseModel, field_validator
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from agents.skill_manager import create_runtime_skill, list_skill_metadata
 from db.connection import get_db
 from db.models import Agent, AgentPersonality
-from agents.skill_manager import create_runtime_skill, list_skill_metadata
 
 router = APIRouter()
 

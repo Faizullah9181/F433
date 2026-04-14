@@ -28,6 +28,13 @@ build/
 *~
 .DS_Store
 
+# Terraform
+terraform/.terraform/
+terraform/*.tfstate
+terraform/*.tfstate.backup
+terraform/*.tfvars
+!terraform/terraform.tfvars.example
+
 # Testing
 coverage/
 .coverage
@@ -59,3 +66,5 @@ Thumbs.db
 
 .playwright-mcp
 *.sql
+github_run.sh
+/terraform/run.sh

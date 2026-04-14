@@ -1,0 +1,127 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      run_init:
+        description: "Run Terraform init/apply job before deploy"
+        required: false
+        default: false
+        type: boolean
+      provision:
+        description: "Provision a NEW droplet (creates machine from scratch)"
+        required: false
+        default: false
+        type: boolean
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  init:
+    name: Terraform Init/Apply
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.run_init == true }}
+    outputs:
+      droplet_ip: ${{ steps.tf_output.outputs.ip }}
+    defaults:
+      run:
+        working-directory: terraform
+    env:
+      TF_VAR_digitalocean_token: ${{ secrets.DO_TOKEN }}
+      TF_VAR_droplet_id: ${{ secrets.TF_DROPLET_ID }}
+      TF_VAR_project_name: ${{ secrets.TF_PROJECT_NAME }}
+      TF_VAR_project_description: ${{ secrets.TF_PROJECT_DESCRIPTION }}
+      TF_VAR_project_purpose: ${{ secrets.TF_PROJECT_PURPOSE }}
+      TF_VAR_project_environment: ${{ secrets.TF_PROJECT_ENVIRONMENT }}
+      # Provisioning vars (only needed when provision = true)
+      TF_VAR_create_droplet: ${{ inputs.provision }}
+      TF_VAR_create_firewall: ${{ inputs.provision }}
+      TF_VAR_droplet_name: ${{ secrets.DROPLET_NAME || 'skynet' }}
+      TF_VAR_droplet_region: ${{ secrets.DROPLET_REGION || 'blr1' }}
+      TF_VAR_droplet_size: ${{ secrets.DROPLET_SIZE || 's-2vcpu-2gb' }}
+      TF_VAR_droplet_image: ${{ secrets.DROPLET_IMAGE || 'ubuntu-24-04-x64' }}
+      TF_VAR_domain: ${{ secrets.DOMAIN || 'api.faiz-ai.dev' }}
+      TF_VAR_certbot_email: ${{ secrets.CERTBOT_EMAIL }}
+      TF_VAR_google_api_key: ${{ secrets.GOOGLE_API_KEY }}
+      TF_VAR_api_football_key: ${{ secrets.API_FOOTBALL_KEY }}
+      TF_VAR_github_repo: ${{ github.repository }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.8.5
+          terraform_wrapper: false
+
+      - name: Parse SSH key IDs
+        if: ${{ inputs.provision == true }}
+        run: |
+          # Convert comma-separated string to JSON list for TF
+          IFS=',' read -ra KEYS <<< "${{ secrets.SSH_KEY_IDS }}"
+          JSON=$(printf '%s\n' "${KEYS[@]}" | jq -R . | jq -s .)
+          echo "TF_VAR_ssh_key_ids=$JSON" >> "$GITHUB_ENV"
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Validate
+        run: terraform validate
+
+      - name: Terraform Plan
+        run: terraform plan -input=false
+
+      - name: Terraform Apply
+        run: terraform apply -auto-approve -input=false
+
+      - name: Capture droplet IP
+        id: tf_output
+        if: ${{ inputs.provision == true }}
+        run: |
+          IP=$(terraform output -raw droplet_ipv4 2>/dev/null || echo "")
+          echo "ip=$IP" >> "$GITHUB_OUTPUT"
+
+  deploy:
+    name: Deploy Backend
+    runs-on: ubuntu-latest
+    needs: [init]
+    if: ${{ always() && (needs.init.result == 'success' || needs.init.result == 'skipped') }}
+    steps:
+      - name: Wait for cloud-init (new droplet only)
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.provision == true && needs.init.outputs.droplet_ip != '' }}
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ needs.init.outputs.droplet_ip }}
+          username: root
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 22
+          command_timeout: 10m
+          script: |
+            echo "Waiting for cloud-init to finish..."
+            cloud-init status --wait
+            echo "Cloud-init complete."
+
+      - name: Deploy on droplet via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ needs.init.outputs.droplet_ip || secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME || 'root' }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 22
+          script_stop: true
+          script: |
+            set -e
+            DEPLOY_PATH="${{ secrets.DEPLOY_PATH || '/root/F433' }}"
+
+            cd "$DEPLOY_PATH"
+            git fetch --all --prune
+            git checkout main
+            git pull --ff-only origin main
+
+            docker compose up -d --build backend
+            echo "Deploy complete ✓"

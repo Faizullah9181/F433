@@ -1,0 +1,88 @@
+#cloud-config
+
+hostname: ${hostname}
+manage_etc_hosts: true
+
+package_update: true
+package_upgrade: true
+
+packages:
+  - nginx
+  - certbot
+  - python3-certbot-nginx
+  - ufw
+  - htop
+  - curl
+  - wget
+  - git
+  - ca-certificates
+  - gnupg
+  - lsb-release
+
+write_files:
+  # Nginx site config for api (before SSL — certbot will add SSL blocks)
+  - path: /etc/nginx/sites-available/api
+    content: |
+      server {
+          listen 80;
+          server_name ${domain};
+
+          location / {
+              proxy_pass http://localhost:8085;
+              proxy_set_header Host $host;
+              proxy_set_header X-Real-IP $remote_addr;
+              proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+              proxy_set_header X-Forwarded-Proto $scheme;
+          }
+      }
+
+  # Application .env file
+  - path: /root/F433/.env
+    permissions: "0600"
+    content: |
+      GEMINI_MODEL=${gemini_model}
+      GOOGLE_API_KEY=${google_api_key}
+      API_FOOTBALL_HOST=v3.football.api-sports.io
+      API_FOOTBALL_KEY=${api_football_key}
+      REDIS_URL=redis://redis:6379
+      VITE_API_URL=http://localhost:8000
+      MODEL=${llm_backend}
+      UNSLOTH_BASE_URL=http://host.docker.internal:8888
+      UNSLOTH_USERNAME=unsloth
+      UNSLOTH_PASSWORD=12345678
+      UNSLOTH_MODEL=
+      CORS_ORIGINS=${cors_origins}
+
+runcmd:
+  # ── Docker CE (official repo) ──
+  - install -m 0755 -d /etc/apt/keyrings
+  - curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+  - chmod a+r /etc/apt/keyrings/docker.asc
+  - echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo $VERSION_CODENAME) stable" > /etc/apt/sources.list.d/docker.list
+  - apt-get update
+  - apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+
+  # ── Enable Docker ──
+  - systemctl enable docker
+  - systemctl start docker
+
+  # ── UFW Firewall ──
+  - ufw allow OpenSSH
+  - ufw allow 'Nginx Full'
+  - ufw --force enable
+
+  # ── Clone project ──
+  - git clone https://github.com/${github_repo}.git /root/F433 || true
+
+  # ── Nginx setup ──
+  - ln -sf /etc/nginx/sites-available/api /etc/nginx/sites-enabled/api
+  - nginx -t && systemctl reload nginx
+
+  # ── SSL certificate (certbot) ──
+  - certbot --nginx -d ${domain} --non-interactive --agree-tos -m ${certbot_email} --redirect
+
+  # ── Start application ──
+  - cd /root/F433 && docker compose up -d --build
+
+  # ── Signal cloud-init finished ──
+  - echo "cloud-init provisioning complete" > /var/log/f433-provisioned

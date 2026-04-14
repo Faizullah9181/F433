@@ -13,7 +13,6 @@ from agents.skill_manager import build_skill_context, skill_catalog_text
 from agents.tools import FOOTBALL_TOOLS, get_fixture_info
 from config import settings
 
-
 _LEAKY_PREFIX = re.compile(
     r"^\s*(?:[-*]\s*)?\*?\s*(Topic|Persona|Platform|Tone|Target Audience|Constraints|Identity|Stance|Angle|Opening|Body|Closing)\s*:\s*",
     flags=re.IGNORECASE,
@@ -39,9 +38,7 @@ def _with_skills(task_type: str, prompt: str) -> str:
     skill_block = build_skill_context(task_type, prompt)
     if not skill_block:
         return (
-            f"{prompt}\n\n"
-            "Output only final user-facing content. "
-            "Do not include internal plan labels or setup bullets."
+            f"{prompt}\n\nOutput only final user-facing content. Do not include internal plan labels or setup bullets."
         )
 
     return (
@@ -74,19 +71,23 @@ def _sanitize_output(text: str) -> str:
             continue
 
         # Drop prompt scaffolding bullets/lists.
-        if re.match(r"^\s*(?:[-*]|\d+\.)\s+", line) and ":" in line and any(
-            key in low
-            for key in (
-                "topic",
-                "persona",
-                "identity",
-                "platform",
-                "constraints",
-                "opening",
-                "body",
-                "closing",
-                "goal",
-                "angle",
+        if (
+            re.match(r"^\s*(?:[-*]|\d+\.)\s+", line)
+            and ":" in line
+            and any(
+                key in low
+                for key in (
+                    "topic",
+                    "persona",
+                    "identity",
+                    "platform",
+                    "constraints",
+                    "opening",
+                    "body",
+                    "closing",
+                    "goal",
+                    "angle",
+                )
             )
         ):
             continue
@@ -99,6 +100,7 @@ def _sanitize_output(text: str) -> str:
 
     # Fall back only if sanitizer would empty out the whole response.
     return cleaned or text.strip()
+
 
 # ── Agent Factory ───────────────────────────────────────────────
 

@@ -255,6 +255,50 @@ npm install
 npm run dev
 ```
 
+## CI/CD Automation (Existing Droplet)
+
+This repo now includes a deploy workflow that assumes your VM is already configured (nginx, docker, compose, env files).
+
+- Workflow file: `.github/workflows/deploy.yml`
+- Terraform folder: `terraform/`
+
+### What Terraform manages
+
+- Creates/updates a DigitalOcean Project.
+- Attaches your existing droplet to that project.
+- Does not provision server config, nginx, docker daemon, or app runtime.
+
+### What GitHub Actions deploy does
+
+1. SSH into your existing droplet.
+2. `git pull` latest code on your selected branch.
+3. Run `docker compose up -d --build backend`.
+
+### Required GitHub Secrets
+
+- `DO_TOKEN`
+- `SSH_HOST` (for your case: `168.144.18.107`)
+- `SSH_USERNAME` (for your case: `root`)
+- `SSH_PRIVATE_KEY`
+- `SSH_PORT` (optional; defaults to 22)
+
+### Required GitHub Variables
+
+- `DEPLOY_PATH` (absolute path on droplet where repo exists)
+- `DEPLOY_BRANCH` (optional, default `main`)
+- `TF_DROPLET_ID` (droplet ID, not IP)
+- `TF_PROJECT_NAME` (optional)
+- `TF_PROJECT_DESCRIPTION` (optional)
+- `TF_PROJECT_PURPOSE` (optional)
+- `TF_PROJECT_ENVIRONMENT` (optional)
+
+### Trigger behavior
+
+- Push to `main`: deploy job runs directly.
+- Manual run (`workflow_dispatch`):
+	- Set `run_init=true` to run Terraform init/validate/plan/apply before deploy.
+	- Leave `run_init=false` to skip Terraform and only deploy.
+
 ## Tech Stack
 
 - Backend: FastAPI, SQLAlchemy (async), AsyncPG, Google ADK, LiteLLM.

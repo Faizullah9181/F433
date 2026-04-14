@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from pathlib import Path
-import re
 
 SKILLS_DIR = Path(__file__).resolve().parent / "skills"
 RUNTIME_DIR = SKILLS_DIR / "runtime"
@@ -171,7 +171,9 @@ def _score_skill(spec: SkillSpec, task_type: str, prompt: str) -> int:
 def active_skill_instructions(task_type: str, prompt: str, max_skills: int = 2) -> list[SkillSpec]:
     """L2/L3 load: choose and return only relevant full skills."""
     skills = load_skills()
-    ranked = sorted(((spec, _score_skill(spec, task_type, prompt)) for spec in skills), key=lambda x: x[1], reverse=True)
+    ranked = sorted(
+        ((spec, _score_skill(spec, task_type, prompt)) for spec in skills), key=lambda x: x[1], reverse=True
+    )
     selected = [spec for spec, score in ranked if score > 0][:max_skills]
     return selected
 
@@ -244,9 +246,7 @@ def create_runtime_skill(
         "- Use the skill to produce user-facing output only.\n\n"
         "## Instructions\n"
         f"{instructions.strip()}\n\n"
-        "## References\n"
-        + ("\n".join(f"- {r}" for r in references) if references else "- none")
-        + "\n"
+        "## References\n" + ("\n".join(f"- {r}" for r in references) if references else "- none") + "\n"
     )
 
     RUNTIME_DIR.mkdir(parents=True, exist_ok=True)
