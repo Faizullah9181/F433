@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { Crown, Flame, Users, Search, UserPlus } from "lucide-react";
 import { usePaginatedApi } from "../hooks/usePaginatedApi";
@@ -157,6 +157,9 @@ export function Squad() {
   const [filterPersonality, setFilterPersonality] = useState<string | null>(
     null
   );
+  const [searchPool, setSearchPool] = useState<Agent[] | null>(null);
+  const [searchingAll, setSearchingAll] = useState(false);
+  const [searchLoadError, setSearchLoadError] = useState<string | null>(null);
 
   const {
     items: agents,
@@ -172,6 +175,51 @@ export function Squad() {
     [sortBy]
   );
 
+  useEffect(() => {
+    const q = search.trim();
+    if (!q) {
+      setSearchPool(null);
+      setSearchLoadError(null);
+      return;
+    }
+
+    let cancelled = false;
+
+    const loadAllAgents = async () => {
+      setSearchingAll(true);
+      setSearchLoadError(null);
+      try {
+        const effectiveSort = sortBy === "active" ? "karma" : sortBy;
+        let page = 1;
+        let pages = 1;
+        const all: Agent[] = [];
+
+        while (page <= pages) {
+          const res = await agentsApi.list(effectiveSort, page, 100);
+          all.push(...res.items);
+          pages = res.pages || 1;
+          page += 1;
+        }
+
+        if (!cancelled) setSearchPool(all);
+      } catch (e) {
+        if (!cancelled) {
+          setSearchLoadError(
+            e instanceof Error ? e.message : "Failed to search across all analysts"
+          );
+        }
+      } finally {
+        if (!cancelled) setSearchingAll(false);
+      }
+    };
+
+    void loadAllAgents();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [search, sortBy]);
+
   /* Personality filter chips with counts */
   const personalityCounts = useMemo(() => {
     if (!agents) return {};
@@ -184,12 +232,14 @@ export function Squad() {
 
   /* Filtered + sorted list */
   const filtered = useMemo(() => {
-    let list = agents ?? [];
+    const source = search.trim() ? searchPool ?? [] : agents ?? [];
+    let list = source;
     if (filterPersonality)
       list = list.filter((a) => a.personality === filterPersonality);
     if (search)
       list = list.filter((a) =>
-        a.name.toLowerCase().includes(search.toLowerCase())
+        a.name.toLowerCase().includes(search.toLowerCase()) ||
+        (a.team_allegiance || "").toLowerCase().includes(search.toLowerCase())
       );
     if (sortBy === "active") {
       list = [...list].sort((a, b) => {
@@ -199,7 +249,10 @@ export function Squad() {
       });
     }
     return list;
-  }, [agents, filterPersonality, search, sortBy]);
+  }, [agents, searchPool, filterPersonality, search, sortBy]);
+
+  const effectiveError = searchLoadError || error;
+  const effectiveLoading = loading || searchingAll;
 
   const sortTabs = [
     { key: "karma" as const, label: "Karma", icon: Crown },
@@ -299,9 +352,13 @@ export function Squad() {
       </div>
 
       {/* Grid */}
-      {loading && <LoadingSpinner label="Loading squad..." />}
-      {error && <ErrorBox message={error} onRetry={refetch} />}
-      {!loading && !error && filtered.length === 0 && (
+      {effectiveLoading && (
+        <LoadingSpinner
+          label={search.trim() ? "Searching all analysts..." : "Loading squad..."}
+        />
+      )}
+      {effectiveError && <ErrorBox message={effectiveError} onRetry={refetch} />}
+      {!effectiveLoading && !effectiveError && filtered.length === 0 && (
         <EmptyState message="No analysts match your filters." />
       )}
 
@@ -311,7 +368,7 @@ export function Squad() {
         ))}
       </div>
 
-      {hasMore && !search && !filterPersonality && (
+      {hasMore && !search.trim() && !filterPersonality && (
         <LoadMoreButton
           onClick={loadMore}
           loading={loadingMore}

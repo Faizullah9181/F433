@@ -32,6 +32,12 @@ _META_PHRASES = (
 )
 
 _FENCED_BLOCK_RE = re.compile(r"```[\s\S]*?```", flags=re.MULTILINE)
+_SENTENCE_END_RE = re.compile(r"[.!?][\"')\]]?(?=\s|$)")
+
+_GENERATION_FAILURE_MARKERS = (
+    "encountered an error",
+    "has nothing to say",
+)
 
 
 def _with_skills(task_type: str, prompt: str) -> str:
@@ -100,6 +106,32 @@ def _sanitize_output(text: str) -> str:
 
     # Fall back only if sanitizer would empty out the whole response.
     return cleaned or text.strip()
+
+
+def _finalize_output(text: str) -> str:
+    """Normalize model output and avoid visibly cut-off phrase endings."""
+    cleaned = _sanitize_output(text).strip()
+    if not cleaned:
+        return ""
+
+    lowered = cleaned.lower()
+    if any(marker in lowered for marker in _GENERATION_FAILURE_MARKERS):
+        return ""
+
+    # If generation ended abruptly, trim to the last completed sentence.
+    if len(cleaned) >= 80 and not _SENTENCE_END_RE.search(cleaned[-4:]):
+        matches = list(_SENTENCE_END_RE.finditer(cleaned))
+        if matches:
+            cleaned = cleaned[: matches[-1].end()].strip()
+
+    return cleaned
+
+
+def _require_valid_output(text: str, context: str) -> str:
+    finalized = _finalize_output(text)
+    if not finalized:
+        raise RuntimeError(f"Model failed to generate valid {context}")
+    return finalized
 
 
 # ── Agent Factory ───────────────────────────────────────────────
@@ -185,7 +217,7 @@ class FootballAnalyst:
             prompt += f"\n\nHere's some real data to reference:\n{context}"
         prompt += "\n\nWrite your post. Include a catchy title-like opening line."
         text = await run_agent(self._agent, _with_skills("post", prompt))
-        return _sanitize_output(text)
+        return _require_valid_output(text, "post")
 
     async def generate_post_with_data(self, topic: str, league_id: int | None = None) -> dict:
         """Generate a post enriched with real API-Football data via ADK tools."""
@@ -198,7 +230,7 @@ class FootballAnalyst:
             )
         prompt += "\n\nInclude a catchy title-like opening line. Be specific with real stats."
         content = await run_agent(self._agent, _with_skills("debate", prompt))
-        content = _sanitize_output(content)
+        content = _require_valid_output(content, "debate post")
         return {"title": topic, "content": content}
 
     async def reply_to_post(self, original_post: str, author_name: str) -> str:
@@ -208,7 +240,7 @@ class FootballAnalyst:
             "Give your take. Agree, disagree, banter, or add perspective. Be engaging."
         )
         text = await run_agent(self._agent, _with_skills("reply", prompt))
-        return _sanitize_output(text)
+        return _require_valid_output(text, "reply")
 
     async def make_prediction(self, fixture_id: int) -> dict:
         """Generate a match prediction using ADK tools for real data."""
@@ -227,7 +259,7 @@ class FootballAnalyst:
         )
 
         text = await run_agent(self._agent, _with_skills("prediction", prompt))
-        text = _sanitize_output(text)
+        text = _require_valid_output(text, "prediction")
 
         score_match = re.search(r"(\d+)\s*[-–]\s*(\d+)", text)
         predicted_score = f"{score_match.group(1)}-{score_match.group(2)}" if score_match else None
@@ -254,7 +286,7 @@ class FootballAnalyst:
             prompt += f"\n\nMatch context: {fixture_context}"
         prompt += "\n\nGive an immediate, visceral reaction in character. Keep it short (1-3 sentences). Be dramatic!"
         text = await run_agent(self._agent, _with_skills("react", prompt))
-        return _sanitize_output(text)
+        return _require_valid_output(text, "reaction")
 
     async def confession(self, topic_hint: str | None = None) -> str:
         """Generate a hot take / confession for Tunnel Talk."""
@@ -266,7 +298,7 @@ class FootballAnalyst:
         if topic_hint:
             prompt += f"\n\nTheme: {topic_hint}"
         text = await run_agent(self._agent, _with_skills("confession", prompt))
-        return _sanitize_output(text)
+        return _require_valid_output(text, "confession")
 
     async def generate_debate_reply_chain(
         self,

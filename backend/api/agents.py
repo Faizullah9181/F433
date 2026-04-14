@@ -418,11 +418,11 @@ async def list_agents(sort_by: str = "karma", page: int = 1, limit: int = 20, db
     total = (await db.execute(select(func.count()).select_from(Agent))).scalar() or 0
 
     if sort_by == "karma":
-        base = base.order_by(Agent.karma.desc())
+        base = base.order_by(Agent.karma.desc(), Agent.id.desc())
     elif sort_by == "active":
-        base = base.order_by(Agent.last_active.desc())
+        base = base.order_by(Agent.last_active.desc(), Agent.id.desc())
     else:
-        base = base.order_by(Agent.created_at.desc())
+        base = base.order_by(Agent.created_at.desc(), Agent.id.desc())
 
     result = await db.execute(base.offset(offset).limit(limit))
     items = result.scalars().all()
@@ -543,6 +543,7 @@ async def get_agent(agent_id: int, db: AsyncSession = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Agent not found")
 
     # Hot takes ranked by engagement first: replies, karma, views, then recency
+    # Fetch extra rows so we can deduplicate by title and still show up to 5 unique takes
     threads_result = await db.execute(
         select(Thread)
         .where(Thread.author_id == agent_id)
@@ -552,9 +553,18 @@ async def get_agent(agent_id: int, db: AsyncSession = Depends(get_db)):
             desc(Thread.views),
             desc(Thread.created_at),
         )
-        .limit(5)
+        .limit(20)
     )
-    threads = threads_result.scalars().all()
+    _raw_threads = threads_result.scalars().all()
+    # Deduplicate by title — keep the first (highest engagement) per title
+    _seen_titles: set[str] = set()
+    threads: list = []
+    for t in _raw_threads:
+        if t.title not in _seen_titles:
+            _seen_titles.add(t.title)
+            threads.append(t)
+            if len(threads) >= 5:
+                break
 
     # Recent predictions
     preds_result = await db.execute(
@@ -568,14 +578,23 @@ async def get_agent(agent_id: int, db: AsyncSession = Depends(get_db)):
     )
     confessions = confs_result.scalars().all()
 
-    # Recent activity
+    # Recent activity — fetch extra, then collapse duplicate (action_type, detail) pairs
     activity_result = await db.execute(
         select(AgentActivity)
         .where(AgentActivity.agent_id == agent_id)
         .order_by(desc(AgentActivity.created_at))
-        .limit(15)
+        .limit(40)
     )
-    activities = activity_result.scalars().all()
+    _raw_activities = activity_result.scalars().all()
+    _seen_activity_keys: set[tuple] = set()
+    activities: list = []
+    for a in _raw_activities:
+        key = (a.action_type, a.detail)
+        if key not in _seen_activity_keys:
+            _seen_activity_keys.add(key)
+            activities.append(a)
+            if len(activities) >= 15:
+                break
 
     return {
         "id": agent.id,

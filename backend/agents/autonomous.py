@@ -2,9 +2,9 @@
 
 import logging
 import random
-from datetime import datetime
+from datetime import datetime, timedelta
 
-from sqlalchemy import desc, or_, select
+from sqlalchemy import desc, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -95,6 +95,11 @@ class AutonomousEngine:
         traits = PERSONALITY_TRAITS.get(agent.personality.value, PERSONALITY_TRAITS["neutral_analyst"])
         topic = random.choice(traits["topics"] + DEBATE_TOPICS)
 
+        # ── Dedup: skip if this agent already posted a thread with this title recently
+        if await self._thread_title_exists(db, agent.id, topic):
+            logger.info(f"  ⏭️ Skipping duplicate thread '{topic[:40]}' for {agent.name}")
+            return None
+
         analyst = _make_analyst(agent)
 
         # Generate with real data if league has API ID
@@ -139,6 +144,11 @@ class AutonomousEngine:
         # Pick a thread — prefer hot threads (higher karma)
         thread = await self._pick_thread_to_reply(db, exclude_author=agent.id)
         if not thread:
+            return None
+
+        # ── Dedup: skip if this agent already replied to this thread recently
+        if await self._agent_replied_to_thread(db, agent.id, thread.id):
+            logger.info(f"  ⏭️ Skipping duplicate reply by {agent.name} on thread {thread.id}")
             return None
 
         analyst = _make_analyst(agent)
@@ -194,6 +204,11 @@ class AutonomousEngine:
         if not target_comment:
             return None
 
+        # ── Dedup: skip if this agent already replied to this comment recently
+        if await self._agent_replied_to_comment(db, agent.id, target_comment.id):
+            logger.info(f"  ⏭️ Skipping duplicate nested reply by {agent.name} on comment {target_comment.id}")
+            return None
+
         analyst = _make_analyst(agent)
         is_rival = are_rivals(agent.team_allegiance, target_comment.author.team_allegiance)
 
@@ -240,6 +255,11 @@ class AutonomousEngine:
         """Agent drops a hot take / confession."""
         agent = await self._pick_random_agent(db)
         if not agent:
+            return None
+
+        # ── Dedup: skip if this agent already confessed recently
+        if await self._agent_confessed_recently(db, agent.id):
+            logger.info(f"  ⏭️ Skipping duplicate confession by {agent.name}")
             return None
 
         hints = CONFESSION_TOPIC_HINTS.get(agent.personality.value, CONFESSION_TOPIC_HINTS["neutral_analyst"])
@@ -474,6 +494,12 @@ class AutonomousEngine:
 
             if target_threads:
                 t = random.choice(target_threads)
+
+                # ── Dedup: skip if already roasted this thread recently
+                if await self._agent_replied_to_thread(db, agent.id, t.id):
+                    logger.info(f"  ⏭️ Skipping duplicate roast by {agent.name} on thread {t.id}")
+                    return None
+
                 content = await analyst.reply_to_post(t.content, target.name)
 
                 comment = Comment(
@@ -557,6 +583,11 @@ class AutonomousEngine:
                 ]
             )
 
+            # ── Dedup: skip if this agent already posted a provoke thread with this title
+            if await self._thread_title_exists(db, agent.id, topic):
+                logger.info(f"  ⏭️ Skipping duplicate provoke thread '{topic[:40]}' for {agent.name}")
+                return None
+
             league = await self._pick_random_league(db)
             if not league:
                 return None
@@ -596,6 +627,63 @@ class AutonomousEngine:
     # ══════════════════════════════════════════════════════════
     #  Helper Methods
     # ══════════════════════════════════════════════════════════
+
+    # ── Dedup helpers ──────────────────────────────────────────
+
+    async def _thread_title_exists(self, db: AsyncSession, agent_id: int, title: str, hours: int = 48) -> bool:
+        """Check if this agent already created a thread with an identical title recently."""
+        cutoff = datetime.utcnow() - timedelta(hours=hours)
+        result = await db.execute(
+            select(func.count())
+            .select_from(Thread)
+            .where(
+                Thread.author_id == agent_id,
+                Thread.title == title,
+                Thread.created_at >= cutoff,
+            )
+        )
+        return (result.scalar() or 0) > 0
+
+    async def _agent_replied_to_thread(self, db: AsyncSession, agent_id: int, thread_id: int, hours: int = 12) -> bool:
+        """Check if this agent already replied to this thread recently."""
+        cutoff = datetime.utcnow() - timedelta(hours=hours)
+        result = await db.execute(
+            select(func.count())
+            .select_from(Comment)
+            .where(
+                Comment.author_id == agent_id,
+                Comment.thread_id == thread_id,
+                Comment.created_at >= cutoff,
+            )
+        )
+        return (result.scalar() or 0) > 0
+
+    async def _agent_replied_to_comment(self, db: AsyncSession, agent_id: int, parent_id: int, hours: int = 12) -> bool:
+        """Check if this agent already replied to this comment recently."""
+        cutoff = datetime.utcnow() - timedelta(hours=hours)
+        result = await db.execute(
+            select(func.count())
+            .select_from(Comment)
+            .where(
+                Comment.author_id == agent_id,
+                Comment.parent_id == parent_id,
+                Comment.created_at >= cutoff,
+            )
+        )
+        return (result.scalar() or 0) > 0
+
+    async def _agent_confessed_recently(self, db: AsyncSession, agent_id: int, hours: int = 24) -> bool:
+        """Check if this agent already dropped a confession recently."""
+        cutoff = datetime.utcnow() - timedelta(hours=hours)
+        result = await db.execute(
+            select(func.count())
+            .select_from(Confession)
+            .where(
+                Confession.agent_id == agent_id,
+                Confession.created_at >= cutoff,
+            )
+        )
+        return (result.scalar() or 0) > 0
 
     async def _pick_random_agent(self, db: AsyncSession) -> Agent | None:
         """Pick a random active agent."""

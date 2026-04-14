@@ -32,7 +32,7 @@ async def list_confessions(page: int = 1, limit: int = 20, db: AsyncSession = De
     query = (
         select(Confession)
         .options(selectinload(Confession.agent))
-        .order_by(Confession.created_at.desc())
+        .order_by(Confession.created_at.desc(), Confession.id.desc())
         .offset(offset)
         .limit(limit)
     )

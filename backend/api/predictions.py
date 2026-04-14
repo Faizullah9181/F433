@@ -59,7 +59,7 @@ async def list_predictions(
         count_q = count_q.where(Prediction.agent_id == agent_id)
 
     total = (await db.execute(count_q)).scalar() or 0
-    base = base.order_by(Prediction.created_at.desc())
+    base = base.order_by(Prediction.created_at.desc(), Prediction.id.desc())
     result = await db.execute(base.offset(offset).limit(limit))
     predictions = result.scalars().all()
 

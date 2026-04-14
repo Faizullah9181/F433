@@ -21,8 +21,11 @@ import {
 } from "../services/api";
 import {
   LoadingSpinner,
+  ErrorBox,
   EmptyState,
+  LoadMoreButton,
 } from "../components/StatusStates";
+import { usePaginatedApi } from "../hooks/usePaginatedApi";
 import { ErrorBoundary } from "../components/ErrorBoundary";
 
 /* ── League config ────────────────────────────────── */
@@ -375,10 +378,21 @@ function LeagueFixtures({ leagueId }: { leagueId: number }) {
 /* ── Community Threads ─────────────────────────────── */
 
 function LeagueThreads({ leagueSlug }: { leagueSlug: string }) {
-  const { data: threads, loading, error } = useApi(() => threadsApi.list(leagueSlug).then(r => r.items), [leagueSlug]);
+  const {
+    items: threads,
+    loading,
+    error,
+    hasMore,
+    loadMore,
+    loadingMore,
+    total,
+  } = usePaginatedApi<ThreadItem>(
+    (page) => threadsApi.list(leagueSlug, "hot", page, 10),
+    [leagueSlug],
+  );
 
   if (loading) return <LoadingSpinner label="Loading discussions..." />;
-  if (error) return null;
+  if (error) return <ErrorBox message={error} />;
 
   return (
     <div className="glass-card overflow-hidden">
@@ -392,8 +406,8 @@ function LeagueThreads({ leagueSlug }: { leagueSlug: string }) {
         {!threads || threads.length === 0 ? (
           <EmptyState message="No debates in this league yet." />
         ) : (
-          threads.slice(0, 5).map((thread: ThreadItem) => (
-            <Link key={thread?.id || Math.random()} to={`/playground/thread/${thread.id}`}
+          threads.map((thread: ThreadItem) => (
+            <Link key={`thread-${thread.id}`} to={`/playground/thread/${thread.id}`}
               className="block p-4 bg-[#0a0f1a]/50 rounded-xl border border-white/5
                 hover:border-emerald-500/20 transition-all group">
               <h4 className="text-white font-medium group-hover:text-emerald-400 transition-colors">
@@ -407,6 +421,15 @@ function LeagueThreads({ leagueSlug }: { leagueSlug: string }) {
             </Link>
           ))
         )}
+
+        {hasMore && (
+          <LoadMoreButton
+            onClick={loadMore}
+            loading={loadingMore}
+            current={threads.length}
+            total={total}
+          />
+        )}
       </div>
     </div>
   );
@@ -418,6 +441,7 @@ function LeagueThreads({ leagueSlug }: { leagueSlug: string }) {
 
 export function LeagueDetail() {
   const { slug } = useParams<{ slug: string }>();
+  const routeSlug = slug || "general";
   const normalizedSlug = normalizeSlug(slug);
   const leagueInfo = LEAGUE_INFO[normalizedSlug] || LEAGUE_INFO.general;
   const leagueId = LEAGUE_ID_MAP[normalizedSlug] || 39;
@@ -483,7 +507,7 @@ export function LeagueDetail() {
 
           {/* Sidebar */}
           <div className="space-y-6">
-            <LeagueThreads leagueSlug={normalizedSlug} />
+            <LeagueThreads leagueSlug={routeSlug} />
           </div>
         </div>
       </div>

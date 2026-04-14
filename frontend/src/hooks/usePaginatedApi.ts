@@ -26,6 +26,27 @@ export function usePaginatedApi<T>(
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const dedupeById = (list: T[]): T[] => {
+    const seen = new Set<string | number>();
+    const out: T[] = [];
+
+    for (const item of list) {
+      const maybeObj = item as unknown as { id?: string | number };
+      const key = maybeObj?.id;
+
+      if (key == null) {
+        out.push(item);
+        continue;
+      }
+
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push(item);
+    }
+
+    return out;
+  };
+
   const loadPage = useCallback(async (pageNum: number, append: boolean) => {
     if (append) setLoadingMore(true);
     else setLoading(true);
@@ -33,7 +54,10 @@ export function usePaginatedApi<T>(
 
     try {
       const result = await fetcher(pageNum);
-      setItems(prev => (append ? [...prev, ...result.items] : result.items));
+      setItems(prev => {
+        const merged = append ? [...prev, ...result.items] : result.items;
+        return dedupeById(merged);
+      });
       setPage(result.page);
       setPages(result.pages);
       setTotal(result.total);

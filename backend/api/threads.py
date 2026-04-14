@@ -13,6 +13,27 @@ from db.models import Comment, League, Thread
 
 router = APIRouter()
 
+_INVALID_GENERATION_MARKERS = (
+    "encountered an error",
+    "has nothing to say",
+)
+
+
+def _is_invalid_generated_content(text: str | None) -> bool:
+    if not text:
+        return True
+    lowered = text.lower()
+    return any(marker in lowered for marker in _INVALID_GENERATION_MARKERS)
+
+
+def _truncate_at_word_boundary(text: str, limit: int = 200) -> str:
+    if len(text) <= limit:
+        return text
+    chunk = text[: limit + 1]
+    if " " in chunk:
+        chunk = chunk.rsplit(" ", 1)[0]
+    return chunk.rstrip(" .,;:") + "..."
+
 
 class ThreadCreate(BaseModel):
     title: str
@@ -35,8 +56,10 @@ async def list_threads(
     count_q = select(func.count()).select_from(Thread)
 
     if league:
-        base = base.join(League).where(League.slug == league)
-        count_q = count_q.join(League).where(League.slug == league)
+        # Accept both legacy underscore slugs (la_liga) and canonical hyphen slugs (la-liga).
+        slug_candidates = {league, league.replace("_", "-"), league.replace("-", "_")}
+        base = base.join(League).where(League.slug.in_(slug_candidates))
+        count_q = count_q.join(League).where(League.slug.in_(slug_candidates))
 
     total = (await db.execute(count_q)).scalar() or 0
 
@@ -47,21 +70,31 @@ async def list_threads(
             Thread.views.desc(),
             Thread.karma.desc(),
             Thread.created_at.desc(),
+            Thread.id.desc(),
         )
     elif sort_by == "new":
-        base = base.order_by(Thread.created_at.desc())
+        base = base.order_by(Thread.created_at.desc(), Thread.id.desc())
     elif sort_by == "top":
-        base = base.order_by(Thread.views.desc())
+        base = base.order_by(Thread.views.desc(), Thread.id.desc())
 
     result = await db.execute(base.offset(offset).limit(limit))
     threads = result.scalars().all()
+
+    # Collapse duplicate titles from the same author (existing DB dupes from pre-dedup era)
+    seen_author_titles: set[tuple[int, str]] = set()
+    unique_threads = []
+    for t in threads:
+        key = (t.author_id, t.title)
+        if key not in seen_author_titles:
+            seen_author_titles.add(key)
+            unique_threads.append(t)
 
     return {
         "items": [
             {
                 "id": t.id,
                 "title": t.title,
-                "content": t.content[:200] + "..." if len(t.content) > 200 else t.content,
+                "content": _truncate_at_word_boundary(t.content, 200),
                 "karma": t.karma,
                 "views": t.views,
                 "comment_count": t.comment_count,
@@ -78,7 +111,7 @@ async def list_threads(
                     "icon": t.league.icon,
                 },
             }
-            for t in threads
+            for t in unique_threads
         ],
         "total": total,
         "page": page,
@@ -115,7 +148,7 @@ async def get_thread(thread_id: int, db: AsyncSession = Depends(get_db)):
         .where(Comment.thread_id == thread_id)
         .order_by(asc(Comment.created_at))
     )
-    all_comments = comments_result.scalars().all()
+    all_comments = [c for c in comments_result.scalars().all() if not _is_invalid_generated_content(c.content)]
 
     # Serialize all comments
     comment_map = {}

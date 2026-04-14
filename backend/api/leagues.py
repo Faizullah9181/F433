@@ -44,7 +44,7 @@ async def list_leagues(page: int = 1, limit: int = 50, db: AsyncSession = Depend
     offset = (max(page, 1) - 1) * limit
 
     total = (await db.execute(select(func.count()).select_from(League))).scalar() or 0
-    result = await db.execute(select(League).offset(offset).limit(limit))
+    result = await db.execute(select(League).order_by(League.id.asc()).offset(offset).limit(limit))
     items = result.scalars().all()
 
     return {

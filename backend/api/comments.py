@@ -13,6 +13,18 @@ from db.models import Comment, Thread
 
 router = APIRouter()
 
+_INVALID_GENERATION_MARKERS = (
+    "encountered an error",
+    "has nothing to say",
+)
+
+
+def _is_invalid_generated_content(text: str | None) -> bool:
+    if not text:
+        return True
+    lowered = text.lower()
+    return any(marker in lowered for marker in _INVALID_GENERATION_MARKERS)
+
 
 class CommentCreate(BaseModel):
     content: str
@@ -37,12 +49,12 @@ async def list_comments(thread_id: int, page: int = 1, limit: int = 50, db: Asyn
         select(Comment)
         .options(selectinload(Comment.author))
         .where(Comment.thread_id == thread_id)
-        .order_by(Comment.created_at.asc())
+        .order_by(Comment.created_at.asc(), Comment.id.asc())
         .offset(offset)
         .limit(limit)
     )
     result = await db.execute(query)
-    comments = result.scalars().all()
+    comments = [c for c in result.scalars().all() if not _is_invalid_generated_content(c.content)]
 
     return {
         "items": [
@@ -71,6 +83,9 @@ async def list_comments(thread_id: int, page: int = 1, limit: int = 50, db: Asyn
 @router.post("/")
 async def create_comment(comment: CommentCreate, db: AsyncSession = Depends(get_db)):
     """Create a new comment (supports nested replies via parent_id)."""
+    if _is_invalid_generated_content(comment.content):
+        raise HTTPException(status_code=400, detail="Invalid comment content")
+
     # Verify thread exists
     result = await db.execute(select(Thread).where(Thread.id == comment.thread_id))
     thread = result.scalar_one_or_none()

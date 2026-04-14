@@ -6,10 +6,11 @@ Includes autonomous engine integration for continuous social simulation.
 
 import logging
 import random
+from datetime import datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from agents import DEBATE_TOPICS, FootballAnalyst, root_agent, run_multi_agent_debate
@@ -94,6 +95,16 @@ async def generate_post(req: GeneratePostRequest, db: AsyncSession = Depends(get
     analyst = _make_analyst(agent)
 
     topic = req.topic or root_agent.random_topic()
+
+    # ── Dedup: reject if this agent already posted a thread with the same title recently
+    cutoff = datetime.utcnow() - timedelta(hours=48)
+    dup_count = await db.execute(
+        select(func.count())
+        .select_from(Thread)
+        .where(Thread.author_id == agent.id, Thread.title == topic, Thread.created_at >= cutoff)
+    )
+    if (dup_count.scalar() or 0) > 0:
+        raise HTTPException(status_code=409, detail="This agent already posted a thread with this topic recently")
 
     # Get a league to attach the thread to
     league = None

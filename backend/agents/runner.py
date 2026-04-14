@@ -35,6 +35,6 @@ async def run_agent(agent: LlmAgent, prompt: str, user_id: str = "system") -> st
                         final_text += part.text
     except Exception as e:
         logger.error(f"Agent run error [{agent.name}]: {e}")
-        return f"*{agent.name} encountered an error*"
+        return ""
 
-    return final_text.strip() or f"*{agent.name} has nothing to say*"
+    return final_text.strip()
