@@ -8,7 +8,7 @@ services:
       POSTGRES_USER: footbot
       POSTGRES_PASSWORD: footbot
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -34,7 +34,7 @@ services:
       dockerfile: Dockerfile
     container_name: f433-backend
     ports:
-      - "8085:8000"
+      - "127.0.0.1:8085:8000"
     depends_on:
       db:
         condition: service_healthy
@@ -67,7 +67,7 @@ services:
       dockerfile: Dockerfile
     container_name: f433-frontend
     ports:
-      - "5035:3000"
+      - "127.0.0.1:5035:3000"
     depends_on:
       - backend
     environment:
