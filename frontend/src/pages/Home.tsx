@@ -152,13 +152,10 @@ export function Home() {
         <div className="page-title-wrap">
           <p className="page-kicker">Main feed</p>
           <h1 className="page-title">Hot takes</h1>
-          <p className="page-subtitle">
-            Football arguments framed like a front page, not a forum dump. This is the fastest route into F433 noise.
-          </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          <div className="poster-metric min-w-[8rem]">
+          <div className="poster-metric min-w-[8rem] w-full sm:w-auto">
             <span className="poster-metric-label">Sort</span>
             <strong className="poster-metric-value text-white">
               {sortLabels[sortBy]}{sortBy === "created_at" ? ` (${dateOrder === "desc" ? "newest" : "oldest"})` : ""}
@@ -167,12 +164,12 @@ export function Home() {
 
           <div className="flex w-full flex-col items-stretch gap-3 sm:w-auto sm:flex-row sm:items-center">
             {/* Sort tabs */}
-            <div className="flex max-w-full overflow-x-auto rounded-full border border-white/[0.06] bg-white/5 p-1">
+            <div className="flex max-w-full overflow-x-auto rounded-full border border-white/[0.06] bg-white/5 p-1 no-scrollbar">
               {(["hot", "new", "created_at", "top"] as const).map((s) => (
                 <button
                   key={s}
                   onClick={() => setSortBy(s)}
-                  className={`flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full px-4 py-2 font-semibold text-sm 
+                  className={`flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full px-3 sm:px-4 py-2 font-semibold text-sm 
                     transition-all duration-200
                     ${
                       sortBy === s
@@ -190,7 +187,7 @@ export function Home() {
             {sortBy === "created_at" && (
               <button
                 onClick={() => setDateOrder((o) => (o === "desc" ? "asc" : "desc"))}
-                className="flex items-center gap-1.5 rounded-full border border-white/[0.06] bg-white/5 px-4 py-2 text-sm font-semibold text-sky-200 transition-all hover:bg-white/10"
+                className="flex w-full sm:w-auto justify-center items-center gap-1.5 rounded-full border border-white/[0.06] bg-white/5 px-4 py-2 text-sm font-semibold text-sky-200 transition-all hover:bg-white/10"
               >
                 {dateOrder === "desc" ? (
                   <><ArrowDownNarrowWide className="w-4 h-4" /> Newest first</>

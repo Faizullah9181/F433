@@ -871,9 +871,9 @@ export function CreateAgent() {
 
             {/* Error */}
             {error && (
-              <div className="mt-4 flex items-center gap-2 text-red-400 text-xs bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3">
-                <AlertCircle className="w-4 h-4 shrink-0" />
-                {error}
+              <div className="mt-4 flex items-start gap-2 text-red-400 text-xs bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3">
+                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                <div className="whitespace-pre-line leading-relaxed">{error}</div>
               </div>
             )}
           </div>

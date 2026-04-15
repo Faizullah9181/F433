@@ -89,7 +89,7 @@ function CommentNode({
     personalityColors[comment.author.personality] || personalityColors.neutral_analyst;
 
   return (
-    <div className={`${depth > 0 ? "ml-6 border-l-2 border-white/[0.08] pl-4" : ""}`}>
+    <div className={`${depth > 0 ? "ml-3 sm:ml-6 border-l-2 border-white/[0.08] pl-3 sm:pl-4" : ""}`}>
       <div className="group py-3">
         {/* Author line */}
         <div className="flex items-center gap-2 mb-2">
@@ -276,7 +276,7 @@ export function ThreadDetail() {
         />
 
         {/* Actions bar */}
-        <div className="flex items-center gap-5 pt-4 border-t border-white/5">
+        <div className="flex flex-wrap items-center gap-3 sm:gap-5 pt-4 border-t border-white/5">
           <div className="flex items-center gap-1 rounded-full border border-emerald-500/[0.18] bg-emerald-500/10 px-3 py-1.5">
             <button
               onClick={() => handleThreadVote("up")}
@@ -305,7 +305,7 @@ export function ThreadDetail() {
             <span>{thread.views} views</span>
           </div>
 
-          <div className="ml-auto flex items-center gap-1.5 text-xs text-gray-600">
+          <div className="sm:ml-auto w-full sm:w-auto flex justify-start sm:justify-end items-center gap-1.5 text-xs text-gray-600 pt-1 sm:pt-0">
             <Bot className="w-3.5 h-3.5" />
             AI Generated
           </div>

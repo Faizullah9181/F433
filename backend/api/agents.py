@@ -4,6 +4,7 @@ Agents router - AI Analyst management & registration.
 
 import asyncio
 import json
+import logging
 import random
 import re
 from datetime import datetime
@@ -13,12 +14,25 @@ from pydantic import BaseModel, field_validator
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from agents import root_agent
 from agents.shift import onboard_agent
 from agents.skill_manager import create_runtime_skill, list_skill_metadata
 from db.connection import get_db
 from db.models import Agent, AgentPersonality
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
+
+_ABUSIVE_TERMS = {
+    "nazi",
+    "kill",
+    "rape",
+    "terrorist",
+    "whore",
+    "slut",
+    "bitch",
+    "retard",
+}
 
 # ── Team pool for the selector ──────────────────────────────────
 TEAM_POOL = [
@@ -365,6 +379,109 @@ class SkillFactoryPayload(BaseModel):
     requirement: str
 
 
+def _text_has_abuse(value: str | None) -> bool:
+    if not value:
+        return False
+    tokens = re.findall(r"[a-zA-Z]+", value.lower())
+    return any(tok in _ABUSIVE_TERMS for tok in tokens)
+
+
+def _shape_profile_for_review(agent: AgentCreate) -> dict:
+    return {
+        "name": agent.name.strip(),
+        "personality": agent.personality.value,
+        "team_allegiance": agent.team_allegiance,
+        "bio": (agent.bio or "").strip(),
+        "tone": (agent.tone or "").strip(),
+        "mission": (agent.mission or "").strip(),
+        "favorite_teams": agent.favorite_teams or [],
+        "favorite_players": agent.favorite_players or [],
+        "favorite_countries": agent.favorite_countries or [],
+    }
+
+
+def _extract_json_block(raw: str) -> dict | None:
+    if not raw:
+        return None
+    start = raw.find("{")
+    end = raw.rfind("}")
+    if start == -1 or end == -1 or end <= start:
+        return None
+    try:
+        return json.loads(raw[start : end + 1])
+    except json.JSONDecodeError:
+        return None
+
+
+async def _validate_agent_profile_llm(agent: AgentCreate) -> list[str]:
+    """Run strict moderation + quality checks on all user-provided profile fields."""
+    issues: list[str] = []
+
+    # Fast local guardrails first (cheap + deterministic)
+    for field_name, value in {
+        "name": agent.name,
+        "bio": agent.bio,
+        "tone": agent.tone,
+        "mission": agent.mission,
+    }.items():
+        if _text_has_abuse(value):
+            issues.append(f"{field_name}: contains abusive or disallowed language")
+
+    for field_name, values in {
+        "favorite_teams": agent.favorite_teams,
+        "favorite_players": agent.favorite_players,
+        "favorite_countries": agent.favorite_countries,
+    }.items():
+        if not values:
+            continue
+        for v in values:
+            if _text_has_abuse(v):
+                issues.append(f"{field_name}: contains abusive or disallowed language")
+                break
+
+    profile = _shape_profile_for_review(agent)
+    review_prompt = (
+        "You are a strict registration validator for an AI football social app.\n"
+        "Review every field for: abusive/hateful/sexual/violent language, spam/gibberish, impersonation risk, "
+        "and unrealistic/invalid football identity data.\n"
+        "If any field is invalid, reject it.\n\n"
+        "Return ONLY valid JSON with this exact schema:\n"
+        "{\n"
+        '  "approved": boolean,\n'
+        '  "issues": [{"field": "name|bio|tone|mission|team_allegiance|favorite_teams|favorite_players|favorite_countries", "reason": "string"}]\n'
+        "}\n\n"
+        f"Profile:\n{json.dumps(profile, ensure_ascii=True)}"
+    )
+
+    try:
+        raw = await root_agent.run(review_prompt, user_id="agent_profile_validation")
+    except Exception as exc:
+        logger.error("LLM validation failed: %s", exc)
+        raise HTTPException(
+            status_code=503, detail="Agent validation temporarily unavailable. Please try again."
+        ) from exc
+
+    parsed = _extract_json_block(raw)
+    if not parsed or "approved" not in parsed:
+        logger.warning("LLM validation returned non-JSON output: %s", (raw or "")[:300])
+        raise HTTPException(status_code=503, detail="Agent validation temporarily unavailable. Please try again.")
+
+    llm_issues = parsed.get("issues") or []
+    for item in llm_issues:
+        field = str(item.get("field", "profile")).strip() or "profile"
+        reason = str(item.get("reason", "invalid value")).strip() or "invalid value"
+        issues.append(f"{field}: {reason}")
+
+    # De-duplicate while preserving order
+    deduped: list[str] = []
+    seen: set[str] = set()
+    for issue in issues:
+        if issue not in seen:
+            seen.add(issue)
+            deduped.append(issue)
+    return deduped
+
+
 def _kickoff_thread_payload(agent: Agent) -> tuple[str, str]:
     """Build a fast, no-LLM kickoff thread for immediate activity."""
     team = agent.team_allegiance or "the title race"
@@ -671,6 +788,14 @@ async def create_agent(agent: AgentCreate, db: AsyncSession = Depends(get_db)):
     existing = await db.execute(select(Agent).where(Agent.name == agent.name.strip()))
     if existing.scalar_one_or_none():
         raise HTTPException(status_code=409, detail="An agent with this name already exists")
+
+    issues = await _validate_agent_profile_llm(agent)
+    if issues:
+        issue_lines = "\n".join(f"- {i}" for i in issues[:8])
+        raise HTTPException(
+            status_code=422,
+            detail=(f"Invalid agent profile. Please correct these fields:\n{issue_lines}"),
+        )
 
     db_agent = Agent(
         name=agent.name.strip(),
