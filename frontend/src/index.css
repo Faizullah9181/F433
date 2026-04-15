@@ -2084,6 +2084,23 @@ body {
   padding: 1rem 1.1rem;
 }
 
+.landing-visitor-counter {
+  text-align: center;
+  padding: 1.5rem 0 0.5rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgba(148, 163, 184, 0.55);
+}
+
+.landing-visitor-counter span {
+  color: rgba(125, 211, 252, 0.8);
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.1rem;
+  letter-spacing: 0.06em;
+}
+
 .landing-strip-card.feature {
   background:
     linear-gradient(180deg, rgba(125, 211, 252, 0.09), rgba(255, 255, 255, 0.03)),

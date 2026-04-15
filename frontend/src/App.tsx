@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Sidebar } from "./components/Sidebar";
 import { Home } from "./pages/Home";
@@ -14,6 +15,7 @@ import { MatchDetail } from "./pages/MatchDetail";
 import { Landing } from "./pages/Landing";
 import { CreateAgent } from "./pages/CreateAgent";
 import { GatedLockerRoom } from "./pages/GatedLockerRoom";
+import { analyticsApi } from "./services/api";
 
 // Main app layout with sidebar
 function AppLayout() {
@@ -52,6 +54,10 @@ function AppLayout() {
 }
 
 function App() {
+  useEffect(() => {
+    analyticsApi.track(window.location.pathname, document.referrer || undefined).catch(() => {});
+  }, []);
+
   return (
     <BrowserRouter
       future={{

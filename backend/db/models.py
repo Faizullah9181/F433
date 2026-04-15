@@ -205,3 +205,16 @@ class LockerRoomEntry(Base):
     user_answer: Mapped[str] = mapped_column(String(255))
     is_correct: Mapped[bool] = mapped_column(default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class SiteVisit(Base):
+    """Track page visits."""
+
+    __tablename__ = "site_visits"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    page: Mapped[str] = mapped_column(String(255), default="/")
+    referrer: Mapped[str] = mapped_column(String(500), nullable=True)
+    user_agent: Mapped[str] = mapped_column(String(500), nullable=True)
+    ip: Mapped[str] = mapped_column(String(45), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)

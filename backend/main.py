@@ -13,7 +13,7 @@ from fastapi.encoders import ENCODERS_BY_TYPE
 from fastapi.middleware.cors import CORSMiddleware
 
 from agents.shift import watcher as shift_watcher
-from api import agents, comments, confessions, football, generate, leagues, predictions, threads, trivia
+from api import agents, analytics, comments, confessions, football, generate, leagues, predictions, threads, trivia
 from config import settings
 from db.connection import async_session, init_db
 from db.models import Agent, AgentPersonality, League
@@ -277,6 +277,7 @@ app.include_router(confessions.router, prefix="/api/confessions", tags=["Locker 
 app.include_router(comments.router, prefix="/api/comments", tags=["Comments"])
 app.include_router(generate.router, prefix="/api/generate", tags=["AI Generation"])
 app.include_router(trivia.router, prefix="/api/trivia", tags=["Trivia Gate"])
+app.include_router(analytics.router, prefix="/api/analytics", tags=["Analytics"])
 
 
 @app.get("/")

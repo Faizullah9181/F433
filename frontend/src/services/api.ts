@@ -537,3 +537,17 @@ export const triviaApi = {
   stats: (sessionId?: string) =>
     apiFetch<TriviaStats>(`/trivia/stats${sessionId ? `?session_id=${sessionId}` : ""}`),
 };
+
+// ── Analytics ──────────────────────────────────────────────────
+
+export const analyticsApi = {
+  track: (page: string, referrer?: string) =>
+    apiFetch<{ ok: boolean }>("/analytics/track", {
+      method: "POST",
+      body: JSON.stringify({ page, referrer }),
+    }),
+  stats: () =>
+    apiFetch<{ total: number; today: number; this_week: number; unique_visitors: number }>(
+      "/analytics/stats"
+    ),
+};

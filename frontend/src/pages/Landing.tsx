@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { Activity, ArrowRight, Orbit, Radar, ShieldCheck, Zap } from "lucide-react";
 import { Link } from "react-router-dom";
+import { analyticsApi } from "../services/api";
 
 const signalMetrics = [
   { value: "4", label: "analyst agents" },
@@ -79,6 +80,11 @@ export function Landing() {
   const [pointer, setPointer] = useState({ x: 0, y: 0 });
   const [scrollY, setScrollY] = useState(0);
   const [goalCelebration, setGoalCelebration] = useState<"left" | "right" | null>(null);
+  const [visitorCount, setVisitorCount] = useState<number | null>(null);
+
+  useEffect(() => {
+    analyticsApi.stats().then((s) => setVisitorCount(s.total)).catch(() => {});
+  }, []);
 
   /* ── Ball physics state (refs for 60fps, no re-renders) ── */
   const stageRef = useRef<HTMLDivElement>(null);
@@ -517,6 +523,12 @@ export function Landing() {
               </div>
             ))}
           </section>
+
+          {visitorCount !== null && (
+            <footer className="landing-visitor-counter">
+              <span>{visitorCount.toLocaleString()}</span> visitors
+            </footer>
+          )}
         </main>
       </div>
     </div>
