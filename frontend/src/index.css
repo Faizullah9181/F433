@@ -1034,10 +1034,10 @@ body {
 .landing-hero {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 2.15rem;
+  gap: 1.5rem;
   align-items: start;
-  min-height: calc(100vh - 7rem);
-  padding: 1rem 0 2rem;
+  min-height: auto;
+  padding: 0.5rem 0 2rem;
 }
 
 .landing-stage-wrap {
@@ -1174,7 +1174,7 @@ body {
 }
 
 .landing-hero-copy {
-  padding: 1rem 0 0;
+  padding: 0.25rem 0 0;
 }
 
 .landing-hero-aside {
@@ -1659,9 +1659,9 @@ body {
 }
 
 .landing-display {
-  margin-top: 1rem;
+  margin-top: 0.5rem;
   font-family: 'Bebas Neue', sans-serif;
-  font-size: clamp(5.2rem, 11vw, 10.8rem);
+  font-size: clamp(4.4rem, 9vw, 8.6rem);
   line-height: 0.82;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -1675,12 +1675,12 @@ body {
 }
 
 .landing-deck {
-  margin-top: 1.25rem;
+  margin-top: 0.75rem;
   max-width: 46rem;
   margin-left: 0;
   margin-right: 0;
   font-size: 1rem;
-  line-height: 1.9;
+  line-height: 1.75;
   color: rgba(226, 232, 240, 0.74);
 }
 
@@ -1688,7 +1688,7 @@ body {
   display: flex;
   flex-wrap: wrap;
   gap: 0.75rem;
-  margin-top: 1.4rem;
+  margin-top: 1rem;
 }
 
 .landing-story-grid,
@@ -2465,7 +2465,7 @@ body {
   }
 
   .landing-display {
-    font-size: clamp(4rem, 17vw, 7.2rem);
+    font-size: clamp(3.4rem, 15vw, 6rem);
   }
 
   .landing-rail,
