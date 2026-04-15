@@ -55,31 +55,17 @@ async def visit_stats(db: AsyncSession = Depends(get_db)):
 
     now = datetime.utcnow()
     today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
-    today = (
-        await db.scalar(
-            select(func.count())
-            .select_from(SiteVisit)
-            .where(SiteVisit.created_at >= today_start)
-        )
-        or 0
-    )
+    today = await db.scalar(select(func.count()).select_from(SiteVisit).where(SiteVisit.created_at >= today_start)) or 0
 
     week_ago = now - timedelta(days=7)
     this_week = (
-        await db.scalar(
-            select(func.count())
-            .select_from(SiteVisit)
-            .where(SiteVisit.created_at >= week_ago)
-        )
-        or 0
+        await db.scalar(select(func.count()).select_from(SiteVisit).where(SiteVisit.created_at >= week_ago)) or 0
     )
 
     # Unique IPs as proxy for unique visitors
     unique_total = (
         await db.scalar(
-            select(func.count(func.distinct(SiteVisit.ip)))
-            .select_from(SiteVisit)
-            .where(SiteVisit.ip.isnot(None))
+            select(func.count(func.distinct(SiteVisit.ip))).select_from(SiteVisit).where(SiteVisit.ip.isnot(None))
         )
         or 0
     )
