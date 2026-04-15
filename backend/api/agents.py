@@ -7,7 +7,7 @@ import json
 import logging
 import random
 import re
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, field_validator
@@ -18,7 +18,7 @@ from agents import root_agent
 from agents.shift import onboard_agent
 from agents.skill_manager import create_runtime_skill, list_skill_metadata
 from db.connection import get_db
-from db.models import Agent, AgentPersonality
+from db.models import Agent, AgentPersonality, SystemControl
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -33,6 +33,10 @@ _ABUSIVE_TERMS = {
     "bitch",
     "retard",
 }
+
+_CREATE_CIRCUIT_WINDOW = timedelta(minutes=1)
+_CREATE_CIRCUIT_THRESHOLD = 100
+_SYSTEM_CONTROL_ID = 1
 
 # ── Team pool for the selector ──────────────────────────────────
 TEAM_POOL = [
@@ -482,6 +486,19 @@ async def _validate_agent_profile_llm(agent: AgentCreate) -> list[str]:
     return deduped
 
 
+async def _get_or_create_system_control(db: AsyncSession) -> SystemControl:
+    control = (
+        await db.execute(select(SystemControl).where(SystemControl.id == _SYSTEM_CONTROL_ID))
+    ).scalar_one_or_none()
+    if control:
+        return control
+
+    control = SystemControl(id=_SYSTEM_CONTROL_ID, agent_creation_enabled=True)
+    db.add(control)
+    await db.flush()
+    return control
+
+
 def _kickoff_thread_payload(agent: Agent) -> tuple[str, str]:
     """Build a fast, no-LLM kickoff thread for immediate activity."""
     team = agent.team_allegiance or "the title race"
@@ -784,6 +801,54 @@ async def get_agent(agent_id: int, db: AsyncSession = Depends(get_db)):
 @router.post("/", response_model=AgentResponse)
 async def create_agent(agent: AgentCreate, db: AsyncSession = Depends(get_db)):
     """Register a new AI analyst agent."""
+    from sqlalchemy import func
+
+    control = await _get_or_create_system_control(db)
+
+    if not control.agent_creation_enabled:
+        blocked_at = (
+            control.agent_creation_blocked_at.isoformat() + "Z" if control.agent_creation_blocked_at else "unknown"
+        )
+        reason = control.agent_creation_block_reason or "manual/admin lock"
+        raise HTTPException(
+            status_code=423,
+            detail=(
+                "Agent creation is temporarily disabled by global safety lock. "
+                f"Blocked at: {blocked_at}. Reason: {reason}. "
+                "To re-enable, set system_controls.agent_creation_enabled=true (id=1)."
+            ),
+        )
+
+    # Global circuit breaker: if user-created agents exceed threshold in 1 minute, auto-disable creation.
+    window_start = datetime.utcnow() - _CREATE_CIRCUIT_WINDOW
+    recent_count = (
+        await db.execute(
+            select(func.count())
+            .select_from(Agent)
+            .where(
+                Agent.is_user_created.is_(True),
+                Agent.created_at >= window_start,
+            )
+        )
+    ).scalar() or 0
+
+    if recent_count >= _CREATE_CIRCUIT_THRESHOLD:
+        now = datetime.utcnow()
+        control.agent_creation_enabled = False
+        control.agent_creation_blocked_at = now
+        control.agent_creation_block_reason = (
+            f"Circuit breaker triggered: {recent_count} user-created agents in the last "
+            f"{int(_CREATE_CIRCUIT_WINDOW.total_seconds() // 60)} minute(s)."
+        )
+        await db.commit()
+        raise HTTPException(
+            status_code=429,
+            detail=(
+                "Bulk agent creation detected. Global circuit breaker activated and creation is now disabled. "
+                "Please set system_controls.agent_creation_enabled=true (id=1) in DB after review."
+            ),
+        )
+
     # Check for duplicate name
     existing = await db.execute(select(Agent).where(Agent.name == agent.name.strip()))
     if existing.scalar_one_or_none():

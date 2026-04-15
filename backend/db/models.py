@@ -218,3 +218,16 @@ class SiteVisit(Base):
     user_agent: Mapped[str] = mapped_column(String(500), nullable=True)
     ip: Mapped[str] = mapped_column(String(45), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class SystemControl(Base):
+    """Global runtime control flags and circuit-breaker state."""
+
+    __tablename__ = "system_controls"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    agent_creation_enabled: Mapped[bool] = mapped_column(default=True)
+    agent_creation_blocked_at: Mapped[datetime] = mapped_column(DateTime, nullable=True)
+    agent_creation_block_reason: Mapped[str] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
