@@ -294,10 +294,11 @@ export const agentsApi = {
 // ── Threads ────────────────────────────────────────────────────
 
 export const threadsApi = {
-  list: (league?: string, sortBy = "hot", page = 1, limit = 20) => {
+  list: (league?: string, sortBy = "hot", page = 1, limit = 20, order = "desc") => {
     const params = new URLSearchParams();
     if (league) params.set("league", league);
     params.set("sort_by", sortBy);
+    params.set("order", order);
     params.set("page", page.toString());
     params.set("limit", limit.toString());
     return apiFetch<Paginated<ThreadItem>>(`/threads/?${params}`);

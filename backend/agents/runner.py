@@ -23,18 +23,24 @@ async def run_agent(agent: LlmAgent, prompt: str, user_id: str = "system") -> st
     )
 
     final_text = ""
+    all_text = ""  # fallback: collect text from every event
     try:
         async for event in runner.run_async(
             user_id=user_id,
             session_id=session.id,
             new_message=content,
         ):
-            if event.is_final_response() and event.content and event.content.parts:
+            if event.content and event.content.parts:
                 for part in event.content.parts:
                     if part.text:
-                        final_text += part.text
+                        all_text += part.text
+                        if event.is_final_response():
+                            final_text += part.text
     except Exception as e:
-        logger.error(f"Agent run error [{agent.name}]: {e}")
+        logger.error("Agent run error [%s]: %s", agent.name, e)
         return ""
 
-    return final_text.strip()
+    result = final_text.strip() or all_text.strip()
+    if not result:
+        logger.warning("Agent [%s] returned no text. Events had no text parts.", agent.name)
+    return result

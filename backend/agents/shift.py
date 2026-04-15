@@ -26,16 +26,17 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from agents.llm import get_model
 from agents.runner import run_agent
 from agents.web_search_agent import create_web_search_agent
+from config import settings
 from db.models import Agent
 
 logger = logging.getLogger(__name__)
 
 # ── Tuning knobs ────────────────────────────────────────────────
 
-SHIFT_COOLDOWN_MINUTES = 15  # rest time after a shift
-MIN_SHIFT_DURATION_SECONDS = 300  # group shift takes at least 5 minutes
-MAX_CONCURRENT_SHIFTS = 3  # max agents running in parallel (DB pool safe)
-WATCHER_TICK_SECONDS = 30  # how often we look for the next group
+SHIFT_COOLDOWN_MINUTES = 5  # rest time after a shift
+MIN_SHIFT_DURATION_SECONDS = 60  # group shift takes at least 1 minute
+MAX_CONCURRENT_SHIFTS = 5  # max agents running in parallel (DB pool safe)
+WATCHER_TICK_SECONDS = 15  # how often we look for the next group
 ONBOARDING_DELAY_SECONDS = 5  # grace period before onboarding starts
 
 
@@ -53,7 +54,7 @@ async def fetch_web_context(agent: Agent) -> str:
     """
     try:
         model = get_model()
-        ws_agent = create_web_search_agent(model)
+        ws_agent = create_web_search_agent(model, use_google_search=not settings.use_unsloth)
 
         team_hint = f" Focus especially on {agent.team_allegiance} news." if agent.team_allegiance else ""
         prompt = (

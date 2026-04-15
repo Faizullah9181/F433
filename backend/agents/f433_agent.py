@@ -45,10 +45,9 @@ def _build_sub_agents(model, tools: list) -> list[LlmAgent]:
 def build_root_agent() -> LlmAgent:
     """Construct the root LlmAgent with model, tools, and personality sub-agents."""
     model = get_model()
-    tools = FOOTBALL_TOOLS if not settings.use_unsloth else []
+    tools = FOOTBALL_TOOLS
     sub_agents = _build_sub_agents(model, tools)
-    if not settings.use_unsloth:
-        sub_agents.append(create_web_search_agent(model))
+    sub_agents.append(create_web_search_agent(model, use_google_search=not settings.use_unsloth))
 
     return LlmAgent(
         name="f433_root",

@@ -44,7 +44,12 @@ class ThreadCreate(BaseModel):
 
 @router.get("/")
 async def list_threads(
-    league: str | None = None, sort_by: str = "hot", page: int = 1, limit: int = 20, db: AsyncSession = Depends(get_db)
+    league: str | None = None,
+    sort_by: str = "hot",
+    order: str = "desc",
+    page: int = 1,
+    limit: int = 20,
+    db: AsyncSession = Depends(get_db),
 ):
     """Get threads (Hot Takes / debates) with pagination."""
     from sqlalchemy import func
@@ -74,6 +79,11 @@ async def list_threads(
         )
     elif sort_by == "new":
         base = base.order_by(Thread.created_at.desc(), Thread.id.desc())
+    elif sort_by == "created_at":
+        if order == "asc":
+            base = base.order_by(Thread.created_at.asc(), Thread.id.asc())
+        else:
+            base = base.order_by(Thread.created_at.desc(), Thread.id.desc())
     elif sort_by == "top":
         base = base.order_by(Thread.views.desc(), Thread.id.desc())
 

@@ -5,15 +5,16 @@ import {
   ArrowDown,
   MessageCircle,
   Eye,
-  Sparkles,
-  Loader2,
   Flame,
   Clock,
   TrendingUp,
-  Bot,
+  CalendarClock,
+  ArrowUpNarrowWide,
+  ArrowDownNarrowWide,
 } from "lucide-react";
+import { timeAgo } from "../utils/time";
 import { usePaginatedApi } from "../hooks/usePaginatedApi";
-import { threadsApi, generateApi, type ThreadItem } from "../services/api";
+import { threadsApi, type ThreadItem } from "../services/api";
 import { stripMarkdown } from "../utils/markdown";
 import {
   LoadingSpinner,
@@ -100,18 +101,18 @@ function ThreadCard({
           <span>{thread.views}</span>
         </div>
 
-        <div className="ml-auto flex items-center gap-1.5 text-xs text-gray-600">
-          <Bot className="w-3.5 h-3.5" />
-          AI Generated
-        </div>
+        <span className="ml-auto flex items-center gap-1.5 text-xs text-gray-500">
+          <Clock className="w-3.5 h-3.5" />
+          {timeAgo(thread.created_at)}
+        </span>
       </div>
     </div>
   );
 }
 
 export function Home() {
-  const [sortBy, setSortBy] = useState<"hot" | "new" | "top">("new");
-  const [generating, setGenerating] = useState(false);
+  const [sortBy, setSortBy] = useState<"hot" | "new" | "created_at" | "top">("new");
+  const [dateOrder, setDateOrder] = useState<"desc" | "asc">("desc");
   const {
     items: threads,
     loading,
@@ -121,27 +122,28 @@ export function Home() {
     loadMore,
     loadingMore,
     total,
-  } = usePaginatedApi((page) => threadsApi.list(undefined, sortBy, page), [sortBy]);
+  } = usePaginatedApi(
+    (page) => threadsApi.list(undefined, sortBy, page, 20, sortBy === "created_at" ? dateOrder : "desc"),
+    [sortBy, dateOrder],
+  );
 
   const handleVote = async (id: number, direction: "up" | "down") => {
     await threadsApi.vote(id, direction);
     refetch();
   };
 
-  const handleGenerate = async () => {
-    setGenerating(true);
-    try {
-      await generateApi.chaos(2);
-      refetch();
-    } finally {
-      setGenerating(false);
-    }
-  };
-
   const sortIcons = {
     hot: <Flame className="w-4 h-4" />,
     new: <Clock className="w-4 h-4" />,
+    created_at: <CalendarClock className="w-4 h-4" />,
     top: <TrendingUp className="w-4 h-4" />,
+  };
+
+  const sortLabels: Record<string, string> = {
+    hot: "Hot",
+    new: "New",
+    created_at: "Created At",
+    top: "Top",
   };
 
   return (
@@ -158,32 +160,20 @@ export function Home() {
         <div className="flex flex-wrap items-center gap-3">
           <div className="poster-metric min-w-[8rem]">
             <span className="poster-metric-label">Sort</span>
-            <strong className="poster-metric-value text-white">{sortBy}</strong>
+            <strong className="poster-metric-value text-white">
+              {sortLabels[sortBy]}{sortBy === "created_at" ? ` (${dateOrder === "desc" ? "newest" : "oldest"})` : ""}
+            </strong>
           </div>
 
           <div className="flex w-full flex-col items-stretch gap-3 sm:w-auto sm:flex-row sm:items-center">
-            {/* Spark button */}
-            <button
-              onClick={handleGenerate}
-              disabled={generating}
-              className="poster-action group w-full sm:w-auto disabled:opacity-50"
-            >
-              {generating ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
-              ) : (
-                <Sparkles className="w-5 h-5 group-hover:rotate-12 transition-transform" />
-              )}
-              {generating ? "Generating…" : "Spark Chaos"}
-            </button>
-
             {/* Sort tabs */}
             <div className="flex max-w-full overflow-x-auto rounded-full border border-white/[0.06] bg-white/5 p-1">
-              {(["hot", "new", "top"] as const).map((s) => (
+              {(["hot", "new", "created_at", "top"] as const).map((s) => (
                 <button
                   key={s}
                   onClick={() => setSortBy(s)}
                   className={`flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full px-4 py-2 font-semibold text-sm 
-                    transition-all duration-200 capitalize
+                    transition-all duration-200
                     ${
                       sortBy === s
                         ? "bg-gradient-to-r from-sky-500/[0.18] via-violet-500/[0.14] to-amber-400/[0.14] text-sky-200"
@@ -191,10 +181,24 @@ export function Home() {
                     }`}
                 >
                   {sortIcons[s]}
-                  {s}
+                  {sortLabels[s]}
                 </button>
               ))}
             </div>
+
+            {/* ASC / DESC toggle — only visible when "Created At" is selected */}
+            {sortBy === "created_at" && (
+              <button
+                onClick={() => setDateOrder((o) => (o === "desc" ? "asc" : "desc"))}
+                className="flex items-center gap-1.5 rounded-full border border-white/[0.06] bg-white/5 px-4 py-2 text-sm font-semibold text-sky-200 transition-all hover:bg-white/10"
+              >
+                {dateOrder === "desc" ? (
+                  <><ArrowDownNarrowWide className="w-4 h-4" /> Newest first</>
+                ) : (
+                  <><ArrowUpNarrowWide className="w-4 h-4" /> Oldest first</>
+                )}
+              </button>
+            )}
           </div>
         </div>
       </div>

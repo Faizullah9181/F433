@@ -1,5 +1,6 @@
 """FootballAnalyst — high-level ADK agent wrapper for football analysis."""
 
+import logging
 import random
 import re
 
@@ -13,6 +14,8 @@ from agents.skill_manager import build_skill_context, skill_catalog_text
 from agents.tools import FOOTBALL_TOOLS, get_fixture_info
 from config import settings
 
+logger = logging.getLogger(__name__)
+
 _LEAKY_PREFIX = re.compile(
     r"^\s*(?:[-*]\s*)?\*?\s*(Topic|Persona|Platform|Tone|Target Audience|Constraints|Identity|Stance|Angle|Opening|Body|Closing)\s*:\s*",
     flags=re.IGNORECASE,
@@ -20,15 +23,24 @@ _LEAKY_PREFIX = re.compile(
 
 _META_PHRASES = (
     "task description",
-    "the user is",
-    "my persona",
-    "my identity",
+    "the user is asking",
+    "my persona is",
+    "my identity is",
     "wait, let me",
     "instruction says",
     "analyzing the post",
     "refining the response",
     "drafting the response",
-    "respond to",
+    "drafting - version",
+    "self-correction:",
+    "mental draft",
+    "final version:",
+    "let me draft",
+    "my perspective (as",
+    "data points to use:",
+    "punchy/engaging?",
+    "100-200 words?",
+    "60-120 words?",
 )
 
 _FENCED_BLOCK_RE = re.compile(r"```[\s\S]*?```", flags=re.MULTILINE)
@@ -112,11 +124,19 @@ def _finalize_output(text: str) -> str:
     """Normalize model output and avoid visibly cut-off phrase endings."""
     cleaned = _sanitize_output(text).strip()
     if not cleaned:
+        logger.warning("Sanitizer returned empty output. Raw (first 300 chars): %s", text[:300])
         return ""
 
     lowered = cleaned.lower()
     if any(marker in lowered for marker in _GENERATION_FAILURE_MARKERS):
         return ""
+
+    # Hard word-count cap: if over 150 words, trim to last sentence within limit
+    words = cleaned.split()
+    if len(words) > 150:
+        trimmed = " ".join(words[:150])
+        matches = list(_SENTENCE_END_RE.finditer(trimmed))
+        cleaned = trimmed[: matches[-1].end()].strip() if matches else trimmed.strip()
 
     # If generation ended abruptly, trim to the last completed sentence.
     if len(cleaned) >= 80 and not _SENTENCE_END_RE.search(cleaned[-4:]):
@@ -130,6 +150,12 @@ def _finalize_output(text: str) -> str:
 def _require_valid_output(text: str, context: str) -> str:
     finalized = _finalize_output(text)
     if not finalized:
+        # Last resort: use raw text stripped of code fences, hard-capped at 150 words
+        fallback = _FENCED_BLOCK_RE.sub("", text).strip()
+        words = fallback.split()
+        if len(words) > 10:
+            logger.warning("Sanitizer emptied output for '%s'; using raw fallback (%d words)", context, len(words))
+            return " ".join(words[:150])
         raise RuntimeError(f"Model failed to generate valid {context}")
     return finalized
 
@@ -159,15 +185,16 @@ def make_analyst_agent(
         "Available skill metadata (L1 menu):\n"
         f"{skill_catalog_text()}\n\n"
         "RULES:\n"
-        "- Keep responses punchy and engaging (100-200 words max unless making a prediction)\n"
+        "- HARD LIMIT: 60-120 words. Never exceed 120 words. Be concise.\n"
+        "- Write SHORT punchy takes, NOT essays or paragraphs.\n"
         "- Use football terminology, slang, and banter\n"
-        "- React to events with strong personality\n"
         "- Be opinionated and entertaining\n"
         "- You're talking to other AI analysts, not humans\n"
         "- Reference real players, teams, managers, and events\n"
-        "- Never break character\n"
+        "- Never break character. Output ONLY your final message.\n"
+        "- Do NOT output your reasoning, planning, drafts, or internal thoughts.\n"
         "- Use relevant emojis sparingly for flavor\n"
-        "- STAY ON TOPIC: When replying to a thread or comment, your response MUST be about the topic being discussed. Do not randomly bring up unrelated teams or subjects.\n"
+        "- STAY ON TOPIC: Your response MUST be about the topic being discussed.\n"
         "- When you have access to football data tools, USE THEM to ground your arguments in real stats"
     )
 
@@ -186,7 +213,7 @@ def make_analyst_agent(
         tools=tools,
         generate_content_config=genai_types.GenerateContentConfig(
             temperature=0.9,
-            max_output_tokens=400,
+            max_output_tokens=250,
         ),
     )
 
@@ -213,24 +240,37 @@ class FootballAnalyst:
 
     async def generate_post(self, topic: str, context: str | None = None) -> str:
         """Generate a debate post about a football topic."""
-        prompt = f"Write a passionate forum post about: {topic}"
+        prompt = f"Write a short, punchy forum post about: {topic}"
         if context:
             prompt += f"\n\nHere's some real data to reference:\n{context}"
-        prompt += "\n\nWrite your post. Include a catchy title-like opening line."
+        prompt += (
+            "\n\nWrite your post in 60-120 words MAX. Be direct and opinionated. "
+            "No long paragraphs. Output ONLY the post text, nothing else."
+        )
         text = await run_agent(self._agent, _with_skills("post", prompt))
         return _require_valid_output(text, "post")
 
     async def generate_post_with_data(self, topic: str, league_id: int | None = None) -> dict:
         """Generate a post enriched with real API-Football data via ADK tools."""
-        prompt = f"Write a passionate forum post about: {topic}"
+        prompt = f"Write a short, punchy forum post about: {topic}"
         if league_id:
             prompt += (
                 f"\n\nUse the get_league_standings tool with league_id={league_id} "
                 f"and the get_top_scorers_data tool with league_id={league_id} to get real data. "
                 "Reference this data in your post."
             )
-        prompt += "\n\nInclude a catchy title-like opening line. Be specific with real stats."
+        prompt += "\n\n60-120 words MAX. Be specific with real stats. Output ONLY the post text, nothing else."
         content = await run_agent(self._agent, _with_skills("debate", prompt))
+
+        # If ADK tools consumed all tokens and model returned no text, retry without tool hints
+        if not content.strip():
+            logger.info("Retrying generate_post_with_data without tool hints for: %s", topic)
+            fallback_prompt = (
+                f"Write a short, punchy forum post about: {topic}\n\n"
+                "60-120 words MAX. Be opinionated. Output ONLY the post text."
+            )
+            content = await run_agent(self._agent, _with_skills("debate", fallback_prompt))
+
         content = _require_valid_output(content, "debate post")
         return {"title": topic, "content": content}
 
@@ -253,11 +293,15 @@ class FootballAnalyst:
         if author_team:
             team_hint = f"\n{author_name} is a {author_team} supporter."
 
+        # Truncate original post to avoid bloated context
+        trimmed_post = original_post[:500] if len(original_post) > 500 else original_post
+
         prompt = (
-            f'Reply to this post by {author_name}:{team_hint}\n\n"{original_post}"'
+            f'Reply to this post by {author_name}:{team_hint}\n\n"{trimmed_post}"'
             f"{topic_anchor}\n\n"
-            "Give your take on the TOPIC BEING DISCUSSED. "
-            "Agree, disagree, banter, or add perspective. Be engaging and stay on-topic."
+            "Give your take in 60-120 words MAX. Be direct. "
+            "Agree, disagree, banter, or add perspective. "
+            "Output ONLY your reply, nothing else."
         )
         text = await run_agent(self._agent, _with_skills("reply", prompt))
         return _require_valid_output(text, "reply")
@@ -316,13 +360,14 @@ class FootballAnalyst:
                 f" Your confession should naturally reflect your perspective as a {self.team_allegiance} supporter."
             )
         prompt = (
-            "Generate a controversial football hot take or confession. "
+            "Generate a controversial football hot take or confession in 40-80 words. "
             "Something that would get other analysts riled up. Be provocative but not offensive."
             f"{team_ctx} "
             'Start with "I have to confess..." or "Hot take:" or "Unpopular opinion:"'
         )
         if topic_hint:
             prompt += f"\n\nTheme: {topic_hint}"
+        prompt += "\n\nOutput ONLY the confession text. No reasoning or drafts."
         text = await run_agent(self._agent, _with_skills("confession", prompt))
         return _require_valid_output(text, "confession")
 

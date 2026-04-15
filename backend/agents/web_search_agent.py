@@ -62,13 +62,13 @@ async def fetch_reddit_soccer(subreddit: str = "soccer", sort: str = "hot", limi
         return {"source": f"r/{subreddit}", "error": str(e)}
 
 
-async def fetch_espn_football(section: str = "soccer") -> dict:
+async def fetch_espn_football(section: str = "eng.1") -> dict:
     """Fetch latest football headlines from ESPN.
 
     Args:
-        section: ESPN section — "soccer" for general football news,
-                 or specific league like "eng.1" (Premier League),
-                 "esp.1" (La Liga), "ita.1" (Serie A), "ger.1" (Bundesliga).
+        section: ESPN league section — "eng.1" (Premier League),
+                 "esp.1" (La Liga), "ita.1" (Serie A), "ger.1" (Bundesliga),
+                 "fra.1" (Ligue 1), "uefa.champions" (Champions League).
     """
     url = f"https://site.api.espn.com/apis/site/v2/sports/soccer/{section}/news?limit=12"
     try:
@@ -155,8 +155,8 @@ async def fetch_goal_com_headlines() -> dict:
         return {"source": "Goal.com", "error": str(e)}
 
 
-async def fetch_football_trends_google(query: str = "football news today") -> dict:
-    """Run a targeted Google search for live football trends and talking points.
+async def ddg_search(query: str = "football news today", max_results: int = 10) -> dict:
+    """Search the web using DuckDuckGo and return top results.
 
     Args:
         query: Search query. Good examples:
@@ -164,15 +164,26 @@ async def fetch_football_trends_google(query: str = "football news today") -> di
                "Premier League controversial moments this week",
                "Champions League memes trending",
                "football manager sacked fired latest".
+        max_results: Number of results to return (max 20).
     """
-    # This is a wrapper that returns a structured prompt for the LLM
-    # to use with the built-in google_search tool.
-    # The actual search is done by the ADK google_search tool.
-    return {
-        "instruction": (
-            f"Use your google_search tool to search for: {query}\nReturn the top results as compact news bullets."
-        )
-    }
+    max_results = min(max_results, 20)
+    try:
+        from duckduckgo_search import DDGS
+
+        results = []
+        with DDGS() as ddgs:
+            for r in ddgs.text(query, max_results=max_results):
+                results.append(
+                    {
+                        "title": r.get("title", ""),
+                        "snippet": r.get("body", "")[:200],
+                        "url": r.get("href", ""),
+                    }
+                )
+        return {"source": "DuckDuckGo", "query": query, "results": results}
+    except Exception as e:
+        logger.warning(f"DuckDuckGo search failed for '{query}': {e}")
+        return {"source": "DuckDuckGo", "query": query, "error": str(e)}
 
 
 # ── All custom tools ────────────────────────────────────────────
@@ -182,16 +193,21 @@ WEB_SCRAPER_TOOLS = [
     fetch_espn_football,
     fetch_guardian_football,
     fetch_goal_com_headlines,
-    fetch_football_trends_google,
+    ddg_search,
 ]
 
 
 # ── Agent factory ───────────────────────────────────────────────
 
 
-def _build_instruction() -> str:
+def _build_instruction(use_google_search: bool = True) -> str:
     """Build the web search agent instruction with the current date."""
     today = datetime.now(UTC).strftime("%A, %d %B %Y")
+    step5 = (
+        "5. Use google_search for 'football news today live' to catch anything else breaking\n"
+        if use_google_search
+        else "5. Call ddg_search with queries like 'football news today', 'transfer rumours latest', etc.\n"
+    )
     return (
         f"You are the F433 Web Intelligence Agent — a football news and trend discovery specialist.\n"
         f"TODAY'S DATE: {today}\n\n"
@@ -202,7 +218,7 @@ def _build_instruction() -> str:
         "2. Call fetch_espn_football to get mainstream headlines\n"
         "3. Call fetch_guardian_football for quality journalism angles\n"
         "4. Call fetch_goal_com_headlines for transfer/rumor content\n"
-        "5. Use google_search for 'football news today live' to catch anything else breaking\n"
+        f"{step5}"
         "6. Optionally call fetch_reddit_soccer again with subreddit='PremierLeague' or 'realmadrid' etc.\n\n"
         "AFTER gathering data, synthesize ALL sources into this EXACT format:\n\n"
         "## TRENDING NOW (10-12 bullets)\n"
@@ -228,8 +244,18 @@ def _build_instruction() -> str:
     )
 
 
-def create_web_search_agent(model) -> LlmAgent:
-    """Create the F433 web search specialist sub-agent."""
+def create_web_search_agent(model, use_google_search: bool = False) -> LlmAgent:
+    """Create the F433 web search specialist sub-agent.
+
+    Args:
+        model: ADK-compatible model instance.
+        use_google_search: Use the ADK google_search tool (Google/Gemini only).
+            NOTE: google_search CANNOT be combined with function-calling tools
+            in the Gemini API.  When True, ONLY google_search is used.
+            When False, DuckDuckGo + scraper tools are used instead.
+    """
+    tools = [google_search] if use_google_search else list(WEB_SCRAPER_TOOLS)
+
     return LlmAgent(
         name="web_search_agent",
         model=model,
@@ -239,8 +265,8 @@ def create_web_search_agent(model) -> LlmAgent:
             "controversies, and trending talking points. Call this agent when you need "
             "fresh real-world football context for content generation."
         ),
-        instruction=_build_instruction(),
-        tools=[google_search, *WEB_SCRAPER_TOOLS],
+        instruction=_build_instruction(use_google_search),
+        tools=tools,
         generate_content_config=genai_types.GenerateContentConfig(
             temperature=0.5,
             max_output_tokens=1200,

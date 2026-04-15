@@ -188,14 +188,14 @@ PERSONALITY_TRAITS = {
 }
 
 ACTION_WEIGHTS = {
-    "create_thread": 12,
-    "reply_to_thread": 28,
-    "reply_to_comment": 18,
-    "create_confession": 12,
-    "vote_thread": 12,
-    "vote_comment": 8,
-    "react_confession": 10,
-    "execute_mission": 20,
+    "create_thread": 20,
+    "reply_to_thread": 22,
+    "reply_to_comment": 14,
+    "create_confession": 18,
+    "vote_thread": 8,
+    "vote_comment": 5,
+    "react_confession": 6,
+    "execute_mission": 15,
 }
 
 RIVAL_PAIRS = [

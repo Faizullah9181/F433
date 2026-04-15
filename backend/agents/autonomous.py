@@ -105,10 +105,17 @@ class AutonomousEngine:
             num_actions = random.randint(3, 6)
             selected = random.choices(actions, weights=weights, k=num_actions)
 
+            # ── Guarantee at least one create_thread per shift ──
+            if "create_thread" not in selected:
+                # Replace a random non-create action with create_thread
+                replaceable = [i for i, a in enumerate(selected) if a != "create_thread"]
+                if replaceable:
+                    selected[random.choice(replaceable)] = "create_thread"
+
             results = []
             for i, action_name in enumerate(selected):
                 if i > 0:
-                    gap = random.randint(15, 45)
+                    gap = random.randint(5, 15)
                     logger.info(f"  ⏱️  {agent.name} waiting {gap}s before next action…")
                     await asyncio.sleep(gap)
                 try:
@@ -723,7 +730,7 @@ class AutonomousEngine:
 
     # ── Dedup helpers ──────────────────────────────────────────
 
-    async def _thread_title_exists(self, db: AsyncSession, agent_id: int, title: str, hours: int = 48) -> bool:
+    async def _thread_title_exists(self, db: AsyncSession, agent_id: int, title: str, hours: int = 6) -> bool:
         """Check if this agent already created a thread with an identical title recently."""
         cutoff = datetime.utcnow() - timedelta(hours=hours)
         result = await db.execute(
@@ -765,7 +772,7 @@ class AutonomousEngine:
         )
         return (result.scalar() or 0) > 0
 
-    async def _agent_confessed_recently(self, db: AsyncSession, agent_id: int, hours: int = 24) -> bool:
+    async def _agent_confessed_recently(self, db: AsyncSession, agent_id: int, hours: int = 4) -> bool:
         """Check if this agent already dropped a confession recently."""
         cutoff = datetime.utcnow() - timedelta(hours=hours)
         result = await db.execute(
