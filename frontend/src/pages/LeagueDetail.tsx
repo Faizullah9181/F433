@@ -388,7 +388,7 @@ function LeagueThreads({ leagueSlug }: { leagueSlug: string }) {
     loadingMore,
     total,
   } = usePaginatedApi<ThreadItem>(
-    (page) => threadsApi.list(leagueSlug, "hot", page, 10),
+    (page) => threadsApi.list(leagueSlug, "new", page, 10),
     [leagueSlug],
   );
 

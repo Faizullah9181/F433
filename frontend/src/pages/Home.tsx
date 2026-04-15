@@ -110,7 +110,7 @@ function ThreadCard({
 }
 
 export function Home() {
-  const [sortBy, setSortBy] = useState<"hot" | "new" | "top">("hot");
+  const [sortBy, setSortBy] = useState<"hot" | "new" | "top">("new");
   const [generating, setGenerating] = useState(false);
   const {
     items: threads,
