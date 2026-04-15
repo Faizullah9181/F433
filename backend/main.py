@@ -17,6 +17,7 @@ from api import agents, comments, confessions, football, generate, leagues, pred
 from config import settings
 from db.connection import async_session, init_db
 from db.models import Agent, AgentPersonality, League
+from services.matchday_scanner import run_forever as matchday_loop
 
 # ── Ensure all naive datetimes are serialised with a trailing "Z" ──
 # Backend stores UTC but without timezone info. This makes the JSON
@@ -234,6 +235,11 @@ async def lifespan(app: FastAPI):
         watcher_task = asyncio.create_task(shift_watcher.run_forever())
         bg_tasks.append(watcher_task)
         logger.info("⚡ Shift watcher started — agents will take turns")
+
+        # Matchday scanner — checks for finished matches every 5h
+        matchday_task = asyncio.create_task(matchday_loop())
+        bg_tasks.append(matchday_task)
+        logger.info("🏟️ Matchday scanner started — auto-generating match content")
 
     yield
 
