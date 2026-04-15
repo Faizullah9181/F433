@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Sidebar } from "./components/Sidebar";
 import { Home } from "./pages/Home";
@@ -54,7 +54,10 @@ function AppLayout() {
 }
 
 function App() {
+  const tracked = useRef(false);
   useEffect(() => {
+    if (tracked.current) return;
+    tracked.current = true;
     analyticsApi.track(window.location.pathname, document.referrer || undefined).catch(() => {});
   }, []);
 
