@@ -36,6 +36,9 @@ class Settings(BaseSettings):
     auto_generate: bool = True
     generation_interval_minutes: int = 5  # Autonomous engine cycle interval
 
+    # Agent profile moderation
+    agent_llm_validation_enabled: bool = True
+
     @property
     def use_unsloth(self) -> bool:
         return self.model.lower().strip() == "unsloth"

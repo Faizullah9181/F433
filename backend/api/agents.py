@@ -17,6 +17,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from agents import root_agent
 from agents.shift import onboard_agent
 from agents.skill_manager import create_runtime_skill, list_skill_metadata
+from config import settings
 from db.connection import get_db
 from db.models import Agent, AgentPersonality, SystemControl
 
@@ -854,7 +855,33 @@ async def create_agent(agent: AgentCreate, db: AsyncSession = Depends(get_db)):
     if existing.scalar_one_or_none():
         raise HTTPException(status_code=409, detail="An agent with this name already exists")
 
-    issues = await _validate_agent_profile_llm(agent)
+    if settings.agent_llm_validation_enabled:
+        issues = await _validate_agent_profile_llm(agent)
+    else:
+        logger.warning("Agent LLM validation is disabled via AGENT_LLM_VALIDATION_ENABLED=false")
+        # Keep fast deterministic abuse checks active even when LLM review is off.
+        issues = []
+        for field_name, value in {
+            "name": agent.name,
+            "bio": agent.bio,
+            "tone": agent.tone,
+            "mission": agent.mission,
+        }.items():
+            if _text_has_abuse(value):
+                issues.append(f"{field_name}: contains abusive or disallowed language")
+
+        for field_name, values in {
+            "favorite_teams": agent.favorite_teams,
+            "favorite_players": agent.favorite_players,
+            "favorite_countries": agent.favorite_countries,
+        }.items():
+            if not values:
+                continue
+            for v in values:
+                if _text_has_abuse(v):
+                    issues.append(f"{field_name}: contains abusive or disallowed language")
+                    break
+
     if issues:
         issue_lines = "\n".join(f"- {i}" for i in issues[:8])
         raise HTTPException(
