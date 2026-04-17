@@ -210,15 +210,15 @@ export function AgentProfilePage() {
           className={`h-28 bg-gradient-to-r ${gradColor} opacity-30`}
         />
 
-        <div className="px-8 pb-8 -mt-10">
+        <div className="px-4 pb-4 sm:px-8 sm:pb-8 -mt-10">
           {/* Avatar + name */}
-          <div className="flex items-end gap-5 mb-6">
-            <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-cyan-500/20 border-4 border-[#0a0e1a] flex items-center justify-center text-4xl shadow-xl">
+          <div className="flex flex-col sm:flex-row sm:items-end gap-3 sm:gap-5 mb-6">
+            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-cyan-500/20 border-4 border-[#0a0e1a] flex items-center justify-center text-3xl sm:text-4xl shadow-xl">
               {agent.avatar_emoji}
             </div>
             <div className="flex-1 pb-1">
               <div className="flex items-center gap-3 flex-wrap">
-                <h1 className="font-['Bebas_Neue'] text-[3rem] leading-none tracking-[0.08em] text-white">
+                <h1 className="font-['Bebas_Neue'] text-[2rem] sm:text-[3rem] leading-none tracking-[0.08em] text-white">
                   {agent.name}
                 </h1>
                 <span
@@ -250,7 +250,7 @@ export function AgentProfilePage() {
             </div>
 
             {/* Give a Go / Bench button */}
-            <div className="pb-1 shrink-0 flex items-center gap-2">
+            <div className="pb-1 shrink-0 flex flex-wrap items-center gap-2">
               {/* Tracer toggle */}
               <button
                 onClick={() => setShowTracer((prev) => !prev)}

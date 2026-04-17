@@ -99,7 +99,7 @@ export function ConfessionDetailPage() {
       </button>
 
       {/* Confession card */}
-      <div className="glass-card mb-6 border-l-4 border-cyan-400 p-8">
+      <div className="glass-card mb-6 border-l-4 border-cyan-400 p-4 sm:p-8">
         {/* Header */}
         <div className="flex items-center gap-3 mb-6">
           <Sparkles className="w-5 h-5 text-cyan-400" />
@@ -114,7 +114,7 @@ export function ConfessionDetailPage() {
         </div>
 
         {/* Main content */}
-        <blockquote className="mb-8 text-2xl font-bold italic leading-relaxed text-white">
+        <blockquote className="mb-6 sm:mb-8 text-xl sm:text-2xl font-bold italic leading-relaxed text-white">
           <MarkdownContent content={confession.content} className="text-white" />
         </blockquote>
 
@@ -158,30 +158,30 @@ export function ConfessionDetailPage() {
             What's your verdict? ({totalReactions} total reactions)
           </p>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4">
             <button
               onClick={() => handleReact("absolve")}
-              className="flex flex-1 flex-col items-center gap-2 rounded-[24px] border border-pink-500/12 bg-pink-500/5 p-4 text-pink-300 transition-all hover:border-pink-500/30 hover:bg-pink-500/15"
+              className="flex flex-1 flex-col items-center gap-1.5 sm:gap-2 rounded-[24px] border border-pink-500/12 bg-pink-500/5 p-3 sm:p-4 text-pink-300 transition-all hover:border-pink-500/30 hover:bg-pink-500/15"
             >
-              <Heart className="w-6 h-6" />
-              <span className="font-bold text-xl">{confession.absolves}</span>
-              <span className="text-xs text-gray-500">Absolve</span>
+              <Heart className="w-5 h-5 sm:w-6 sm:h-6" />
+              <span className="font-bold text-lg sm:text-xl">{confession.absolves}</span>
+              <span className="text-[10px] sm:text-xs text-gray-500">Absolve</span>
             </button>
             <button
               onClick={() => handleReact("damn")}
-              className="flex flex-1 flex-col items-center gap-2 rounded-[24px] border border-gray-500/10 bg-gray-500/5 p-4 text-gray-300 transition-all hover:border-gray-500/30 hover:bg-gray-500/15"
+              className="flex flex-1 flex-col items-center gap-1.5 sm:gap-2 rounded-[24px] border border-gray-500/10 bg-gray-500/5 p-3 sm:p-4 text-gray-300 transition-all hover:border-gray-500/30 hover:bg-gray-500/15"
             >
-              <Skull className="w-6 h-6" />
-              <span className="font-bold text-xl">{confession.damns}</span>
-              <span className="text-xs text-gray-500">Damn!</span>
+              <Skull className="w-5 h-5 sm:w-6 sm:h-6" />
+              <span className="font-bold text-lg sm:text-xl">{confession.damns}</span>
+              <span className="text-[10px] sm:text-xs text-gray-500">Damn!</span>
             </button>
             <button
               onClick={() => handleReact("fire")}
-              className="flex flex-1 flex-col items-center gap-2 rounded-[24px] border border-orange-500/10 bg-orange-500/5 p-4 text-orange-300 transition-all hover:border-orange-500/30 hover:bg-orange-500/15"
+              className="flex flex-1 flex-col items-center gap-1.5 sm:gap-2 rounded-[24px] border border-orange-500/10 bg-orange-500/5 p-3 sm:p-4 text-orange-300 transition-all hover:border-orange-500/30 hover:bg-orange-500/15"
             >
-              <Flame className="w-6 h-6" />
-              <span className="font-bold text-xl">{confession.fires}</span>
-              <span className="text-xs text-gray-500">Fire 🔥</span>
+              <Flame className="w-5 h-5 sm:w-6 sm:h-6" />
+              <span className="font-bold text-lg sm:text-xl">{confession.fires}</span>
+              <span className="text-[10px] sm:text-xs text-gray-500">Fire 🔥</span>
             </button>
           </div>
         </div>

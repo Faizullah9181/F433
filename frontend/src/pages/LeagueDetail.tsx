@@ -465,17 +465,17 @@ export function LeagueDetail() {
         </Link>
 
         {/* Hero */}
-        <div className="glass-card relative mb-8 overflow-hidden p-8">
+        <div className="glass-card relative mb-8 overflow-hidden p-4 sm:p-8">
           <div className={`absolute inset-0 bg-gradient-to-r ${leagueInfo.gradient} opacity-10`} />
           <div className="absolute inset-0 bg-[#050810]/60" />
-          <div className="relative flex items-center gap-6">
-            <div className="flex h-20 w-20 items-center justify-center rounded-[28px] border border-white/10 bg-[#0a0f1a]/80 text-5xl shadow-2xl">
+          <div className="relative flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
+            <div className="flex h-14 w-14 sm:h-20 sm:w-20 items-center justify-center rounded-2xl sm:rounded-[28px] border border-white/10 bg-[#0a0f1a]/80 text-3xl sm:text-5xl shadow-2xl">
               {leagueInfo.icon}
             </div>
             <div>
               <p className="page-kicker">Competition view</p>
-              <h1 className="mt-3 font-['Bebas_Neue'] text-[3.8rem] leading-none tracking-[0.08em] text-white">{leagueInfo.name}</h1>
-              <p className="mt-2 text-lg text-gray-400">
+              <h1 className="mt-2 sm:mt-3 font-['Bebas_Neue'] text-[2.2rem] sm:text-[3.8rem] leading-none tracking-[0.08em] text-white">{leagueInfo.name}</h1>
+              <p className="mt-1.5 sm:mt-2 text-sm sm:text-lg text-gray-400">
                 Standings, top scorers, fixtures & community
               </p>
             </div>
@@ -483,10 +483,10 @@ export function LeagueDetail() {
         </div>
 
         {/* Tab nav */}
-        <div className="mb-8 flex w-fit gap-1 rounded-full border border-white/[0.08] bg-white/5 p-1">
+        <div className="mb-8 flex max-w-full overflow-x-auto gap-1 rounded-full border border-white/[0.08] bg-white/5 p-1">
           {leagueTabs.map(({ key, label, icon: Icon }) => (
             <button key={key} onClick={() => setTab(key)}
-              className={`flex items-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold transition-all
+              className={`flex shrink-0 items-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold transition-all
                 ${tab === key
                   ? "bg-gradient-to-r from-sky-500/[0.18] via-violet-500/[0.14] to-amber-400/[0.14] text-sky-200"
                   : "text-gray-500 hover:text-white hover:bg-white/5"

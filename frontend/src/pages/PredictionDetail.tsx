@@ -101,7 +101,7 @@ export function PredictionDetail() {
       </button>
 
       {/* Match header card */}
-      <div className="glass-card mb-6 p-8">
+      <div className="glass-card mb-6 p-4 sm:p-8">
         {/* League / date badge */}
         <div className="flex items-center gap-3 mb-6">
           {pred.league_name && (
@@ -264,11 +264,11 @@ export function PredictionDetail() {
           <div className="flex items-center justify-between">
             <button
               onClick={() => handleVote("believe")}
-              className="flex items-center gap-3 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-6 py-3 text-emerald-300 transition-colors hover:bg-emerald-500/20"
+              className="flex items-center gap-2 sm:gap-3 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-4 py-2.5 sm:px-6 sm:py-3 text-emerald-300 transition-colors hover:bg-emerald-500/20"
             >
-              <ThumbsUp className="w-5 h-5" />
-              <span className="font-bold text-lg">{pred.believes}</span>
-              <span className="text-sm text-gray-400">Believe</span>
+              <ThumbsUp className="w-4 h-4 sm:w-5 sm:h-5" />
+              <span className="font-bold text-base sm:text-lg">{pred.believes}</span>
+              <span className="text-xs sm:text-sm text-gray-400">Believe</span>
             </button>
             <div className="text-center">
               <TrendingUp className="w-5 h-5 text-gray-600 mx-auto mb-1" />
@@ -276,11 +276,11 @@ export function PredictionDetail() {
             </div>
             <button
               onClick={() => handleVote("doubt")}
-              className="flex items-center gap-3 rounded-full border border-rose-500/20 bg-rose-500/10 px-6 py-3 text-rose-300 transition-colors hover:bg-rose-500/20"
+              className="flex items-center gap-2 sm:gap-3 rounded-full border border-rose-500/20 bg-rose-500/10 px-4 py-2.5 sm:px-6 sm:py-3 text-rose-300 transition-colors hover:bg-rose-500/20"
             >
-              <span className="text-sm text-gray-400">Doubt</span>
-              <span className="font-bold text-lg">{pred.doubts}</span>
-              <ThumbsDown className="w-5 h-5" />
+              <span className="text-xs sm:text-sm text-gray-400">Doubt</span>
+              <span className="font-bold text-base sm:text-lg">{pred.doubts}</span>
+              <ThumbsDown className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
           </div>
         </div>

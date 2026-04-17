@@ -56,7 +56,7 @@ function MatchHeader({ fixture }: { fixture: FixtureItem }) {
   const isLive = ["1H", "2H", "ET", "P", "BT", "LIVE"].includes(st.short);
 
   return (
-    <div className="glass-card p-6 md:p-8 relative overflow-hidden">
+    <div className="glass-card p-4 sm:p-6 md:p-8 relative overflow-hidden">
       {/* Gradient bg */}
       <div className="absolute inset-0 bg-gradient-to-r from-sky-600/8 via-transparent to-violet-600/8" />
       <div className="relative">
@@ -75,25 +75,25 @@ function MatchHeader({ fixture }: { fixture: FixtureItem }) {
         </div>
 
         {/* Teams & Score */}
-        <div className="flex items-center justify-center gap-4 md:gap-8">
+        <div className="flex items-center justify-center gap-3 sm:gap-4 md:gap-8">
           {/* Home */}
-          <div className="flex-1 text-center">
+          <div className="flex-1 text-center min-w-0">
             {home.logo && (
-              <img src={home.logo} alt="" className="w-16 h-16 md:w-20 md:h-20 object-contain mx-auto mb-3" />
+              <img src={home.logo} alt="" className="w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 object-contain mx-auto mb-2 sm:mb-3" />
             )}
-            <h2 className={`text-lg md:text-xl font-bold ${home.winner === true ? "text-white" : home.winner === false ? "text-gray-500" : "text-gray-200"}`}>
+            <h2 className={`text-sm sm:text-lg md:text-xl font-bold truncate ${home.winner === true ? "text-white" : home.winner === false ? "text-gray-500" : "text-gray-200"}`}>
               {home.name}
             </h2>
           </div>
 
           {/* Score */}
           <div className="text-center shrink-0">
-            <div className="px-8 py-5 bg-[#0a0f1a] rounded-2xl border border-white/5 mb-3">
-              <span className={`text-4xl md:text-5xl font-black tracking-wider ${isLive ? "text-sky-300" : "text-white"}`}>
+            <div className="px-5 py-3 sm:px-8 sm:py-5 bg-[#0a0f1a] rounded-2xl border border-white/5 mb-3">
+              <span className={`text-3xl sm:text-4xl md:text-5xl font-black tracking-wider ${isLive ? "text-sky-300" : "text-white"}`}>
                 {fixture.goals.home ?? "-"}
               </span>
-              <span className="text-gray-600 mx-3 text-2xl font-bold">:</span>
-              <span className={`text-4xl md:text-5xl font-black tracking-wider ${isLive ? "text-sky-300" : "text-white"}`}>
+              <span className="text-gray-600 mx-2 sm:mx-3 text-xl sm:text-2xl font-bold">:</span>
+              <span className={`text-3xl sm:text-4xl md:text-5xl font-black tracking-wider ${isLive ? "text-sky-300" : "text-white"}`}>
                 {fixture.goals.away ?? "-"}
               </span>
             </div>
@@ -106,11 +106,11 @@ function MatchHeader({ fixture }: { fixture: FixtureItem }) {
           </div>
 
           {/* Away */}
-          <div className="flex-1 text-center">
+          <div className="flex-1 text-center min-w-0">
             {away.logo && (
-              <img src={away.logo} alt="" className="w-16 h-16 md:w-20 md:h-20 object-contain mx-auto mb-3" />
+              <img src={away.logo} alt="" className="w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 object-contain mx-auto mb-2 sm:mb-3" />
             )}
-            <h2 className={`text-lg md:text-xl font-bold ${away.winner === true ? "text-white" : away.winner === false ? "text-gray-500" : "text-gray-200"}`}>
+            <h2 className={`text-sm sm:text-lg md:text-xl font-bold truncate ${away.winner === true ? "text-white" : away.winner === false ? "text-gray-500" : "text-gray-200"}`}>
               {away.name}
             </h2>
           </div>
@@ -132,7 +132,7 @@ function MatchHeader({ fixture }: { fixture: FixtureItem }) {
         )}
 
         {/* Meta */}
-        <div className="flex items-center justify-center gap-6 mt-5 text-xs text-gray-500">
+        <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-6 mt-5 text-xs text-gray-500">
           <div className="flex items-center gap-1.5">
             <Clock className="w-3.5 h-3.5" />
             {formatDateTime(fixture.fixture.date)}
@@ -526,10 +526,10 @@ export function MatchDetail() {
         <MatchHeader fixture={fixture} />
 
         {/* Tab nav */}
-        <div className="mt-6 mb-6 flex w-fit gap-1 rounded-full border border-white/8 bg-white/5 p-1">
+        <div className="mt-6 mb-6 flex max-w-full overflow-x-auto gap-1 rounded-full border border-white/8 bg-white/5 p-1">
           {detailTabs.map(({ key, label, icon: Icon }) => (
             <button key={key} onClick={() => setTab(key)}
-              className={`flex items-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold transition-all
+              className={`flex shrink-0 items-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold transition-all
                 ${tab === key
                   ? "bg-gradient-to-r from-sky-500/[0.18] via-violet-500/[0.14] to-amber-400/[0.14] text-sky-200"
                   : "text-gray-500 hover:text-white hover:bg-white/5"

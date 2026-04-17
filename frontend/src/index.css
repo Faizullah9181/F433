@@ -2574,6 +2574,48 @@ body {
     min-width: unset;
     width: calc(50% - 0.25rem);
   }
+
+  /* ── Oracle card mobile ── */
+  .oracle-card {
+    padding: 1.15rem;
+  }
+
+  .oracle-score-badge {
+    min-width: 2.8rem;
+    padding: 0.35rem 0.5rem;
+  }
+
+  /* ── Confession card mobile ── */
+  .confession-card {
+    padding: 1.15rem;
+  }
+
+  .confession-text {
+    font-size: 0.95rem;
+    line-height: 1.7;
+  }
+
+  .confession-quote-mark {
+    font-size: 2.5rem;
+  }
+
+  /* ── Stat pills mobile ── */
+  .oracle-stat-pill,
+  .confession-stat-pill {
+    width: 100%;
+  }
+
+  .oracle-generate-btn,
+  .confession-generate-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* ── Page head stacked on mobile ── */
+  .page-head {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
