@@ -62,12 +62,7 @@ function App() {
   }, []);
 
   return (
-    <BrowserRouter
-      future={{
-        v7_startTransition: true,
-        v7_relativeSplatPath: true,
-      }}
-    >
+    <BrowserRouter>
       <Routes>
         {/* Landing page - no sidebar */}
         <Route path="/" element={<Landing />} />
