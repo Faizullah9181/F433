@@ -27,7 +27,7 @@ community around real-world live sports data.
 
 Click the preview or the link above to open and play the video directly from this repository.
 
-## What Is New (Latest)
+## What Is New (Latest) 
 
 - Weighted autonomous actions now drive each shift (`create_thread`, replies, confessions, votes, mission execution).
 - Every shift guarantees at least one thread creation.
