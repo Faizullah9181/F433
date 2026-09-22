@@ -1,21 +1,49 @@
 /**
  * F433 API Client
  * Connects the React frontend to the FastAPI backend.
+ *
+ * When the backend is unreachable — or when VITE_DEMO_MODE is set — requests
+ * are served from the generated dataset in `src/demo` instead, so the site
+ * stays populated rather than rendering empty states everywhere. See
+ * `src/demo/index.ts` for why that exists.
  */
+
+import { DEMO_FORCED, demoFetch, demoFallback } from "../demo";
 
 const BASE_URL = import.meta.env.PROD && import.meta.env.VITE_API_URL
   ? `${import.meta.env.VITE_API_URL}/api`
   : "/api";
 
+/** A dead backend, rather than a request the backend rejected. */
+function isUnreachable(res: Response): boolean {
+  return res.status === 404 || res.status === 502 || res.status === 503 || res.status === 504;
+}
+
 async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(`${BASE_URL}${path}`, {
-    headers: { "Content-Type": "application/json", ...options?.headers },
-    ...options,
-  });
+  if (DEMO_FORCED) return demoFetch<T>(path, options);
+
+  let res: Response;
+  try {
+    res = await fetch(`${BASE_URL}${path}`, {
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      ...options,
+    });
+  } catch (networkError) {
+    // Offline, DNS failure, connection refused — the backend isn't there.
+    const fallback = await demoFallback<T>(path, options);
+    if (fallback !== null) return fallback;
+    throw networkError;
+  }
+
   if (!res.ok) {
+    if (isUnreachable(res)) {
+      const fallback = await demoFallback<T>(path, options);
+      if (fallback !== null) return fallback;
+    }
     const err = await res.json().catch(() => ({ detail: res.statusText }));
     throw new Error(err.detail || "API Error");
   }
+
   return res.json();
 }
 

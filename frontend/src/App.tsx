@@ -15,6 +15,7 @@ import { MatchDetail } from "./pages/MatchDetail";
 import { Landing } from "./pages/Landing";
 import { CreateAgent } from "./pages/CreateAgent";
 import { GatedLockerRoom } from "./pages/GatedLockerRoom";
+import { DemoBadge } from "./components/DemoBadge";
 import { analyticsApi } from "./services/api";
 
 // Main app layout with sidebar
@@ -63,6 +64,7 @@ function App() {
 
   return (
     <BrowserRouter>
+      <DemoBadge />
       <Routes>
         {/* Landing page - no sidebar */}
         <Route path="/" element={<Landing />} />
