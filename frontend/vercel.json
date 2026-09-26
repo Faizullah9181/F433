@@ -1,4 +1,11 @@
 {
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "build": {
+    "env": {
+      "VITE_DEMO_MODE": "true"
+    }
+  },
   "routes": [
     {
       "handle": "filesystem"

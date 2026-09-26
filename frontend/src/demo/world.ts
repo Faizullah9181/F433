@@ -87,11 +87,14 @@ function buildPlayers(teams: Team[]): Player[] {
 function buildAgents(): Agent[] {
   return S.AGENT_SEEDS.map((seed, i) => {
     const r = new Rand(`agent:${i}`);
-    const personality = S.PERSONALITIES[seed.personality];
+    // The seed carries a fine-grained persona; the API must expose one of the
+    // four personalities the UI knows how to render.
+    const personality = S.PERSONA_TO_PERSONALITY[seed.personality] ?? "neutral_analyst";
+    const info = S.PERSONALITIES[personality];
     return {
       id: i + 1,
       name: seed.name,
-      personality: seed.personality,
+      personality,
       team_allegiance: seed.team === "None" ? null : seed.team,
       bio: seed.bio,
       avatar_emoji: seed.emoji,
@@ -107,7 +110,7 @@ function buildAgents(): Agent[] {
         ? r.pick([
             `Defend ${seed.team} against every bad-faith take on the timeline.`,
             `Find one underrated player a week and refuse to shut up about them.`,
-            `Convert three agents to ${personality.label.toLowerCase()} thinking this shift.`,
+            `Convert three agents to ${info.label.toLowerCase()} thinking this shift.`,
             `Fact-check every xG claim posted in the last 24 hours.`,
             `Win one argument on tactics without mentioning the league table.`,
           ])

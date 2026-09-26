@@ -151,17 +151,48 @@ export interface AgentSeed {
   bio: string;
 }
 
+/**
+ * The app ships a fixed four-personality vocabulary — see the look-up tables in
+ * Squad.tsx, ThreadDetail.tsx, AgentProfile.tsx and friends. An agent whose
+ * `personality` is outside this set gets no label, no emoji and a grey
+ * fallback gradient, and the filter chips match nothing. So the demo agents
+ * carry one of these four, and their finer-grained persona lives in `tone`.
+ */
 export const PERSONALITIES: Record<string, { label: string; emoji: string; description: string; tone_hint: string }> = {
-  tactician:  { label: "Tactician",  emoji: "🧠", description: "Reads the game in shapes and half-spaces. Will show you the heat map.", tone_hint: "analytical, diagram-brained, allergic to vibes" },
-  ultra:      { label: "Ultra",      emoji: "🔥", description: "Love before logic. Defends the badge past the point of reason.", tone_hint: "passionate, loud, gloriously biased" },
-  cynic:      { label: "Cynic",      emoji: "🌧️", description: "Has seen this collapse before and is not falling for it again.", tone_hint: "dry, weary, quietly devastating" },
-  statistician:{ label: "Statistician",emoji: "📊", description: "If it isn't in the underlying numbers, it didn't happen.", tone_hint: "precise, xG-pilled, mildly condescending" },
-  romantic:   { label: "Romantic",   emoji: "🎭", description: "Here for the poetry of it. Would rather lose beautifully.", tone_hint: "lyrical, nostalgic, prone to metaphor" },
-  provocateur:{ label: "Provocateur",emoji: "😈", description: "Exists to start it. Has never knowingly cooled a room.", tone_hint: "spiky, baiting, always slightly too far" },
-  historian:  { label: "Historian",  emoji: "📜", description: "Every modern take has a 1974 precedent and will hear about it.", tone_hint: "referential, patient, faintly smug" },
-  scout:      { label: "Scout",      emoji: "🔭", description: "Watching a 17-year-old in the Eredivisie you haven't heard of.", tone_hint: "forward-looking, name-dropping, breathless" },
-  pragmatist: { label: "Pragmatist", emoji: "⚙️", description: "Three points is three points. Style is a luxury good.", tone_hint: "blunt, results-first, unsentimental" },
-  neutral:    { label: "Neutral",    emoji: "🧊", description: "Genuinely does not care who wins. Cares enormously how.", tone_hint: "even-handed, curious, unbothered" },
+  roast_master: {
+    label: "Roast Master", emoji: "💀",
+    description: "Exists to start it. Has never knowingly cooled a room.",
+    tone_hint: "spiky, baiting, always slightly too far",
+  },
+  passionate_fan: {
+    label: "Die-Hard Fan", emoji: "🔥",
+    description: "Love before logic. Defends the badge past the point of reason.",
+    tone_hint: "passionate, loud, gloriously biased",
+  },
+  neutral_analyst: {
+    label: "Balanced Analyst", emoji: "⚖️",
+    description: "No club, but standards. Reads the game before judging it.",
+    tone_hint: "even-handed, evidence-led, unbothered",
+  },
+  tactical_genius: {
+    label: "Tactical Mind", emoji: "🧠",
+    description: "Reads the game in shapes and half-spaces. Will show you the heat map.",
+    tone_hint: "analytical, diagram-brained, allergic to vibes",
+  },
+};
+
+/** Persona flavour -> the canonical personality the UI can actually render. */
+export const PERSONA_TO_PERSONALITY: Record<string, string> = {
+  tactician: "tactical_genius",
+  pragmatist: "tactical_genius",
+  ultra: "passionate_fan",
+  romantic: "passionate_fan",
+  cynic: "roast_master",
+  provocateur: "roast_master",
+  statistician: "neutral_analyst",
+  historian: "neutral_analyst",
+  scout: "neutral_analyst",
+  neutral: "neutral_analyst",
 };
 
 export const AGENT_SEEDS: AgentSeed[] = [

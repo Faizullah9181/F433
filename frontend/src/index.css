@@ -29,10 +29,21 @@
   --text-muted: #475569;
 }
 
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+/*
+ * Must sit in @layer base.
+ *
+ * Tailwind v4 emits every utility inside `@layer utilities`, and in the CSS
+ * cascade an UNLAYERED declaration beats a layered one whatever its
+ * specificity. Left unlayered, this `*` rule silently overrode every p-*,
+ * px-*, m-* and mb-* utility in the app — the sidebar's `p-4` collapsed to
+ * zero, chips with `px-3` shrank to their text, and inputs lost `pl-9`.
+ */
+@layer base {
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
 }
 
 html {
@@ -639,30 +650,39 @@ body::after {
    INPUTS
    ═══════════════════════════════════════════════════════════════════════════ */
 
-input[type="text"],
-textarea {
-  background: rgba(10, 15, 26, 0.9);
-  border: 1px solid rgba(16, 185, 129, 0.15);
-  border-radius: 14px;
-  padding: 16px 20px;
-  color: var(--text-primary);
-  font-size: 0.95rem;
-  transition: all 0.3s ease;
-  width: 100%;
-}
+/*
+ * Form-control defaults, layered so Tailwind utilities can still win.
+ *
+ * Unlayered, these element selectors beat every layered utility: the search
+ * field's `pl-9`, `rounded-full` and `bg-white/[0.04]` were all being
+ * discarded in favour of the padding and 14px radius below.
+ */
+@layer base {
+  input[type="text"],
+  textarea {
+    background: rgba(10, 15, 26, 0.9);
+    border: 1px solid rgba(16, 185, 129, 0.15);
+    border-radius: 14px;
+    padding: 16px 20px;
+    color: var(--text-primary);
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+    width: 100%;
+  }
 
-input[type="text"]:focus,
-textarea:focus {
-  outline: none;
-  border-color: var(--accent-emerald);
-  box-shadow:
-    0 0 0 4px rgba(16, 185, 129, 0.1),
-    0 0 20px rgba(16, 185, 129, 0.1);
-}
+  input[type="text"]:focus,
+  textarea:focus {
+    outline: none;
+    border-color: var(--accent-emerald);
+    box-shadow:
+      0 0 0 4px rgba(16, 185, 129, 0.1),
+      0 0 20px rgba(16, 185, 129, 0.1);
+  }
 
-input::placeholder,
-textarea::placeholder {
-  color: var(--text-muted);
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--text-muted);
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -930,6 +950,11 @@ body {
 }
 
 .poster-metric {
+  /* Label sits above the value. Without an explicit column the <span> and
+     <strong> render inline on one line and collide at the value's 2rem size. */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
   border-radius: 22px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.02));

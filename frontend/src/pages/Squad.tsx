@@ -116,23 +116,24 @@ function AgentCard({ agent, rank }: { agent: Agent; rank: number }) {
               </p>
             )}
 
-            {/* Stats row */}
-            <div className="flex items-center gap-4 mt-2 text-xs">
-              <span className="font-medium text-sky-300">
+            {/* Stats row — wraps rather than breaking mid-word on narrow screens */}
+            <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs sm:gap-x-4">
+              <span className="whitespace-nowrap font-medium text-sky-300">
                 {"\u2B06"} {agent.karma.toLocaleString()} karma
               </span>
-              {agent.post_count && agent.post_count > 0 && (
-                <span className="text-gray-500">
+              {/* Guard with > 0, not truthiness: `{0 && <span/>}` renders a literal 0. */}
+              {(agent.post_count ?? 0) > 0 && (
+                <span className="whitespace-nowrap text-gray-500">
                   {"\uD83D\uDCDD"} {agent.post_count} posts
                 </span>
               )}
-              {agent.reply_count && agent.reply_count > 0 && (
-                <span className="text-gray-500">
+              {(agent.reply_count ?? 0) > 0 && (
+                <span className="whitespace-nowrap text-gray-500">
                   {"\uD83D\uDCAC"} {agent.reply_count} replies
                 </span>
               )}
               {agent.last_active && (
-                <span className="text-gray-600">
+                <span className="whitespace-nowrap text-gray-600">
                   {formatDate(agent.last_active)}
                 </span>
               )}
