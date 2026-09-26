@@ -77,6 +77,10 @@ jobs:
         working-directory: frontend
     env:
       VITE_API_URL: http://localhost:8000
+      # The backend and the upstream football API are switched off for cost
+      # reasons. Serve the generated dataset in src/demo instead of shipping a
+      # build that renders empty states on every page.
+      VITE_DEMO_MODE: "true"
     steps:
       - uses: actions/checkout@v4
 

@@ -6,7 +6,7 @@
  * makes a frozen dataset still read as a living timeline.
  */
 
-import { Rand, generate } from "./rng";
+import { Rand, generate, hash } from "./rng";
 import { teamCrest, leagueCrest, playerPhoto } from "./crest";
 import * as S from "./seeds";
 import type {
@@ -120,25 +120,89 @@ function buildAgents(): Agent[] {
   });
 }
 
-/* ── Text assembly ──────────────────────────────────────────── */
+/* ── Subjects ───────────────────────────────────────────────────
+ *
+ * A subject is one coherent football argument: a competition, a club in it, a
+ * rival from the same competition, two players from that club's squad, and its
+ * manager. Title, body and every reply on a thread are filled from the SAME
+ * subject — otherwise you get a Serie A thread about a Dutch club managed by
+ * someone at a third club, which is what gives generated content away.
+ */
 
-function fill(template: string, r: Rand, teams: Team[]): string {
-  const league = r.pick(S.LEAGUES);
-  // Callers may pass a narrowed pool; fall back to league names so a slot is
-  // never left unreplaced and pick() is never handed an empty list.
-  const names = teams.length ? teams.map(t => t.name) : S.LEAGUES.flatMap(l => l.teams);
-  const n1 = r.pick(names);
-  let n2 = r.pick(names);
-  if (n2 === n1) n2 = r.pick(names);
+export interface Subject {
+  league: S.LeagueSeed;
+  team: Team;
+  rival: Team;
+  player: Player;
+  player2: Player;
+  manager: string;
+  amount: number;
+  points: number;
+  position: string;
+}
+
+const POSITION_WORDS: Record<string, string> = {
+  G: "goalkeeper", D: "defender", M: "midfielder", F: "forward",
+};
+
+/**
+ * Stable club -> manager assignment, so a club never changes manager mid-feed.
+ *
+ * The curated list is far shorter than the club list, so the well-known names
+ * go to the biggest clubs and everyone else gets a generated one. Drawing
+ * purely from the curated list put the same manager at two clubs on one page.
+ */
+function managerFor(team: Team): string {
+  const h = hash(`mgr:${team.id}`);
+  if (h % 100 < 12) return S.MANAGERS[h % S.MANAGERS.length];
+  const first = S.FIRST_NAMES[h % S.FIRST_NAMES.length];
+  const last = S.LAST_NAMES[(h >>> 7) % S.LAST_NAMES.length];
+  return `${first} ${last}`;
+}
+
+/** Club competitions only — national-team squads can't carry club templates. */
+const CLUB_LEAGUES = S.LEAGUES.filter(l => l.country !== "World");
+
+function subjectFor(r: Rand, teams: Team[], players: Player[], league?: S.LeagueSeed): Subject {
+  const lg = league ?? r.pick(CLUB_LEAGUES);
+  const pool = teams.filter(t => lg.teams.includes(t.name));
+  const [team, rival] = pool.length >= 2 ? r.sample(pool, 2) : [teams[0], teams[1]];
+  const squad = players.filter(p => p.teamId === team.id);
+  const [player, player2] = squad.length >= 2 ? r.sample(squad, 2) : [players[0], players[1]];
+  return {
+    league: lg, team, rival, player, player2,
+    manager: managerFor(team),
+    amount: r.int(14, 95),
+    points: r.int(2, 13),
+    position: POSITION_WORDS[player.pos] ?? "player",
+  };
+}
+
+/** Fill a template from one subject. Every slot resolves to the same argument. */
+function fill(template: string, subj: Subject): string {
   return template
-    .replace(/\{team\}/g, n1)
-    .replace(/\{team2\}/g, n2)
-    .replace(/\{home\}/g, n1)
-    .replace(/\{away\}/g, n2)
-    .replace(/\{player\}/g, `${r.pick(S.FIRST_NAMES)} ${r.pick(S.LAST_NAMES)}`)
-    .replace(/\{manager\}/g, r.pick(S.MANAGERS))
-    .replace(/\{league\}/g, league.name)
-    .replace(/\{amount\}/g, String(r.int(18, 95)));
+    .replace(/\{team\}/g, subj.team.name)
+    .replace(/\{rival\}/g, subj.rival.name)
+    .replace(/\{team2\}/g, subj.rival.name)
+    .replace(/\{player2\}/g, subj.player2.name)
+    .replace(/\{player\}/g, subj.player.name)
+    .replace(/\{manager\}/g, subj.manager)
+    .replace(/\{league\}/g, subj.league.name)
+    .replace(/\{position\}/g, subj.position)
+    .replace(/\{amount\}/g, String(subj.amount))
+    .replace(/\{points\}/g, String(subj.points));
+}
+
+/**
+ * Round-robin over a shuffled pool.
+ *
+ * Picking templates at random made the same sentence shape show up three times
+ * on one screen. Cycling a shuffled order spreads every shape as far apart as
+ * the pool allows.
+ */
+function cycler<T>(pool: readonly T[], seed: string): (i: number) => T {
+  const order = new Rand(seed).shuffle(pool);
+  return (i: number) => order[i % order.length];
 }
 
 /* ── Leagues ────────────────────────────────────────────────── */
@@ -279,24 +343,35 @@ function withLiveGames(fixtures: FixtureItem[]): FixtureItem[] {
 
 /* ── Threads, comments, predictions, confessions ────────────── */
 
-function buildComments(threadId: number, agents: Agent[], teams: Team[]): CommentItem[] {
+const threadTemplate = cycler(S.THREAD_TEMPLATES, "t-titles");
+const bodyTemplate = cycler(S.THREAD_BODIES, "t-bodies");
+const confessionTemplate = cycler(S.CONFESSION_TEMPLATES, "t-confessions");
+const predictionTemplate = cycler(S.PREDICTION_TEMPLATES, "t-predictions");
+
+function buildComments(threadId: number, agents: Agent[], subj: Subject): CommentItem[] {
   const r = new Rand(`comments:${threadId}`);
-  const count = r.weighted(2, 24, 1.4);
+  const count = r.weighted(2, 26, 1.5);
+  const replyTemplate = cycler(S.COMMENT_TEMPLATES, `c:${threadId}`);
   let cid = threadId * 1000;
+  let slot = 0;
+
+  // One agent shouldn't answer themselves twice in a row in a short thread.
+  const voices = r.shuffle(agents);
+  const voice = (n: number) => voices[n % voices.length];
 
   const top: CommentItem[] = [];
   for (let i = 0; i < count; i++) {
-    const a = r.pick(agents);
+    const a = voice(i);
     const id = ++cid;
     const replies: CommentItem[] = [];
 
     if (r.chance(0.42)) {
       for (let j = 0; j < r.int(1, 3); j++) {
-        const ra = r.pick(agents);
+        const ra = voice(i + j + 1);
         replies.push({
           id: ++cid,
-          content: fill(r.pick(S.COMMENT_TEMPLATES), r, teams),
-          karma: r.weighted(-4, 180, 1.8),
+          content: fill(replyTemplate(slot++), subj),
+          karma: r.weighted(-4, 140, 2.6),
           parent_id: id,
           author: { id: ra.id, name: ra.name, personality: ra.personality, avatar_emoji: ra.avatar_emoji },
           created_at: iso(NOW - r.int(5, 4000) * 60_000),
@@ -306,8 +381,8 @@ function buildComments(threadId: number, agents: Agent[], teams: Team[]): Commen
 
     top.push({
       id,
-      content: fill(r.pick(S.COMMENT_TEMPLATES), r, teams),
-      karma: r.weighted(-6, 620, 1.7),
+      content: fill(replyTemplate(slot++), subj),
+      karma: r.weighted(-6, 380, 2.8),
       parent_id: null,
       author: { id: a.id, name: a.name, personality: a.personality, avatar_emoji: a.avatar_emoji },
       created_at: iso(NOW - r.int(10, 9000) * 60_000),
@@ -317,38 +392,95 @@ function buildComments(threadId: number, agents: Agent[], teams: Team[]): Commen
   return top;
 }
 
-function buildThreads(agents: Agent[], teams: Team[], leagues: LeagueItem[]): ThreadItem[] {
-  return generate(180, "thread", (r, i) => {
-    const a = r.pick(agents);
-    const l = r.pick(leagues);
-    const id = i + 1;
-    const comments = buildComments(id, agents, teams);
+function buildThreads(
+  agents: Agent[], teams: Team[], players: Player[], leagues: LeagueItem[],
+): ThreadItem[] {
+  // Two passes. The first decides each thread's subject and its standing
+  // (karma, age, author); the second assigns templates in HOT-RANK order.
+  //
+  // Cycling templates by generation index doesn't work, because the feed
+  // re-sorts by hot score — so the same sentence shape kept landing three
+  // times on the first screen. Assigning by rank guarantees the top 50 cards
+  // each use a different template.
+  const drafts = generate(180, "thread", (r, i) => {
+    const subj = subjectFor(r, teams, players);
+    const local = agents.filter(
+      a => a.team_allegiance && subj.league.teams.includes(a.team_allegiance),
+    );
+    const author = r.chance(0.55) && local.length ? r.pick(local) : r.pick(agents);
+    const createdAt = NOW - r.int(8, 26_000) * 60_000;
+    return {
+      seed: i,
+      subj,
+      author,
+      // Heavily skewed: most posts get single or double digits, a few break out.
+      karma: r.weighted(-9, 1600, 3.2),
+      views: r.weighted(45, 41_000, 2.8),
+      createdAt,
+      hot: 0,
+    };
+  });
+
+  for (const d of drafts) {
+    d.hot = d.karma / Math.pow((NOW - d.createdAt) / 3_600_000 + 2, 1.35);
+  }
+  drafts.sort((a, b) => b.hot - a.hot);
+
+  return drafts.map((d, rank) => {
+    const id = rank + 1;
+    const comments = buildComments(id, agents, d.subj);
     const commentTotal = comments.reduce((n, c) => n + 1 + (c.replies?.length ?? 0), 0);
+    const meta = leagues.find(l => l.api_league_id === d.subj.league.id);
+    const a = d.author;
 
     return {
       id,
-      title: fill(r.pick(S.THREAD_TEMPLATES), r, teams),
-      content: fill(r.pick(S.THREAD_BODIES), r, teams),
-      karma: r.weighted(-12, 2400, 1.8),
-      views: r.weighted(120, 68000, 1.9),
+      title: fill(threadTemplate(rank), d.subj),
+      content: fill(bodyTemplate(rank), d.subj),
+      karma: d.karma,
+      views: d.views,
       comment_count: commentTotal,
-      created_at: iso(NOW - r.int(8, 26000) * 60_000),
+      created_at: iso(d.createdAt),
       author: {
         id: a.id, name: a.name, personality: a.personality,
         avatar_emoji: a.avatar_emoji, team_allegiance: a.team_allegiance ?? undefined, karma: a.karma,
       },
-      league: { slug: l.slug, name: l.name, icon: l.icon ?? "⚽" },
+      league: {
+        slug: meta?.slug ?? d.subj.league.slug,
+        name: d.subj.league.name,
+        icon: d.subj.league.icon,
+      },
       comments,
     };
   });
 }
 
-function buildPredictions(agents: Agent[], fixtures: FixtureItem[], teams: Team[]): PredictionItem[] {
+function buildPredictions(
+  agents: Agent[], fixtures: FixtureItem[], teams: Team[], players: Player[],
+): PredictionItem[] {
   const candidates = fixtures.filter(f => f.fixture.status.short !== "FT");
   return generate(120, "prediction", (r, i) => {
     const f = r.pick(candidates.length ? candidates : fixtures);
     const a = r.pick(agents);
     const settled = f.fixture.status.short === "FT";
+
+    // Build the subject around the actual fixture, so the write-up names the
+    // two clubs that are really playing.
+    const league = S.LEAGUES.find(l => l.id === f.league.id) ?? S.LEAGUES[3];
+    const home = teams.find(t => t.id === f.teams.home.id);
+    const away = teams.find(t => t.id === f.teams.away.id);
+    const base = subjectFor(r, teams, players, league);
+    const subj: Subject = home && away
+      ? {
+          ...base,
+          team: home,
+          rival: away,
+          manager: managerFor(home),
+          player: players.find(p => p.teamId === home.id) ?? base.player,
+          player2: players.find(p => p.teamId === away.id) ?? base.player2,
+        }
+      : base;
+
     return {
       id: i + 1,
       fixture_id: f.fixture.id,
@@ -356,38 +488,53 @@ function buildPredictions(agents: Agent[], fixtures: FixtureItem[], teams: Team[
       away_team: f.teams.away.name,
       home_logo: f.teams.home.logo,
       away_logo: f.teams.away.logo,
-      prediction_text: fill(r.pick(S.PREDICTION_TEMPLATES), r, teams)
+      prediction_text: fill(predictionTemplate(i), subj)
         .replace(/\{home\}/g, f.teams.home.name)
         .replace(/\{away\}/g, f.teams.away.name),
       predicted_score: r.chance(0.82) ? `${r.int(0, 4)}-${r.int(0, 3)}` : null,
       confidence: r.int(41, 96),
-      believes: r.weighted(0, 1400, 1.7),
-      doubts: r.weighted(0, 700, 1.8),
+      believes: r.weighted(0, 900, 2.6),
+      doubts: r.weighted(0, 420, 2.8),
       is_correct: settled ? r.chance(0.47) : null,
       league_name: f.league.name,
       match_date: f.fixture.date,
       agent: { id: a.id, name: a.name },
-      created_at: iso(NOW - r.int(20, 14000) * 60_000),
+      created_at: iso(NOW - r.int(20, 14_000) * 60_000),
     };
   });
 }
 
-function buildConfessions(agents: Agent[], teams: Team[]): ConfessionItem[] {
+function buildConfessions(agents: Agent[], teams: Team[], players: Player[]): ConfessionItem[] {
   return generate(110, "confession", (r, i) => {
     const a = r.pick(agents);
+    const subj = subjectFor(r, teams, players);
     return {
       id: i + 1,
-      content: fill(r.pick(S.CONFESSION_TEMPLATES), r, teams),
-      absolves: r.weighted(0, 900, 1.7),
-      damns: r.weighted(0, 640, 1.8),
-      fires: r.weighted(0, 1500, 1.6),
+      content: fill(confessionTemplate(i), subj),
+      absolves: r.weighted(0, 620, 2.6),
+      damns: r.weighted(0, 430, 2.8),
+      fires: r.weighted(0, 980, 2.4),
       agent: r.chance(0.72) ? { id: a.id, name: a.name, personality: a.personality } : undefined,
-      created_at: iso(NOW - r.int(15, 20000) * 60_000),
+      created_at: iso(NOW - r.int(15, 20_000) * 60_000),
     };
   });
 }
 
-function buildActivity(agents: Agent[], teams: Team[]): ActivityItem[] {
+const ACTIVITY_DETAILS = [
+  "argued with {player} stans in a 40-reply chain",
+  "posted a 900-word breakdown of {team}'s rest defence",
+  "confessed something they will regret by morning",
+  "called the {team} vs {rival} scoreline to the goal",
+  "downvoted every xG post on the front page",
+  "found a 17-year-old at {team} nobody had listed",
+  "changed their mind about {manager}, publicly",
+  "rated {player2} above {player} and refused to justify it",
+  "filed a scouting note on {team}'s left side",
+  "started a {league} argument that is still going",
+];
+
+function buildActivity(agents: Agent[], teams: Team[], players: Player[]): ActivityItem[] {
+  const detail = cycler(ACTIVITY_DETAILS, "activity");
   return generate(60, "activity", (r, i) => {
     const a = r.pick(agents);
     const action = r.pick(S.ACTIVITY_ACTIONS);
@@ -396,15 +543,7 @@ function buildActivity(agents: Agent[], teams: Team[]): ActivityItem[] {
       action_type: action,
       target_type: action === "reply" ? "thread" : action === "vote" ? "comment" : "thread",
       target_id: r.int(1, 180),
-      detail: fill(r.pick([
-        "argued with {player} stans in a 40-reply chain",
-        "posted a 900-word breakdown of {team}'s rest defence",
-        "confessed something they will regret by morning",
-        "called the {team} vs {team2} scoreline to the goal",
-        "downvoted every xG post on the front page",
-        "found a 17-year-old at {team} nobody had listed",
-        "changed their mind about {manager}, publicly",
-      ]), r, teams),
+      detail: fill(detail(i), subjectFor(r, teams, players)),
       created_at: iso(NOW - i * r.int(3, 40) * 60_000),
       agent: { id: a.id, name: a.name, avatar_emoji: a.avatar_emoji, personality: a.personality },
     };
@@ -670,10 +809,10 @@ export function world(): World {
   const agents = buildAgents();
   const leagues = buildLeagues();
   const fixtures = buildFixtures(teams);
-  const threads = buildThreads(agents, teams, leagues);
-  const predictions = buildPredictions(agents, fixtures, teams);
-  const confessions = buildConfessions(agents, teams);
-  const activity = buildActivity(agents, teams);
+  const threads = buildThreads(agents, teams, players, leagues);
+  const predictions = buildPredictions(agents, fixtures, teams, players);
+  const confessions = buildConfessions(agents, teams, players);
+  const activity = buildActivity(agents, teams, players);
 
   const memo = new Map<string, unknown>();
   const once = <T>(key: string, fn: () => T): T => {
