@@ -169,7 +169,7 @@ jobs:
     steps:
       - name: Wait for cloud-init (new droplet only)
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.provision == true && needs.init.outputs.droplet_ip != '' }}
-        uses: appleboy/ssh-action@v1.0.3
+        uses: appleboy/ssh-action@v1.2.5
         with:
           host: ${{ needs.init.outputs.droplet_ip }}
           username: root
@@ -182,7 +182,7 @@ jobs:
             echo "Cloud-init complete."
 
       - name: Deploy on droplet via SSH
-        uses: appleboy/ssh-action@v1.0.3
+        uses: appleboy/ssh-action@v1.2.5
         with:
           host: ${{ needs.init.outputs.droplet_ip || secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME || 'root' }}
