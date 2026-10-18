@@ -19,7 +19,7 @@
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "react-router-dom": "^7.18.2",
-    "streamdown": "^2.5.0",
+    "streamdown": "^2.7.0",
     "tailwind-merge": "^2.5.0"
   },
   "devDependencies": {
